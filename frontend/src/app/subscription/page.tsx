@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
+import { Select } from '@/components/ui/Select';
 
 export default function SubscriptionPage() {
   const { church, branches } = useBranch();
@@ -260,17 +261,18 @@ export default function SubscriptionPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-stone-700 mb-1">Pays</label>
-              <select
+              <Select
+                aria-label="Pays"
                 value={phoneCountry}
-                onChange={(e) => setPhoneCountry(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 focus:outline-hidden"
-              >
-                <option value="GA">🇬🇦 Gabon (+241)</option>
-                <option value="SN">🇸🇳 Sénégal (+221)</option>
-                <option value="CI">🇨🇮 Côte d’Ivoire (+225)</option>
-                <option value="CM">🇨🇲 Cameroun (+237)</option>
-                <option value="FR">🇫🇷 France (+33)</option>
-              </select>
+                onChange={setPhoneCountry}
+                options={[
+                  { value: 'GA', label: '🇬🇦 Gabon (+241)' },
+                  { value: 'SN', label: '🇸🇳 Sénégal (+221)' },
+                  { value: 'CI', label: '🇨🇮 Côte d’Ivoire (+225)' },
+                  { value: 'CM', label: '🇨🇲 Cameroun (+237)' },
+                  { value: 'FR', label: '🇫🇷 France (+33)' },
+                ]}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="block font-bold text-stone-700 mb-1">

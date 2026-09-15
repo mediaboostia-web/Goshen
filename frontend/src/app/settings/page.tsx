@@ -9,6 +9,7 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
+import { Select } from '@/components/ui/Select';
 import {
   ChurchIcon,
   ShieldCheckIcon,
@@ -477,7 +478,7 @@ function SettingsContent() {
                       disabled={savingPassword}
                       className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
                     >
-                      {savingPassword ? 'Modification en cours…' : 'Mettre à jour le mot de passe'}
+                      {savingPassword ? 'Modification en cours…' : 'Mettre à jour'}
                     </button>
                   </form>
                 </div>
@@ -506,113 +507,113 @@ function SettingsContent() {
             {/* ── 3. ONGLET: MEMBRES & RÔLES (NOUVEAU) ── */}
             {activeTab === 'membres' && (
               <div className="space-y-6">
-                {/* Form to add a person with a role */}
-                <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
-                  <div className="border-b border-stone-100 pb-4 mb-6">
-                    <h2 className="font-serif text-xl font-bold text-stone-900">
-                      Ajouter une Personne & Attribuer un Rôle
-                    </h2>
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      Déléguez la gestion financière à vos trésoriers, secrétaires et commissaires
-                      aux comptes
-                    </p>
+                {/* Form to add a person with a role — Pastor only */}
+                {church?.isPastor && (
+                  <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
+                    <div className="border-b border-stone-100 pb-4 mb-6">
+                      <h2 className="font-serif text-xl font-bold text-stone-900">
+                        Ajouter une Personne & Attribuer un Rôle
+                      </h2>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Déléguez la gestion financière à vos trésoriers, secrétaires et commissaires
+                        aux comptes
+                      </p>
+                    </div>
+
+                    <form onSubmit={onSubmitMember} className="space-y-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">
+                            Nom et prénom du responsable
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={newMemberName}
+                            onChange={(e) => setNewMemberName(e.target.value)}
+                            placeholder="Ex: Diacre Pierre Ndong"
+                            className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">
+                            Adresse email de connexion
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={newMemberEmail}
+                            onChange={(e) => setNewMemberEmail(e.target.value)}
+                            placeholder="pierre.ndong@eglise.ga"
+                            className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">
+                            Rôle ecclésiastique attribué
+                          </label>
+                          <Select
+                            aria-label="Rôle ecclésiastique attribué"
+                            value={newMemberRole}
+                            onChange={(v) =>
+                              setNewMemberRole(
+                                v as 'PASTOR' | 'TREASURER' | 'SECRETARY' | 'AUDITOR',
+                              )
+                            }
+                            options={[
+                              {
+                                value: 'TREASURER',
+                                label: 'Trésorier de Paroisse (Saisie & Décaissements)',
+                              },
+                              {
+                                value: 'PASTOR',
+                                label: 'Pasteur Titulaire / Adjoint (Supervision Totale)',
+                              },
+                              {
+                                value: 'SECRETARY',
+                                label: 'Secrétaire de Séance (PV de Culte & Registres)',
+                              },
+                              {
+                                value: 'AUDITOR',
+                                label: 'Commissaire aux Comptes / Auditeur (Contrôle)',
+                              },
+                            ]}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">
+                            Affectation Paroisse / Annexe
+                          </label>
+                          <Select
+                            aria-label="Affectation Paroisse / Annexe"
+                            value={newMemberBranch}
+                            onChange={setNewMemberBranch}
+                            options={[
+                              { value: 'ALL', label: 'Toutes les paroisses (Vue Consolidée)' },
+                              ...branches.map((b) => ({ value: b.id, label: b.name })),
+                            ]}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={invitingMember}
+                          className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs flex items-center gap-1.5"
+                        >
+                          <PlusIcon className="h-4 w-4" />
+                          <span>{invitingMember ? 'Enregistrement…' : 'Ajouter'}</span>
+                        </button>
+                      </div>
+                    </form>
                   </div>
-
-                  <form onSubmit={onSubmitMember} className="space-y-4 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block font-bold text-stone-700 mb-1">
-                          Nom et prénom du responsable
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={newMemberName}
-                          onChange={(e) => setNewMemberName(e.target.value)}
-                          placeholder="Ex: Diacre Pierre Ndong"
-                          className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-stone-700 mb-1">
-                          Adresse email de connexion
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={newMemberEmail}
-                          onChange={(e) => setNewMemberEmail(e.target.value)}
-                          placeholder="pierre.ndong@eglise.ga"
-                          className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block font-bold text-stone-700 mb-1">
-                          Rôle ecclésiastique attribué
-                        </label>
-                        <select
-                          value={newMemberRole}
-                          onChange={(e) =>
-                            setNewMemberRole(
-                              e.target.value as 'PASTOR' | 'TREASURER' | 'SECRETARY' | 'AUDITOR',
-                            )
-                          }
-                          className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 bg-white shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all cursor-pointer"
-                        >
-                          <option value="TREASURER">
-                            Trésorier de Paroisse (Saisie & Décaissements)
-                          </option>
-                          <option value="PASTOR">
-                            Pasteur Titulaire / Adjoint (Supervision Totale)
-                          </option>
-                          <option value="SECRETARY">
-                            Secrétaire de Séance (PV de Culte & Registres)
-                          </option>
-                          <option value="AUDITOR">
-                            Commissaire aux Comptes / Auditeur (Contrôle)
-                          </option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-stone-700 mb-1">
-                          Affectation Paroisse / Annexe
-                        </label>
-                        <select
-                          value={newMemberBranch}
-                          onChange={(e) => setNewMemberBranch(e.target.value)}
-                          className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 bg-white shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all cursor-pointer"
-                        >
-                          <option value="ALL">Toutes les paroisses (Vue Consolidée)</option>
-                          {branches.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={invitingMember}
-                        className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs flex items-center gap-1.5"
-                      >
-                        <PlusIcon className="h-4 w-4" />
-                        <span>
-                          {invitingMember
-                            ? 'Enregistrement…'
-                            : 'Ajouter cette personne et activer son rôle'}
-                        </span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                )}
 
                 {/* List of current members */}
                 <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
@@ -730,15 +731,16 @@ function SettingsContent() {
                       <label className="block font-bold text-stone-700 mb-1">
                         Devise monétaire paritaire
                       </label>
-                      <select
+                      <Select
+                        aria-label="Devise monétaire paritaire"
                         value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 bg-white shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                      >
-                        <option value="FCFA">FCFA (Franc CFA — CEMAC / UEMOA)</option>
-                        <option value="EUR">EUR (€ Euro)</option>
-                        <option value="USD">USD ($ Dollar américain)</option>
-                      </select>
+                        onChange={setCurrency}
+                        options={[
+                          { value: 'FCFA', label: 'FCFA (Franc CFA — CEMAC / UEMOA)' },
+                          { value: 'EUR', label: 'EUR (€ Euro)' },
+                          { value: 'USD', label: 'USD ($ Dollar américain)' },
+                        ]}
+                      />
                     </div>
 
                     <div>
@@ -772,7 +774,7 @@ function SettingsContent() {
                       disabled={savingChurch}
                       className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
                     >
-                      {savingChurch ? 'Enregistrement…' : 'Sauvegarder les paramètres'}
+                      {savingChurch ? 'Enregistrement…' : 'Enregistrer'}
                     </button>
                   </div>
                 </form>

@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
+import { Select } from '@/components/ui/Select';
 
 interface Category {
   id: string;
@@ -130,32 +131,39 @@ export default function ChurchSettingsPage() {
             </div>
           )}
 
-          {/* Add Category Form */}
-          <form onSubmit={handleAddCategory} className="flex flex-wrap items-center gap-3 text-xs">
-            <input
-              type="text"
-              required
-              placeholder="Ex: Don spécial évangélisation, Sono..."
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              className="flex-1 min-w-[200px] rounded-lg border border-stone-300 p-2 text-stone-900 focus:outline-hidden"
-            />
-            <select
-              value={newCatType}
-              onChange={(e) => setNewCatType(e.target.value as 'INCOME' | 'EXPENSE')}
-              className="rounded-lg border border-stone-300 p-2 text-stone-900 focus:outline-hidden"
+          {/* Add Category Form — Pastor only, mirrors the backend gate */}
+          {church?.isPastor && (
+            <form
+              onSubmit={handleAddCategory}
+              className="flex flex-wrap items-center gap-3 text-xs"
             >
-              <option value="INCOME">Type: ENTRÉE (Dîmes, Offrandes)</option>
-              <option value="EXPENSE">Type: DÉPENSE (Sorties)</option>
-            </select>
-            <button
-              type="submit"
-              disabled={adding}
-              className="rounded-lg bg-emerald-800 px-4 py-2 font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {adding ? 'Ajout…' : '+ Ajouter la catégorie'}
-            </button>
-          </form>
+              <input
+                type="text"
+                required
+                placeholder="Ex: Don spécial évangélisation, Sono..."
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                className="flex-1 min-w-[200px] rounded-lg border border-stone-300 p-2 text-stone-900 focus:outline-hidden"
+              />
+              <Select
+                aria-label="Type de catégorie"
+                className="w-56"
+                value={newCatType}
+                onChange={(v) => setNewCatType(v as 'INCOME' | 'EXPENSE')}
+                options={[
+                  { value: 'INCOME', label: 'Type : ENTRÉE (Dîmes, Offrandes)' },
+                  { value: 'EXPENSE', label: 'Type : DÉPENSE (Sorties)' },
+                ]}
+              />
+              <button
+                type="submit"
+                disabled={adding}
+                className="rounded-lg bg-emerald-800 px-4 py-2 font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {adding ? 'Ajout…' : 'Ajouter'}
+              </button>
+            </form>
+          )}
 
           {/* Categories Lists Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 text-xs">

@@ -8,6 +8,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
+import { Select } from '@/components/ui/Select';
 
 interface ReportPreview {
   openingBalance: number;
@@ -270,7 +271,7 @@ export default function ReportsPage() {
               disabled={saving || !preview}
               className="rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-800 hover:bg-stone-50 transition-colors cursor-pointer"
             >
-              {saving ? 'Archivage…' : 'Archiver ce rapport'}
+              {saving ? 'Archivage…' : 'Archiver'}
             </button>
           </div>
         </div>
@@ -279,20 +280,19 @@ export default function ReportsPage() {
         <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
           <div>
             <label className="block font-bold text-stone-700 mb-1">Période du rapport</label>
-            <select
+            <Select
+              aria-label="Période du rapport"
               value={periodType}
-              onChange={(e) =>
-                setPeriodType(
-                  e.target.value as 'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM',
-                )
+              onChange={(v) =>
+                setPeriodType(v as 'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM')
               }
-              className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-hidden bg-white cursor-pointer"
-            >
-              <option value="SUNDAY_SERVICE">Culte Dominical (Jour précis)</option>
-              <option value="MONTHLY">Mois Calendaire</option>
-              <option value="QUARTERLY">Trimestre</option>
-              <option value="CUSTOM">Dates personnalisées</option>
-            </select>
+              options={[
+                { value: 'SUNDAY_SERVICE', label: 'Culte Dominical (Jour précis)' },
+                { value: 'MONTHLY', label: 'Mois Calendaire' },
+                { value: 'QUARTERLY', label: 'Trimestre' },
+                { value: 'CUSTOM', label: 'Dates personnalisées' },
+              ]}
+            />
           </div>
 
           <div>
