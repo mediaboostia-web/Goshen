@@ -81,7 +81,9 @@ export function resolveChariowPhone(input: ChariowPhoneInput): ChariowNormalized
 /**
  * Mappe les statuts Chariow selon la table de vérité de Chariow.md §3.3
  */
-export function mapChariowStatus(raw: string | undefined): 'succeeded' | 'failed' | 'abandoned' | 'pending' {
+export function mapChariowStatus(
+  raw: string | undefined,
+): 'succeeded' | 'failed' | 'abandoned' | 'pending' {
   if (!raw) return 'pending';
   const s = raw.toLowerCase().trim();
 
@@ -93,11 +95,41 @@ export function mapChariowStatus(raw: string | undefined): 'succeeded' | 'failed
   if (s.includes('cancel') || s.includes('abandon') || s.includes('refund')) return 'abandoned';
 
   // Succès (settled = réglé/encaissé = PAYÉ !)
-  if (s.includes('settle') || s.includes('complete') || s.includes('paid') || s.includes('success')) {
+  if (
+    s.includes('settle') ||
+    s.includes('complete') ||
+    s.includes('paid') ||
+    s.includes('success')
+  ) {
     return 'succeeded';
   }
 
   return 'pending';
+}
+
+/**
+ * Thrown when CHARIOW_API_KEY is absent and the request cannot be served by
+ * the dev-only mock. Route handlers should map this to 503
+ * PAYMENT_PROVIDER_UNCONFIGURED — never to a fabricated success response.
+ */
+export class ChariowNotConfiguredError extends Error {
+  constructor(message = 'Chariow is not configured (CHARIOW_API_KEY missing)') {
+    super(message);
+    this.name = 'ChariowNotConfiguredError';
+  }
+}
+
+/**
+ * The mock/no-key fallback below exists for local development and demos
+ * without real Chariow credentials. It must NEVER activate in production —
+ * a church could believe a subscription payment went through when no real
+ * charge was ever attempted. Set CHARIOW_ALLOW_MOCK=1 to explicitly opt
+ * back into the mock in a production-like environment (e.g. a staging
+ * deploy that intentionally has no real credentials) — never do this for a
+ * live deployment handling real church subscriptions.
+ */
+function mockAllowed(): boolean {
+  return process.env.NODE_ENV !== 'production' || process.env.CHARIOW_ALLOW_MOCK === '1';
 }
 
 export class ChariowClient {
@@ -106,7 +138,10 @@ export class ChariowClient {
 
   constructor(apiKey?: string, apiUrl?: string) {
     this.apiKey = apiKey || process.env.CHARIOW_API_KEY || '';
-    this.apiUrl = (apiUrl || process.env.CHARIOW_API_URL || 'https://api.chariow.com/v1').replace(/\/$/, '');
+    this.apiUrl = (apiUrl || process.env.CHARIOW_API_URL || 'https://api.chariow.com/v1').replace(
+      /\/$/,
+      '',
+    );
   }
 
   isConfigured(): boolean {
@@ -115,6 +150,9 @@ export class ChariowClient {
 
   async createCheckout(input: CreateCheckoutInput): Promise<ChariowCheckoutResponse> {
     if (!this.apiKey) {
+      if (!mockAllowed()) {
+        throw new ChariowNotConfiguredError();
+      }
       // Mock pour environnement de développement / démo sans clé
       return {
         purchaseId: `mock_purch_${Date.now()}`,
@@ -168,6 +206,9 @@ export class ChariowClient {
 
   async getSale(purchaseId: string): Promise<ChariowSaleStatus> {
     if (!this.apiKey || purchaseId.startsWith('mock_')) {
+      if (!mockAllowed()) {
+        throw new ChariowNotConfiguredError();
+      }
       return {
         status: 'succeeded',
         rawStatus: 'settled',

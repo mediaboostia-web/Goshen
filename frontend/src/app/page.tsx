@@ -72,7 +72,9 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white py-20 px-6 sm:py-28">
         <div className="mx-auto max-w-5xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-900/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-emerald-200 mb-6">
-            <span>Conçu pour les Assemblées de Dieu et communautés chrétiennes d'Afrique Centrale</span>
+            <span>
+              Conçu pour les Assemblées de Dieu et communautés chrétiennes d'Afrique Centrale
+            </span>
           </div>
 
           <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
@@ -219,7 +221,8 @@ export default function HomePage() {
               <div className="rounded-xl bg-stone-50 p-4 border border-stone-200">
                 <span className="text-xs text-stone-500 font-medium">Solde global disponible</span>
                 <p className="text-2xl font-serif font-bold text-emerald-950 mt-1">
-                  1 845 000 <span className="text-sm font-sans font-normal text-stone-600">FCFA</span>
+                  1 845 000{' '}
+                  <span className="text-sm font-sans font-normal text-stone-600">FCFA</span>
                 </p>
               </div>
               <div className="rounded-xl bg-stone-50 p-4 border border-stone-200">
@@ -281,13 +284,16 @@ export default function HomePage() {
                   <span className="text-emerald-700 font-bold">✓</span> 1 église (sans annexe)
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> 2 utilisateurs (Pasteur + Trésorier)
+                  <span className="text-emerald-700 font-bold">✓</span> 2 utilisateurs (Pasteur +
+                  Trésorier)
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Saisie entrées/dépenses illimitée
+                  <span className="text-emerald-700 font-bold">✓</span> Saisie entrées/dépenses
+                  illimitée
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> 3 modèles de dépenses récurrentes
+                  <span className="text-emerald-700 font-bold">✓</span> 3 modèles de dépenses
+                  récurrentes
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-emerald-700 font-bold">✓</span> 1 rapport PDF par mois
@@ -327,10 +333,12 @@ export default function HomePage() {
                   <span className="text-emerald-700 font-bold">✓</span> 10 utilisateurs & rôles
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Photos des reçus & justificatifs
+                  <span className="text-emerald-700 font-bold">✓</span> Photos des reçus &
+                  justificatifs
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Dépenses récurrentes illimitées
+                  <span className="text-emerald-700 font-bold">✓</span> Dépenses récurrentes
+                  illimitées
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-emerald-700 font-bold">✓</span> Rapports PDF illimités
@@ -368,13 +376,15 @@ export default function HomePage() {
                   <span className="text-emerald-700 font-bold">✓</span> Utilisateurs illimités
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Toutes les fonctionnalités Essentiel
+                  <span className="text-emerald-700 font-bold">✓</span> Toutes les fonctionnalités
+                  Essentiel
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-emerald-700 font-bold">✓</span> Historique illimité archivé
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Support direct WhatsApp & Téléphone
+                  <span className="text-emerald-700 font-bold">✓</span> Support direct WhatsApp &
+                  Téléphone
                 </li>
               </ul>
             </div>
@@ -398,7 +408,9 @@ export default function HomePage() {
             <span className="font-serif text-lg font-bold text-white">Goshen Finance</span>
             <span className="text-stone-500">&mdash; La saine gestion au service de la foi.</span>
           </div>
-          <p>&copy; {new Date().getFullYear()} Goshen. Développé pour les églises d’Afrique centrale.</p>
+          <p>
+            &copy; {new Date().getFullYear()} Goshen. Développé pour les églises d’Afrique centrale.
+          </p>
         </div>
       </footer>
     </div>

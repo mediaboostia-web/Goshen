@@ -45,8 +45,8 @@ export default function ExpensesPage() {
     categoryName: string;
     branchName: string;
     date: string;
-    beneficiary?: string;
-    notes?: string;
+    beneficiary?: string | null;
+    notes?: string | null;
   } | null>(null);
 
   // Modal preview
@@ -56,9 +56,7 @@ export default function ExpensesPage() {
   const [amount, setAmount] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [branchId, setBranchId] = useState<string>('');
-  const [date, setDate] = useState<string>(
-    () => new Date().toISOString().split('T')[0] ?? ''
-  );
+  const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0] ?? '');
   const [beneficiary, setBeneficiary] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [receiptUrl, setReceiptUrl] = useState<string>('');
@@ -179,8 +177,8 @@ export default function ExpensesPage() {
         categoryName: matchedCat?.name || 'Dépense Ecclésiastique',
         branchName: matchedBranch?.name || currentBranch?.name || 'Siège Principal',
         date,
-        beneficiary: beneficiary.trim() || undefined,
-        notes: notes.trim() || undefined,
+        beneficiary: beneficiary.trim() || null,
+        notes: notes.trim() || null,
       };
       setLastSavedExpense(savedTxInfo);
 
@@ -226,16 +224,22 @@ export default function ExpensesPage() {
         {
           no: '01',
           description: tx.categoryName,
-          details: tx.notes || `Décaissement autorisé — ${tx.beneficiary ? `Bénéficiaire : ${tx.beneficiary}` : 'Justificatif conforme'}`,
+          subDescription:
+            tx.notes ||
+            `Décaissement autorisé — ${tx.beneficiary ? `Bénéficiaire : ${tx.beneficiary}` : 'Justificatif conforme'}`,
           price: tx.amount,
           qty: 1,
           total: tx.amount,
         },
       ],
+      subTotal: tx.amount,
+      grandTotal: tx.amount,
       paymentMethod: 'Caisse Locale / Virement Bancaire',
-      paymentDetails: 'Décaissement validé par la Trésorerie Générale de Goshen Finance avec signature autorisée.',
-      terms: 'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique.',
-      taxRate: 0,
+      paymentDetails:
+        'Décaissement validé par la Trésorerie Générale de Goshen Finance avec signature autorisée.',
+      terms:
+        'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique.',
+      tax: 0,
       discount: 0,
       signatoryName: 'Steven Joe',
       signatoryRole: 'Trésorier Général & Comptable',
@@ -300,11 +304,14 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} FCFA enregistrée avec succès !
+                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} FCFA enregistrée avec
+                  succès !
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
                   {lastSavedExpense.categoryName} • {lastSavedExpense.branchName}
-                  {lastSavedExpense.beneficiary ? ` • Bénéficiaire: ${lastSavedExpense.beneficiary}` : ''}
+                  {lastSavedExpense.beneficiary
+                    ? ` • Bénéficiaire: ${lastSavedExpense.beneficiary}`
+                    : ''}
                 </p>
               </div>
             </div>
@@ -365,7 +372,9 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Catégorie de dépense *</label>
+                <label className="block font-bold text-stone-700 mb-1">
+                  Catégorie de dépense *
+                </label>
                 <select
                   required
                   value={categoryId}
@@ -381,7 +390,9 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Lieu de culte / Annexe *</label>
+                <label className="block font-bold text-stone-700 mb-1">
+                  Lieu de culte / Annexe *
+                </label>
                 <select
                   required
                   value={branchId}

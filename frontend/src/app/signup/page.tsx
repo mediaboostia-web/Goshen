@@ -13,7 +13,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -31,42 +30,29 @@ export default function SignupPage() {
 
     setSubmitting(true);
     try {
-      const res = await api<{ csrfToken?: string; ok?: boolean }>('/api/auth/signup', {
+      // Signup never sets cookies (enumeration-resistant — identical
+      // response whether the email is new or already registered). The
+      // session is issued by /verify-email once the 8-char code is entered.
+      await api('/api/auth/signup', {
         method: 'POST',
         body: { email: email.trim(), password },
       });
-      if (res?.csrfToken) {
-        // Session établie directement
-        router.push('/onboarding');
-      } else {
-        router.push('/onboarding');
-      }
-    } catch {
-      // Fallback gracieux en environnement de démonstration local
-      router.push('/onboarding');
+      router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message || 'Impossible de créer le compte pour le moment.'
+          : 'Erreur réseau. Veuillez réessayer.',
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Inscription rapide avec Google (le seul moyen rapide)
-  async function handleGoogleSignup() {
-    setGoogleLoading(true);
-    setError(null);
-    try {
-      // Simulation fluide ou redirection OAuth vers onboarding
-      router.push('/onboarding');
-    } finally {
-      setGoogleLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#064e3b]/10 via-[#f8fafc] to-[#022c22]/15 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      
       {/* ── SPLIT-CARD BIFOLD CONTAINER ── */}
       <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row min-h-[580px]">
-        
         {/* ── LEFT VOLET: GOSHEN IDENTITY & MISSION ── */}
         <div className="relative flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] p-8 sm:p-10 text-white md:w-5/12">
           <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full border border-emerald-500/10 pointer-events-none" />
@@ -100,7 +86,8 @@ export default function SignupPage() {
               Bâtissons une trésorerie sainte.
             </h2>
             <p className="text-xs text-emerald-100/80 leading-relaxed font-normal">
-              Rejoignez les pasteurs, trésoriers et auditeurs qui simplifient la gestion des cultes dominicaux, des offrandes et des charges fixes.
+              Rejoignez les pasteurs, trésoriers et auditeurs qui simplifient la gestion des cultes
+              dominicaux, des offrandes et des charges fixes.
             </p>
           </div>
 
@@ -159,9 +146,7 @@ export default function SignupPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">
-                    Mot de passe
-                  </label>
+                  <label className="block font-bold text-stone-700 mb-1">Mot de passe</label>
                   <input
                     type="password"
                     required
@@ -192,12 +177,13 @@ export default function SignupPage() {
               </div>
 
               <p className="text-[11px] text-stone-500 pt-1 leading-relaxed">
-                En créant un compte, vous acceptez la charte de confidentialité et de gestion financière ecclésiastique de Goshen.
+                En créant un compte, vous acceptez la charte de confidentialité et de gestion
+                financière ecclésiastique de Goshen.
               </p>
 
               <button
                 type="submit"
-                disabled={submitting || googleLoading}
+                disabled={submitting}
                 className="w-full rounded-xl bg-emerald-800 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-50 transition-all active:scale-[0.99] cursor-pointer"
               >
                 {submitting ? 'Création en cours…' : 'Créer mon compte'}
@@ -218,15 +204,13 @@ export default function SignupPage() {
 
             {/* LE SEUL MOYEN RAPIDE EST AVEC GOOGLE */}
             <div>
-              <button
-                type="button"
-                onClick={handleGoogleSignup}
-                disabled={googleLoading || submitting}
-                className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 py-2.5 px-4 text-xs font-bold text-stone-700 shadow-2xs hover:shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+              <a
+                href="/api/auth/oauth/google/start?next=/onboarding"
+                className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 py-2.5 px-4 text-xs font-bold text-stone-700 shadow-2xs hover:shadow-xs transition-all active:scale-[0.99]"
               >
                 <GoogleIcon className="h-5 w-5 shrink-0" />
-                <span>{googleLoading ? 'Inscription Google en cours…' : 'Continuer avec Google'}</span>
-              </button>
+                <span>Continuer avec Google</span>
+              </a>
             </div>
           </div>
 
@@ -236,9 +220,7 @@ export default function SignupPage() {
               <ShieldCheckIcon className="h-3.5 w-3.5 text-emerald-700" />
               Registre protégé et conforme CEMAC
             </span>
-            <span className="font-semibold text-emerald-800">
-              Sans carte bancaire requise
-            </span>
+            <span className="font-semibold text-emerald-800">Sans carte bancaire requise</span>
           </div>
         </div>
       </div>

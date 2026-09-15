@@ -40,7 +40,7 @@ export default function SubscriptionPage() {
             firstName: firstName.trim() || undefined,
             lastName: lastName.trim() || church?.name || undefined,
           },
-        }
+        },
       );
 
       if (res.checkoutUrl) {
@@ -84,16 +84,16 @@ export default function SubscriptionPage() {
                 {currentPlan === 'PREMIUM'
                   ? 'Plan Premium'
                   : currentPlan === 'ESSENTIAL'
-                  ? 'Plan Essentiel'
-                  : 'Plan Gratuit'}
+                    ? 'Plan Essentiel'
+                    : 'Plan Gratuit'}
               </span>
               <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                 Actif
               </span>
             </h2>
             <p className="text-xs text-stone-500 mt-1">
-              Annexes utilisées :{' '}
-              <strong className="text-stone-800">{branches.length}</strong> &bull; Devise : FCFA
+              Annexes utilisées : <strong className="text-stone-800">{branches.length}</strong>{' '}
+              &bull; Devise : FCFA
             </p>
           </div>
 
@@ -123,7 +123,9 @@ export default function SubscriptionPage() {
                 <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-900">
                   RECOMMANDÉ
                 </span>
-                <h3 className="font-serif text-xl font-bold text-emerald-950 mt-2">Plan Essentiel</h3>
+                <h3 className="font-serif text-xl font-bold text-emerald-950 mt-2">
+                  Plan Essentiel
+                </h3>
                 <p className="text-xs text-stone-500">Idéal pour 1 siège + 1 à 3 annexes</p>
               </div>
               <input
@@ -151,7 +153,8 @@ export default function SubscriptionPage() {
                 <span className="text-emerald-700 font-bold">✓</span> 10 utilisateurs & rôles
               </li>
               <li className="flex items-center gap-1.5">
-                <span className="text-emerald-700 font-bold">✓</span> Photos des reçus & justificatifs
+                <span className="text-emerald-700 font-bold">✓</span> Photos des reçus &
+                justificatifs
               </li>
               <li className="flex items-center gap-1.5">
                 <span className="text-emerald-700 font-bold">✓</span> Rapports PDF illimités
@@ -218,7 +221,8 @@ export default function SubscriptionPage() {
                 Règlement sécurisé par Mobile Money (Chariow)
               </h3>
               <p className="text-[11px] text-stone-500">
-                Airtel Money &bull; Moov Money &bull; Wave &bull; Orange Money &bull; Carte Visa/Mastercard
+                Airtel Money &bull; Moov Money &bull; Wave &bull; Orange Money &bull; Carte
+                Visa/Mastercard
               </p>
             </div>
             <span className="text-2xl">🔒</span>
@@ -300,9 +304,7 @@ export default function SubscriptionPage() {
               disabled={loading}
               className="w-full sm:w-auto rounded-lg bg-emerald-800 px-7 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-50 transition-colors"
             >
-              {loading
-                ? 'Génération du paiement…'
-                : 'Procéder au paiement Mobile Money &rarr;'}
+              {loading ? 'Génération du paiement…' : 'Procéder au paiement Mobile Money &rarr;'}
             </button>
           </div>
         </div>

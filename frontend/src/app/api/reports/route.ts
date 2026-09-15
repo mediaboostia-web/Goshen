@@ -67,7 +67,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           incomesByCategory[t.category.name] = (incomesByCategory[t.category.name] || 0) + t.amount;
           totalIncome += t.amount;
         } else {
-          expensesByCategory[t.category.name] = (expensesByCategory[t.category.name] || 0) + t.amount;
+          expensesByCategory[t.category.name] =
+            (expensesByCategory[t.category.name] || 0) + t.amount;
           totalExpense += t.amount;
         }
       }
@@ -131,7 +132,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = await req.json().catch(() => null);
     const parsed = GenerateReportBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { title, periodType, branchId, startDate: startStr, endDate: endStr } = parsed.data;
@@ -190,7 +194,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const reportData = {
       churchName: access.church.name,
       denomination: access.church.denomination,
-      branchName: isConsolidated ? 'Toutes les annexes (Consolidé)' : transactions[0]?.branch.name || 'Annexe',
+      branchName: isConsolidated
+        ? 'Toutes les annexes (Consolidé)'
+        : transactions[0]?.branch.name || 'Annexe',
       incomesByCategory,
       expensesByCategory,
       openingBalance,

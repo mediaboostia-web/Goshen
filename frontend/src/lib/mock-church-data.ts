@@ -207,7 +207,8 @@ export const GOSHEN_MOCK_DATA: MockChurchDataset = {
       beneficiary: 'Culte de louange & Sainte Cène',
       notes: 'Règlement global dîmes par Airtel Money et espèces post-culte',
       paymentMethod: 'AIRTEL_MONEY',
-      receiptUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80',
+      receiptUrl:
+        'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80',
       authorName: 'Pasteur Jean-Marc',
     },
     {
@@ -235,7 +236,8 @@ export const GOSHEN_MOCK_DATA: MockChurchDataset = {
       beneficiary: 'SEEG Agence Mont-Bouët',
       notes: 'Règlement compteur édifice principal réf #984210',
       paymentMethod: 'MOOV_MONEY',
-      receiptUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=600&auto=format&fit=crop&q=80',
+      receiptUrl:
+        'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=600&auto=format&fit=crop&q=80',
       authorName: 'Trésorier André',
     },
     {
@@ -263,7 +265,8 @@ export const GOSHEN_MOCK_DATA: MockChurchDataset = {
       beneficiary: 'Atelier Audio Libreville',
       notes: 'Réparation 2 micros sans fil Shure et câblage table de mixage',
       paymentMethod: 'CASH',
-      receiptUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80',
+      receiptUrl:
+        'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80',
       authorName: 'Responsable Louange',
     },
     {
@@ -291,7 +294,8 @@ export const GOSHEN_MOCK_DATA: MockChurchDataset = {
       beneficiary: 'Bailleur M. Ondo',
       notes: 'Quittance mois de septembre 2026',
       paymentMethod: 'AIRTEL_MONEY',
-      receiptUrl: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&auto=format&fit=crop&q=80',
+      receiptUrl:
+        'https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&auto=format&fit=crop&q=80',
       authorName: 'Trésorier André',
     },
     {

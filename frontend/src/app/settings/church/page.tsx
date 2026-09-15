@@ -20,7 +20,7 @@ export default function ChurchSettingsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCatName, setNewCatName] = useState<string>('');
   const [newCatType, setNewCatType] = useState<'INCOME' | 'EXPENSE'>('INCOME');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [, setLoading] = useState<boolean>(true);
   const [adding, setAdding] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 

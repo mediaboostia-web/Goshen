@@ -21,7 +21,7 @@ interface MemberItem {
 }
 
 export default function MembersPage() {
-  const { church, branches } = useBranch();
+  const { branches } = useBranch();
   const { toast } = useToast();
 
   const [members, setMembers] = useState<MemberItem[]>([]);
@@ -156,7 +156,9 @@ export default function MembersPage() {
                 <label className="block font-bold text-stone-700 mb-1">Rôle attribué *</label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as any)}
+                  onChange={(e) =>
+                    setRole(e.target.value as 'TREASURER' | 'SECRETARY' | 'AUDITOR' | 'PASTOR')
+                  }
                   className="w-full rounded-lg border border-stone-300 p-2 text-stone-900 focus:outline-hidden"
                 >
                   <option value="TREASURER">Trésorier (Saisie entrées/dépenses, validation)</option>
@@ -213,8 +215,8 @@ export default function MembersPage() {
               Gestion des Membres & Permissions
             </h1>
             <p className="text-xs text-stone-500 mt-1">
-              Attribuez les rôles précis (Trésorier, Secrétaire, Auditeur) pour sécuriser l’accès aux
-              finances.
+              Attribuez les rôles précis (Trésorier, Secrétaire, Auditeur) pour sécuriser l’accès
+              aux finances.
             </p>
           </div>
 
@@ -257,19 +259,19 @@ export default function MembersPage() {
                           m.role === 'PASTOR'
                             ? 'bg-amber-100 text-amber-900'
                             : m.role === 'TREASURER'
-                            ? 'bg-emerald-100 text-emerald-900'
-                            : m.role === 'AUDITOR'
-                            ? 'bg-blue-100 text-blue-900'
-                            : 'bg-stone-100 text-stone-800'
+                              ? 'bg-emerald-100 text-emerald-900'
+                              : m.role === 'AUDITOR'
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'bg-stone-100 text-stone-800'
                         }`}
                       >
                         {m.role === 'PASTOR'
                           ? 'Pasteur'
                           : m.role === 'TREASURER'
-                          ? 'Trésorier'
-                          : m.role === 'AUDITOR'
-                          ? 'Auditeur'
-                          : 'Secrétaire'}
+                            ? 'Trésorier'
+                            : m.role === 'AUDITOR'
+                              ? 'Auditeur'
+                              : 'Secrétaire'}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-stone-600">

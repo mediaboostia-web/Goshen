@@ -30,9 +30,7 @@ function ResetPasswordContent() {
       await refresh();
       router.push('/dashboard');
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Erreur lors de la réinitialisation.'
-      );
+      setError(err instanceof ApiError ? err.message : 'Erreur lors de la réinitialisation.');
     } finally {
       setSubmitting(false);
     }
@@ -132,4 +130,3 @@ export default function ResetPasswordPage() {
     </Suspense>
   );
 }
-

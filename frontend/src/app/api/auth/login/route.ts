@@ -89,7 +89,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 4. User lookup with offline database fallback
+    // 4. User lookup. A database error propagates as a normal 5xx — it must
+    //    NEVER be treated as "no user" and must NEVER issue a session. An
+    //    earlier "offline fallback" here silently authenticated ANY email
+    //    (existing or not) whenever Prisma was unreachable; that was a full
+    //    authentication bypass and has been removed. See D-25 in the audit.
     let user;
     try {
       user = await prisma.user.findUnique({
@@ -104,40 +108,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         },
       });
     } catch (dbErr) {
-      log.warn('Prisma database unreachable, issuing offline session', { email, error: String(dbErr) });
-      const offlineUserId = `usr_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      const accessToken = await createAccessToken({
-        sub: offlineUserId,
-        email,
-        tokenVersion: 0,
-      });
-      const refreshToken = await createRefreshToken(offlineUserId, 0);
-      await setAuthCookies(accessToken, refreshToken);
-      const csrfToken = await setCsrfCookie();
+      log.warn('login: database unreachable', { email, error: String(dbErr) });
       return NextResponse.json(
-        { ok: true, user: { sub: offlineUserId, email }, csrfToken },
-        { status: 200, headers: { 'x-request-id': ctx.requestId } },
+        { error: 'SERVICE_UNAVAILABLE', message: 'Please try again shortly.' },
+        { status: 503, headers: { 'x-request-id': ctx.requestId } },
       );
     }
 
     // 5. No-user (or OAuth-only) branch: dummy bcrypt then INVALID_CREDENTIALS.
     //    No recordFailure here per D-24 — Pattern 9 step 4 only counts failures
     //    against accounts that exist (otherwise an attacker can DoS arbitrary
-    //    emails by guessing).
+    //    emails by guessing). This must NEVER issue a session — a prior
+    //    "demo convenience" branch here authenticated any nonexistent email
+    //    with any password; removed for the same reason as step 4 above.
     if (!user || !user.passwordHash) {
-      // In local dev without seeded user, accept common demo credentials or proceed
-      const offlineUserId = `usr_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      const accessToken = await createAccessToken({
-        sub: offlineUserId,
-        email,
-        tokenVersion: 0,
-      });
-      const refreshToken = await createRefreshToken(offlineUserId, 0);
-      await setAuthCookies(accessToken, refreshToken);
-      const csrfToken = await setCsrfCookie();
+      await dummyBcryptCompare(password);
       return NextResponse.json(
-        { ok: true, user: { sub: offlineUserId, email }, csrfToken },
-        { status: 200, headers: { 'x-request-id': ctx.requestId } },
+        { error: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' },
+        { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
     }
 

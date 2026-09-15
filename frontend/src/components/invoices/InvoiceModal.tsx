@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { ChurchIcon, DocumentReportIcon } from '@/components/icons/ChurchIcons';
+import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
 
 export interface InvoiceItemRow {
   id?: string;
@@ -29,22 +29,25 @@ export interface InvoiceData {
   discount?: number;
   grandTotal: number;
   paymentMethod: string;
+  paymentDetails?: string;
   terms?: string;
   signatoryName?: string;
   signatoryRole?: string;
   notes?: string;
+  phone?: string;
+  email?: string;
 }
 
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: InvoiceData;
+  data: InvoiceData | null;
 }
 
 export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !data) return null;
 
   const handlePrint = () => {
     window.print();
@@ -57,10 +60,8 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 p-2 sm:p-4 overflow-y-auto backdrop-blur-none">
-      
       {/* Modal Container */}
       <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-stone-200 overflow-hidden flex flex-col my-4 max-h-[92vh]">
-        
         {/* Top Actions Bar (Hidden on Print) */}
         <div className="print:hidden flex items-center justify-between border-b border-stone-200 bg-stone-50 px-6 py-4">
           <div className="flex items-center gap-2.5">
@@ -85,7 +86,13 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 transition-all shadow-xs cursor-pointer"
               title="Télécharger la facture en PDF"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -100,7 +107,13 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-md cursor-pointer"
               title="Imprimer directement sur imprimante"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="6 9 6 2 18 2 18 9" />
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
                 <rect x="6" y="14" width="12" height="8" />
@@ -172,9 +185,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                   {data.recipientAddress || '270 5th Avenue, Libreville\nGabon'}
                 </p>
                 {data.recipientContact && (
-                  <p className="text-xs text-stone-500 mt-1 font-mono">
-                    {data.recipientContact}
-                  </p>
+                  <p className="text-xs text-stone-500 mt-1 font-mono">{data.recipientContact}</p>
                 )}
               </div>
 
@@ -182,17 +193,13 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               <div className="relative rounded-lg bg-[#f1f5f9] p-5 border-l-4 border-[#e11d48] shadow-2xs">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="block font-bold text-stone-700">
-                      Invoice Number
-                    </span>
+                    <span className="block font-bold text-stone-700">Invoice Number</span>
                     <span className="block text-stone-600 font-mono mt-1 text-[11px] font-semibold truncate">
                       {data.invoiceNumber}
                     </span>
                   </div>
                   <div>
-                    <span className="block font-bold text-stone-700">
-                      Date Information
-                    </span>
+                    <span className="block font-bold text-stone-700">Date Information</span>
                     <span className="block text-stone-600 font-mono mt-1 text-[11px] font-semibold">
                       {data.date}
                     </span>
@@ -255,12 +262,15 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               {/* Left Column: Payment Method, Terms & Condition, Signature */}
               <div className="space-y-4 text-xs">
                 <div>
-                  <h4 className="font-bold text-stone-900 uppercase text-[11px]">
-                    Payment Method
-                  </h4>
+                  <h4 className="font-bold text-stone-900 uppercase text-[11px]">Payment Method</h4>
                   <p className="text-stone-600 mt-0.5 font-medium leading-relaxed">
                     {data.paymentMethod || 'Airtel Money / Caisse Espèces Libreville'}
                   </p>
+                  {data.paymentDetails && (
+                    <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                      {data.paymentDetails}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -321,9 +331,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
 
                   {/* Grand Total Box (Full Red Bar with White Text) */}
                   <div className="mt-4 rounded-lg bg-[#e11d48] px-5 py-3 text-white flex items-center justify-between shadow-xs">
-                    <span className="font-bold text-xs uppercase tracking-wider">
-                      Grand Total:
-                    </span>
+                    <span className="font-bold text-xs uppercase tracking-wider">Grand Total:</span>
                     <span className="font-serif font-black text-lg tracking-tight">
                       {data.grandTotal.toLocaleString('fr-FR')} FCFA
                     </span>
@@ -332,12 +340,10 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
 
                 {/* Bottom Thank You & Contacts */}
                 <div className="pt-8 text-center sm:text-right">
-                  <p className="font-bold text-sm text-[#e11d48]">
-                    Thank you for your business!
-                  </p>
+                  <p className="font-bold text-sm text-[#e11d48]">Thank you for your business!</p>
                   <div className="flex items-center justify-center sm:justify-end gap-4 text-[11px] text-stone-500 mt-1">
-                    <span>📞 +241 07 45 67 89</span>
-                    <span>✉️ finance@eglise.ga</span>
+                    <span>📞 {data.phone || '+241 07 45 67 89'}</span>
+                    <span>✉️ {data.email || 'finance@eglise.ga'}</span>
                   </div>
                 </div>
               </div>

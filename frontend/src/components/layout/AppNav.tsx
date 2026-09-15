@@ -115,7 +115,9 @@ export function AppNav() {
                   isActive ? 'text-emerald-800 font-bold' : 'text-stone-500 hover:text-stone-900'
                 }`}
               >
-                <Icon className={`h-5 w-5 mb-0.5 ${isActive ? 'text-emerald-800' : 'text-stone-400'}`} />
+                <Icon
+                  className={`h-5 w-5 mb-0.5 ${isActive ? 'text-emerald-800' : 'text-stone-400'}`}
+                />
                 <span className="truncate max-w-[58px]">{item.label}</span>
               </Link>
             );

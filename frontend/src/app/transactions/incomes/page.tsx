@@ -49,9 +49,7 @@ export default function IncomesPage() {
   const [amount, setAmount] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [branchId, setBranchId] = useState<string>('');
-  const [date, setDate] = useState<string>(
-    () => new Date().toISOString().split('T')[0] ?? ''
-  );
+  const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0] ?? '');
   const [notes, setNotes] = useState<string>('');
 
   useEffect(() => {
@@ -206,7 +204,8 @@ export default function IncomesPage() {
             Enregistrement des Entrées & Culte
           </h1>
           <p className="text-xs text-stone-500 mt-1">
-            Saisie rapide des dîmes, offrandes et libéralités avec prévisualisation immédiate de la facture ou du reçu
+            Saisie rapide des dîmes, offrandes et libéralités avec prévisualisation immédiate de la
+            facture ou du reçu
           </p>
         </div>
 
@@ -219,7 +218,8 @@ export default function IncomesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} FCFA enregistrée avec succès !
+                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} FCFA enregistrée avec
+                  succès !
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
                   {lastSavedIncome.categoryName} • {lastSavedIncome.branchName}
@@ -283,7 +283,9 @@ export default function IncomesPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Catégorie de collecte *</label>
+                <label className="block font-bold text-stone-700 mb-1">
+                  Catégorie de collecte *
+                </label>
                 <select
                   required
                   value={categoryId}
@@ -299,7 +301,9 @@ export default function IncomesPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Lieu de culte / Annexe *</label>
+                <label className="block font-bold text-stone-700 mb-1">
+                  Lieu de culte / Annexe *
+                </label>
                 <select
                   required
                   value={branchId}

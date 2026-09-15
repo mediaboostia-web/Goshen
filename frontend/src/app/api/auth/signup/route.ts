@@ -19,14 +19,7 @@ import { redis } from '@/lib/server/redis';
 import { createEmailLimiter } from '@/lib/server/middleware/rate-limit-by-email';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { log } from '@/lib/server/observability/log';
-import {
-  hashPassword,
-  generateVerificationCode,
-  createAccessToken,
-  createRefreshToken,
-  setAuthCookies,
-  setCsrfCookie,
-} from '@/lib/server/auth';
+import { hashPassword, generateVerificationCode } from '@/lib/server/auth';
 import { isBanned } from '@/lib/server/auth/banned-passwords';
 import { isPwned } from '@/lib/server/auth/hibp';
 import { dummyBcryptCompare } from '@/lib/server/auth/dummy-bcrypt';
@@ -107,70 +100,59 @@ export async function POST(req: NextRequest): Promise<Response> {
     const rateFail = await limiter.check(req, email);
     if (rateFail) return rateFail;
 
-    // 4. Existing-email branch & user creation with offline database fallback
-    try {
-      const existing = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true },
-      });
-      if (existing) {
-        await dummyBcryptCompare(password);
-        log.info('signup duplicate (enumeration-resist)');
-        const res = NextResponse.json({ ok: true }, { status: 201 });
-        res.headers.set('x-request-id', ctx.requestId);
-        return res;
-      }
-
-      // 5. New-user branch — hash + create User + VerificationCode + outbox.
-      const passwordHash = await hashPassword(password);
-      const code = generateVerificationCode();
-      const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
-
-      await prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({
-          data: { email, passwordHash },
-          select: { id: true },
-        });
-        await tx.verificationCode.create({
-          data: {
-            userId: user.id,
-            code,
-            type: 'EMAIL_VERIFY',
-            expiresAt,
-          },
-        });
-        await enqueueOutbox(tx, {
-          kind: 'email.verification_code',
-          payload: {
-            to: email,
-            code,
-            expiresAt: expiresAt.toISOString(),
-          },
-        });
-      });
-    } catch (dbErr) {
-      log.warn('Prisma database unreachable during signup, creating offline session', {
-        email,
-        error: String(dbErr),
-      });
+    // 4. Existing-email branch & new-user creation.
+    //
+    //    A prior "offline fallback" here swallowed any database error and
+    //    then unconditionally issued auth cookies for a FABRICATED
+    //    `usr_<email>` session id — for BOTH the existing-email branch and
+    //    genuine failures — bypassing email verification entirely and
+    //    contradicting the documented invariant that signup issues no
+    //    cookies (CLAUDE.md: "cookies are issued by POST /verify-email").
+    //    The synthetic id didn't even match the real `User.id` created
+    //    below, so the resulting session was permanently orphaned. Removed;
+    //    a database failure now surfaces as a normal error response.
+    const existing = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existing) {
+      await dummyBcryptCompare(password);
+      log.info('signup duplicate (enumeration-resist)');
+      const res = NextResponse.json({ ok: true }, { status: 201 });
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
     }
 
-    // Auto-login session cookies so user can proceed directly to onboarding/dashboard
-    const offlineUserId = `usr_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    const accessToken = await createAccessToken({
-      sub: offlineUserId,
-      email,
-      tokenVersion: 0,
-    });
-    const refreshToken = await createRefreshToken(offlineUserId, 0);
-    await setAuthCookies(accessToken, refreshToken);
-    const csrfToken = await setCsrfCookie();
+    // 5. New-user branch — hash + create User + VerificationCode + outbox.
+    const passwordHash = await hashPassword(password);
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
-    log.info('signup successful session');
-    const res = NextResponse.json(
-      { ok: true, user: { sub: offlineUserId, email }, csrfToken },
-      { status: 201 },
-    );
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email, passwordHash },
+        select: { id: true },
+      });
+      await tx.verificationCode.create({
+        data: {
+          userId: user.id,
+          code,
+          type: 'EMAIL_VERIFY',
+          expiresAt,
+        },
+      });
+      await enqueueOutbox(tx, {
+        kind: 'email.verification_code',
+        payload: {
+          to: email,
+          code,
+          expiresAt: expiresAt.toISOString(),
+        },
+      });
+    });
+
+    log.info('signup successful');
+    const res = NextResponse.json({ ok: true }, { status: 201 });
     res.headers.set('x-request-id', ctx.requestId);
     return res;
   });

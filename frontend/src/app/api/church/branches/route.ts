@@ -18,86 +18,26 @@ const CreateBranchBody = z.object({
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    const DEFAULT_CHURCH = {
-      id: 'org_goshen_default',
-      slug: 'eglise-goshen',
-      name: 'Communauté Évangélique de la Grâce — Goshen',
-      denomination: 'Alliance Chrétienne & Missionnaire du Gabon',
-      logoUrl: null,
-      currency: 'XAF',
-      plan: 'ESSENTIAL',
-      planExpiresAt: null,
-    };
+    const auth = await requireAuth(req.headers.get('authorization'));
+    if (auth instanceof NextResponse) return auth;
 
-    const DEFAULT_BRANCHES = [
-      {
-        id: 'br_main_libreville',
-        name: 'Siège Principal — Libreville',
-        city: 'Libreville',
-        isMain: true,
-        currentBalance: 4430000,
-        lowBalanceThreshold: 50000,
-        status: 'ACTIVE',
-      },
-      {
-        id: 'br_owendo',
-        name: 'Paroisse Grâce — Owendo',
-        city: 'Owendo',
-        isMain: false,
-        currentBalance: 875000,
-        lowBalanceThreshold: 25000,
-        status: 'ACTIVE',
-      },
-      {
-        id: 'br_port_gentil',
-        name: 'Paroisse Réveil — Port-Gentil',
-        city: 'Port-Gentil',
-        isMain: false,
-        currentBalance: 1250000,
-        lowBalanceThreshold: 30000,
-        status: 'ACTIVE',
-      },
-    ];
-
-    try {
-      const auth = await requireAuth(req.headers.get('authorization'));
-      if (auth instanceof NextResponse) {
-        return NextResponse.json({
-          church: DEFAULT_CHURCH,
-          branches: DEFAULT_BRANCHES,
-          role: 'PASTOR',
-        });
-      }
-
-      const access = await resolveChurchUser(auth.user.sub);
-      if (!access) {
-        return NextResponse.json({
-          church: DEFAULT_CHURCH,
-          branches: DEFAULT_BRANCHES,
-          role: 'PASTOR',
-        });
-      }
-
-      const branches = await prisma.branch.findMany({
-        where: {
-          organizationId: access.church.id,
-          status: 'ACTIVE',
-        },
-        orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
-      });
-
-      return NextResponse.json({
-        church: access.church,
-        branches: branches.length > 0 ? branches : DEFAULT_BRANCHES,
-        role: access.member.role,
-      });
-    } catch {
-      return NextResponse.json({
-        church: DEFAULT_CHURCH,
-        branches: DEFAULT_BRANCHES,
-        role: 'PASTOR',
-      });
+    const access = await resolveChurchUser(auth.user.sub);
+    if (!access) {
+      return NextResponse.json({ error: 'CHURCH_NOT_FOUND', branches: [] }, { status: 404 });
     }
+
+    const branches = await prisma.branch.findMany({
+      where: {
+        organizationId: access.church.id,
+        status: 'ACTIVE',
+      },
+      orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
+    });
+
+    return NextResponse.json({
+      church: { ...access.church, role: access.member.role },
+      branches,
+    });
   });
 }
 
@@ -113,13 +53,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (!access.isPastor) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Seul le pasteur peut ajouter une annexe.' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Seul le pasteur peut ajouter une annexe.' },
+        { status: 403 },
+      );
     }
 
     const body = await req.json().catch(() => null);
     const parsed = CreateBranchBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { name, city, isMain, lowBalanceThreshold } = parsed.data;

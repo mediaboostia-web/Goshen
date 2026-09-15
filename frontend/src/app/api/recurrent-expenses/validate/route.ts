@@ -26,13 +26,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (!access.isTreasurer && !access.isPastor) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Seul le trésorier ou pasteur peut valider une échéance.' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Seul le trésorier ou pasteur peut valider une échéance.' },
+        { status: 403 },
+      );
     }
 
     const body = await req.json().catch(() => null);
     const parsed = ValidateBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { executionId, action, reason } = parsed.data;
@@ -50,11 +56,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     if (!execution || execution.recurringExpense.organizationId !== access.church.id) {
-      return NextResponse.json({ error: 'NOT_FOUND', message: 'Échéance introuvable.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'NOT_FOUND', message: 'Échéance introuvable.' },
+        { status: 404 },
+      );
     }
 
     if (execution.status !== 'PENDING') {
-      return NextResponse.json({ error: 'ALREADY_PROCESSED', message: 'Cette échéance a déjà été traitée.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ALREADY_PROCESSED', message: 'Cette échéance a déjà été traitée.' },
+        { status: 400 },
+      );
     }
 
     if (action === 'POSTPONE') {

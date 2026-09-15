@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useBranch } from '@/contexts/BranchContext';
 
 function CheckoutSuccessContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshBranches } = useBranch();
 
@@ -15,7 +14,9 @@ function CheckoutSuccessContent() {
   const plan = searchParams.get('plan') || 'ESSENTIAL';
 
   const [status, setStatus] = useState<'polling' | 'success' | 'delayed' | 'failed'>('polling');
-  const [message, setMessage] = useState<string>('Vérification du règlement en cours auprès de l’opérateur…');
+  const [message, setMessage] = useState<string>(
+    'Vérification du règlement en cours auprès de l’opérateur…',
+  );
   const attemptsRef = useRef<number>(0);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ function CheckoutSuccessContent() {
           if (isMounted) {
             setStatus('delayed');
             setMessage(
-              'La confirmation de votre opérateur Mobile Money prend un peu plus de temps que prévu. Votre compte sera activé automatiquement dès réception du signal.'
+              'La confirmation de votre opérateur Mobile Money prend un peu plus de temps que prévu. Votre compte sera activé automatiquement dès réception du signal.',
             );
           }
           return;
@@ -67,7 +68,7 @@ function CheckoutSuccessContent() {
         if (isMounted) {
           timer = setTimeout(checkStatus, 3000);
         }
-      } catch (err) {
+      } catch {
         if (attemptsRef.current >= 5) {
           if (isMounted) {
             setStatus('delayed');
@@ -110,9 +111,7 @@ function CheckoutSuccessContent() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
               ✅
             </div>
-            <h2 className="font-serif text-2xl font-bold text-emerald-950">
-              Paiement confirmé !
-            </h2>
+            <h2 className="font-serif text-2xl font-bold text-emerald-950">Paiement confirmé !</h2>
             <p className="text-xs text-stone-600 leading-relaxed">{message}</p>
             <div className="pt-4">
               <Link
@@ -162,4 +161,3 @@ export default function CheckoutSuccessPage() {
     </Suspense>
   );
 }
-

@@ -44,15 +44,15 @@ export function AppHeader() {
                 church.plan === 'PREMIUM'
                   ? 'bg-amber-100 text-amber-800 border border-amber-200'
                   : church.plan === 'ESSENTIAL'
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                  : 'bg-stone-100 text-stone-700'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : 'bg-stone-100 text-stone-700'
               }`}
             >
               {church.plan === 'PREMIUM'
                 ? 'Plan Premium'
                 : church.plan === 'ESSENTIAL'
-                ? 'Plan Essentiel'
-                : 'Plan Gratuit'}
+                  ? 'Plan Essentiel'
+                  : 'Plan Gratuit'}
             </span>
           )}
         </div>
@@ -116,16 +116,13 @@ export function AppHeader() {
               {user?.name
                 ? user.name.slice(0, 2).toUpperCase()
                 : user?.email
-                ? user.email.slice(0, 1).toUpperCase()
-                : 'G'}
+                  ? user.email.slice(0, 1).toUpperCase()
+                  : 'G'}
             </button>
 
             {isProfileMenuOpen && (
               <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                />
+                <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl z-50">
                   <div className="px-3 py-2.5 border-b border-stone-100">
                     <p className="text-xs font-bold text-stone-900 truncate">
@@ -133,7 +130,7 @@ export function AppHeader() {
                     </p>
                     <p className="text-[11px] text-stone-500 truncate">{user?.email}</p>
                     <span className="inline-block mt-1.5 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-900 border border-emerald-200">
-                      {user?.role || 'Responsable de Caisse'}
+                      {church?.role || 'Responsable de Caisse'}
                     </span>
                   </div>
 

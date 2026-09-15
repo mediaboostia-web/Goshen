@@ -17,13 +17,11 @@ import {
   LightningBoltIcon,
   DocumentReportIcon,
   ShieldCheckIcon,
-  AlertTriangleIcon,
   BuildingBranchIcon,
   TrendingUpIcon,
   TrendingDownIcon,
   CameraIcon,
   CalendarClockIcon,
-  WalletIcon,
   CheckCircleIcon,
   ArrowRightIcon,
   CrossIcon,
@@ -45,6 +43,22 @@ interface TransactionItem {
   category: { name: string };
   branch: { name: string };
   author: { name: string | null; email: string };
+}
+
+// Shape shared by both the mock dataset (GOSHEN_MOCK_DATA.transactions) and
+// the real API data mapped in `displayTransactions` below — just enough for
+// handleOpenTransactionInvoice to build an invoice from either source.
+interface DisplayTransaction {
+  id?: string;
+  date?: string;
+  branchName?: string;
+  beneficiary?: string | null;
+  type?: 'INCOME' | 'EXPENSE';
+  categoryName?: string;
+  notes?: string | null;
+  amount: number;
+  paymentMethod?: string;
+  authorName?: string;
 }
 
 interface PendingExecution {
@@ -81,7 +95,7 @@ export default function DashboardPage() {
   const [pendingRecurrents, setPendingRecurrents] = useState<PendingExecution[]>([]);
   const [totalIncome, setTotalIncome] = useState<number>(0);
   const [totalExpense, setTotalExpense] = useState<number>(0);
-  const [dataLoading, setDataLoading] = useState<boolean>(true);
+  const [, setDataLoading] = useState<boolean>(true);
 
   // UI interaction states
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
@@ -93,7 +107,9 @@ export default function DashboardPage() {
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState<boolean>(false);
   const [isAddBranchModalOpen, setIsAddBranchModalOpen] = useState<boolean>(false);
   const [mockBranches, setMockBranches] = useState(GOSHEN_MOCK_DATA.branches);
-  const [selectedMockBranchId, setSelectedMockBranchId] = useState<string | 'CONSOLIDATED'>('CONSOLIDATED');
+  const [selectedMockBranchId, setSelectedMockBranchId] = useState<string | 'CONSOLIDATED'>(
+    'CONSOLIDATED',
+  );
 
   // Add branch form state
   const [newBranchName, setNewBranchName] = useState<string>('');
@@ -114,7 +130,7 @@ export default function DashboardPage() {
           summary: { totalIncome: number; totalExpense: number };
         }>(`/api/transactions?branchId=${branchParam}&limit=12`),
         api<{ pendingExecutions: PendingExecution[] }>(
-          `/api/recurrent-expenses?branchId=${branchParam}`
+          `/api/recurrent-expenses?branchId=${branchParam}`,
         ),
       ]);
 
@@ -123,7 +139,10 @@ export default function DashboardPage() {
       setTotalExpense(txRes.summary?.totalExpense || 0);
       setPendingRecurrents(recRes.pendingExecutions || []);
 
-      if ((!txRes.transactions || txRes.transactions.length === 0) && txRes.summary?.totalIncome === 0) {
+      if (
+        (!txRes.transactions || txRes.transactions.length === 0) &&
+        txRes.summary?.totalIncome === 0
+      ) {
         setUseMockData(true);
       }
     } catch {
@@ -308,21 +327,29 @@ export default function DashboardPage() {
   }, [useMockData, pendingRecurrents]);
 
   // Open invoice for a specific transaction (durant un enregistrement précis)
-  const handleOpenTransactionInvoice = (tx: any) => {
+  const handleOpenTransactionInvoice = (tx: DisplayTransaction) => {
     setActiveInvoiceData({
       invoiceNumber: `INV-${tx.id ? String(tx.id).slice(0, 8).toUpperCase() : '2026-0841'}`,
       date: tx.date || new Date().toLocaleDateString('fr-FR'),
       churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
       churchAddress: `${tx.branchName || 'Paroisse Centrale'}, Libreville, Gabon`,
-      recipientName: tx.beneficiary || (tx.type === 'INCOME' ? 'Culte Dominical & Assemblée' : 'Prestataire / Fournisseur Paroissial'),
+      recipientName:
+        tx.beneficiary ||
+        (tx.type === 'INCOME'
+          ? 'Culte Dominical & Assemblée'
+          : 'Prestataire / Fournisseur Paroissial'),
       recipientAddress: 'Libreville, Gabon',
       recipientContact: 'finance@eglise.ga',
       items: [
         {
           no: '01',
-          description: tx.categoryName,
-          subDescription: tx.notes || (tx.type === 'INCOME' ? 'Collecte et libéralités dominicales approuvées' : 'Règlement de charge avec pièce comptable'),
+          description: tx.categoryName || 'Opération',
+          subDescription:
+            tx.notes ||
+            (tx.type === 'INCOME'
+              ? 'Collecte et libéralités dominicales approuvées'
+              : 'Règlement de charge avec pièce comptable'),
           price: tx.amount,
           qty: '1',
           total: tx.amount,
@@ -332,8 +359,11 @@ export default function DashboardPage() {
       tax: 0,
       discount: 0,
       grandTotal: tx.amount,
-      paymentMethod: tx.paymentMethod ? String(tx.paymentMethod).replace('_', ' ') : 'Caisse Espèces Libreville',
-      terms: 'Certifié conforme aux écritures du grand livre de la communauté. Pièce justificative officielle.',
+      paymentMethod: tx.paymentMethod
+        ? String(tx.paymentMethod).replace('_', ' ')
+        : 'Caisse Espèces Libreville',
+      terms:
+        'Certifié conforme aux écritures du grand livre de la communauté. Pièce justificative officielle.',
       signatoryName: tx.authorName || 'Steven Joe',
       signatoryRole: 'Accounting Manager / Trésorier de Caisse',
     });
@@ -373,7 +403,8 @@ export default function DashboardPage() {
       discount: 0,
       grandTotal: activeIncomes,
       paymentMethod: 'Virement UGB / Airtel Money / Caisse Locale',
-      terms: 'Synthèse officielle des opérations financières de la période certifiée par la trésorerie.',
+      terms:
+        'Synthèse officielle des opérations financières de la période certifiée par la trésorerie.',
       signatoryName: 'Steven Joe',
       signatoryRole: 'Accounting Manager / Trésorier Général',
     });
@@ -403,7 +434,7 @@ export default function DashboardPage() {
         time: new Date(tx.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         beneficiary: tx.beneficiary,
         notes: tx.notes,
-        paymentMethod: (tx.paymentMethod as any) || 'CASH',
+        paymentMethod: tx.paymentMethod || 'CASH',
         receiptUrl: tx.receiptUrl,
         authorName: tx.author?.name || tx.author?.email?.split('@')[0] || 'Trésorier',
       }));
@@ -411,7 +442,10 @@ export default function DashboardPage() {
 
   const reserveDiff = activeBalance - activeThreshold;
   const isLowBalance = reserveDiff < 0;
-  const reserveHealthRatio = Math.min(Math.round((activeBalance / (activeThreshold || 1)) * 100), 100);
+  const reserveHealthRatio = Math.min(
+    Math.round((activeBalance / (activeThreshold || 1)) * 100),
+    100,
+  );
 
   const pendingTotalAmount = activePendingRecurrents.reduce((acc, r) => acc + r.amount, 0);
   const netProjected = activeBalance - pendingTotalAmount;
@@ -502,10 +536,8 @@ export default function DashboardPage() {
       )}
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6 sm:space-y-8">
-        
         {/* ── 1. GABONESE SANCTUARY HERO ACCOUNT CARD (Rich Gradient, Pro Effects, Branch Switcher) ── */}
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 border border-emerald-800/80">
-          
           {/* Top Bar inside Card */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-emerald-800/80 pb-5">
             <div className="flex items-start sm:items-center gap-3.5">
@@ -517,10 +549,10 @@ export default function DashboardPage() {
                   <h2 className="text-sm font-bold tracking-wider text-emerald-100 uppercase">
                     {useMockData
                       ? GOSHEN_MOCK_DATA.church.name
-                      : (church?.name || 'Communauté Chrétienne')}
+                      : church?.name || 'Communauté Chrétienne'}
                   </h2>
                   <span className="rounded-md bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 border border-amber-400/40">
-                    {useMockData ? 'CEMAC • GABON' : (church?.plan || 'ESSENTIEL')}
+                    {useMockData ? 'CEMAC • GABON' : church?.plan || 'ESSENTIEL'}
                   </span>
                 </div>
 
@@ -555,7 +587,8 @@ export default function DashboardPage() {
                               type="button"
                               onClick={() => handleSwitchBranch('CONSOLIDATED')}
                               className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors text-left ${
-                                (useMockData && selectedMockBranchId === 'CONSOLIDATED') || (!useMockData && isConsolidated)
+                                (useMockData && selectedMockBranchId === 'CONSOLIDATED') ||
+                                (!useMockData && isConsolidated)
                                   ? 'bg-emerald-800 text-white border border-emerald-600'
                                   : 'hover:bg-emerald-900/80 text-emerald-200'
                               }`}
@@ -565,9 +598,12 @@ export default function DashboardPage() {
                                 <span>Vue Consolidée (Toutes)</span>
                               </div>
                               <span className="text-[11px] text-amber-300 font-mono font-bold">
-                                {((useMockData
-                                  ? mockBranches.reduce((s, b) => s + b.currentBalance, 0)
-                                  : branches.reduce((s, b) => s + b.currentBalance, 0)) / 1000).toFixed(0)}k F
+                                {(
+                                  (useMockData
+                                    ? mockBranches.reduce((s, b) => s + b.currentBalance, 0)
+                                    : branches.reduce((s, b) => s + b.currentBalance, 0)) / 1000
+                                ).toFixed(0)}
+                                k F
                               </span>
                             </button>
 
@@ -707,7 +743,8 @@ export default function DashboardPage() {
                   <span>Entrées du mois</span>
                 </div>
                 <p className="mt-1 text-base sm:text-lg font-bold text-emerald-300">
-                  +{activeIncomes.toLocaleString('fr-FR')} <span className="text-xs font-normal">F</span>
+                  +{activeIncomes.toLocaleString('fr-FR')}{' '}
+                  <span className="text-xs font-normal">F</span>
                 </p>
               </div>
               <div>
@@ -716,7 +753,8 @@ export default function DashboardPage() {
                   <span>Dépenses du mois</span>
                 </div>
                 <p className="mt-1 text-base sm:text-lg font-bold text-stone-200">
-                  -{activeExpenses.toLocaleString('fr-FR')} <span className="text-xs font-normal">F</span>
+                  -{activeExpenses.toLocaleString('fr-FR')}{' '}
+                  <span className="text-xs font-normal">F</span>
                 </p>
               </div>
             </div>
@@ -823,7 +861,9 @@ export default function DashboardPage() {
               <div className="flex items-baseline justify-between">
                 <p className="text-xs text-stone-500">Marge au-dessus du seuil</p>
                 <span className="font-serif text-lg font-bold text-emerald-950">
-                  {reserveDiff > 0 ? `+${reserveDiff.toLocaleString('fr-FR')} FCFA` : `${reserveDiff.toLocaleString('fr-FR')} FCFA`}
+                  {reserveDiff > 0
+                    ? `+${reserveDiff.toLocaleString('fr-FR')} FCFA`
+                    : `${reserveDiff.toLocaleString('fr-FR')} FCFA`}
                 </span>
               </div>
 
@@ -876,11 +916,15 @@ export default function DashboardPage() {
               <div className="mt-3 space-y-1.5 text-xs text-stone-600 border-t border-stone-100 pt-3">
                 <div className="flex justify-between">
                   <span>Solde en caisse :</span>
-                  <span className="font-semibold text-stone-800">{activeBalance.toLocaleString('fr-FR')} F</span>
+                  <span className="font-semibold text-stone-800">
+                    {activeBalance.toLocaleString('fr-FR')} F
+                  </span>
                 </div>
                 <div className="flex justify-between text-amber-800">
                   <span>Charges récurrentes prévues :</span>
-                  <span className="font-semibold">-{pendingTotalAmount.toLocaleString('fr-FR')} F</span>
+                  <span className="font-semibold">
+                    -{pendingTotalAmount.toLocaleString('fr-FR')} F
+                  </span>
                 </div>
                 <div className="flex justify-between font-bold text-emerald-900 pt-1 border-t border-dashed border-stone-200">
                   <span>Marge nette prévisionnelle :</span>
@@ -971,7 +1015,6 @@ export default function DashboardPage() {
 
         {/* ── 3. OFFERINGS BREAKDOWN & RECURRING EXPENSES CENTER ── */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
           {/* Left: Interactive Breakdown of Worship Offerings (7 cols) */}
           <div className="lg:col-span-7 rounded-2xl border border-stone-200 bg-white p-6 sm:p-7 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
@@ -1009,10 +1052,10 @@ export default function DashboardPage() {
                   idx === 0
                     ? CrossIcon
                     : idx === 1
-                    ? CoinsHandIcon
-                    : idx === 2
-                    ? GiftIcon
-                    : HeartHandIcon;
+                      ? CoinsHandIcon
+                      : idx === 2
+                        ? GiftIcon
+                        : HeartHandIcon;
                 return (
                   <div
                     key={idx}
@@ -1046,7 +1089,9 @@ export default function DashboardPage() {
             <div className="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-3 text-xs text-amber-950">
               <ShieldCheckIcon className="h-5 w-5 text-amber-800 shrink-0 mt-0.5" />
               <div>
-                <strong className="font-bold">Protocole de Transparence Goshen :</strong> Le dépouillement et le comptage dominical sont obligatoirement contresignés par deux personnes avant la clôture du registre.
+                <strong className="font-bold">Protocole de Transparence Goshen :</strong> Le
+                dépouillement et le comptage dominical sont obligatoirement contresignés par deux
+                personnes avant la clôture du registre.
               </div>
             </div>
           </div>
@@ -1059,7 +1104,9 @@ export default function DashboardPage() {
                   <h3 className="font-serif text-lg font-bold text-stone-900">
                     Charges Fixes à Valider
                   </h3>
-                  <p className="text-xs text-stone-500">Loyer du temple, factures SEEG et charges</p>
+                  <p className="text-xs text-stone-500">
+                    Loyer du temple, factures SEEG et charges
+                  </p>
                 </div>
                 <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-800 border border-red-200">
                   {activePendingRecurrents.length} en attente
@@ -1097,7 +1144,10 @@ export default function DashboardPage() {
 
                     <div className="mt-3 flex items-center justify-between pt-2 border-t border-stone-200/80 text-xs">
                       <span className="text-[11px] text-stone-500">
-                        Échéance : <strong className="text-stone-700">{new Date(rec.dueDate).toLocaleDateString('fr-FR')}</strong>
+                        Échéance :{' '}
+                        <strong className="text-stone-700">
+                          {new Date(rec.dueDate).toLocaleDateString('fr-FR')}
+                        </strong>
                       </span>
                       <Link
                         href="/recurrent-expenses/validation"
@@ -1175,7 +1225,9 @@ export default function DashboardPage() {
             {displayTransactions.length === 0 ? (
               <div className="py-12 text-center text-xs text-stone-400">
                 <DocumentReportIcon className="h-8 w-8 mx-auto text-stone-300 mb-2" />
-                <p className="font-semibold text-stone-600">Aucune écriture comptable enregistrée.</p>
+                <p className="font-semibold text-stone-600">
+                  Aucune écriture comptable enregistrée.
+                </p>
                 <button
                   onClick={() => setUseMockData(true)}
                   className="mt-3 text-emerald-800 font-bold underline"
@@ -1226,9 +1278,16 @@ export default function DashboardPage() {
                       </p>
 
                       <div className="mt-1 flex items-center gap-2 text-[10px] text-stone-400">
-                        <span>{tx.date} à {tx.time}</span>
+                        <span>
+                          {tx.date} à {tx.time}
+                        </span>
                         <span>&bull;</span>
-                        <span>Règlement : <strong className="text-stone-600">{tx.paymentMethod.replace('_', ' ')}</strong></span>
+                        <span>
+                          Règlement :{' '}
+                          <strong className="text-stone-600">
+                            {tx.paymentMethod.replace('_', ' ')}
+                          </strong>
+                        </span>
                         <span>&bull;</span>
                         <span>Saisi par {tx.authorName}</span>
                       </div>
@@ -1324,7 +1383,6 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="p-4 bg-stone-950 flex items-center justify-center min-h-[280px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={selectedReceiptUrl}
                 alt="Justificatif de dépense"
@@ -1382,9 +1440,7 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">
-                  Ville / Commune
-                </label>
+                <label className="block font-bold text-stone-700 mb-1">Ville / Commune</label>
                 <input
                   type="text"
                   placeholder="Ex: Port-Gentil"

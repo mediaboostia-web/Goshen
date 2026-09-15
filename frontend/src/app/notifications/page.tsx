@@ -85,8 +85,8 @@ export default function NotificationsPage() {
               Aucune notification
             </h3>
             <p className="mt-1 text-xs text-stone-500">
-              Vous serez notifié dès qu’une dépense récurrente arrive à échéance ou si un solde passe
-              sous le seuil minimal.
+              Vous serez notifié dès qu’une dépense récurrente arrive à échéance ou si un solde
+              passe sous le seuil minimal.
             </p>
           </div>
         ) : (

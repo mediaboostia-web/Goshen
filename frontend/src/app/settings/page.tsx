@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
@@ -13,11 +13,8 @@ import {
   ChurchIcon,
   ShieldCheckIcon,
   WalletIcon,
-  CoinsHandIcon,
-  ReceiptTextIcon,
   BuildingBranchIcon,
   CheckCircleIcon,
-  ArrowRightIcon,
   UsersGroupIcon,
   PlusIcon,
 } from '@/components/icons/ChurchIcons';
@@ -34,7 +31,6 @@ interface MemberItem {
 }
 
 function SettingsContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user, refresh } = useAuth();
   const { church, branches, currentBranch, refreshBranches } = useBranch();
@@ -44,10 +40,6 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState<TabKey>(tabParam || 'compte');
 
   // ── FORM STATES ─────────────────────────────────────────────────────
-  // Tab: Compte
-  const [name, setName] = useState('');
-  const [savingAccount, setSavingAccount] = useState(false);
-
   // Tab: Sécurité (Mot de passe)
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -93,7 +85,9 @@ function SettingsContent() {
   ]);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState<'PASTOR' | 'TREASURER' | 'SECRETARY' | 'AUDITOR'>('TREASURER');
+  const [newMemberRole, setNewMemberRole] = useState<
+    'PASTOR' | 'TREASURER' | 'SECRETARY' | 'AUDITOR'
+  >('TREASURER');
   const [newMemberBranch, setNewMemberBranch] = useState<string>('ALL');
   const [invitingMember, setInvitingMember] = useState(false);
 
@@ -140,7 +134,7 @@ function SettingsContent() {
       await refresh();
     } catch (err) {
       setPasswordError(
-        err instanceof ApiError ? err.message : 'Erreur lors du changement de mot de passe.'
+        err instanceof ApiError ? err.message : 'Erreur lors du changement de mot de passe.',
       );
     } finally {
       setSavingPassword(false);
@@ -161,7 +155,7 @@ function SettingsContent() {
 
       const createdMember: MemberItem = {
         id: `m-${Date.now()}`,
-        name: newMemberName.trim() || newMemberEmail.split('@')[0],
+        name: newMemberName.trim() || newMemberEmail.split('@')[0] || newMemberEmail,
         email: newMemberEmail.trim(),
         role: newMemberRole,
         branchName: selectedBranchName,
@@ -219,7 +213,8 @@ function SettingsContent() {
               Paramètres & Gestion de l'Église
             </h1>
             <p className="text-xs sm:text-sm text-stone-600 mt-1">
-              Gérez votre profil pastoral, vos équipes (trésoriers, secrétaires), les paroisses et la sécurité.
+              Gérez votre profil pastoral, vos équipes (trésoriers, secrétaires), les paroisses et
+              la sécurité.
             </p>
           </div>
           <span className="self-start sm:self-auto rounded-lg bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
@@ -229,7 +224,6 @@ function SettingsContent() {
 
         {/* Layout: Desktop Sidebar Tabs & Content Card */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
           {/* Tabs Navigation */}
           <div className="lg:col-span-3">
             <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
@@ -243,7 +237,9 @@ function SettingsContent() {
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                    activeTab === 'compte' ? 'bg-emerald-800 text-white' : 'bg-stone-100 text-stone-600'
+                    activeTab === 'compte'
+                      ? 'bg-emerald-800 text-white'
+                      : 'bg-stone-100 text-stone-600'
                   }`}
                 >
                   👤
@@ -261,7 +257,9 @@ function SettingsContent() {
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                    activeTab === 'securite' ? 'bg-emerald-800 text-white' : 'bg-stone-100 text-stone-600'
+                    activeTab === 'securite'
+                      ? 'bg-emerald-800 text-white'
+                      : 'bg-stone-100 text-stone-600'
                   }`}
                 >
                   <ShieldCheckIcon className="h-4 w-4" />
@@ -279,7 +277,9 @@ function SettingsContent() {
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                    activeTab === 'membres' ? 'bg-emerald-800 text-white' : 'bg-stone-100 text-stone-600'
+                    activeTab === 'membres'
+                      ? 'bg-emerald-800 text-white'
+                      : 'bg-stone-100 text-stone-600'
                   }`}
                 >
                   <UsersGroupIcon className="h-4 w-4" />
@@ -297,7 +297,9 @@ function SettingsContent() {
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                    activeTab === 'eglise' ? 'bg-emerald-800 text-white' : 'bg-stone-100 text-stone-600'
+                    activeTab === 'eglise'
+                      ? 'bg-emerald-800 text-white'
+                      : 'bg-stone-100 text-stone-600'
                   }`}
                 >
                   <ChurchIcon className="h-4 w-4" />
@@ -315,7 +317,9 @@ function SettingsContent() {
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                    activeTab === 'facturation' ? 'bg-emerald-800 text-white' : 'bg-stone-100 text-stone-600'
+                    activeTab === 'facturation'
+                      ? 'bg-emerald-800 text-white'
+                      : 'bg-stone-100 text-stone-600'
                   }`}
                 >
                   <WalletIcon className="h-4 w-4" />
@@ -327,7 +331,6 @@ function SettingsContent() {
 
           {/* Tab Content Panel (Right 9 Cols) */}
           <div className="lg:col-span-9 space-y-6">
-            
             {/* ── 1. ONGLET: COMPTE ── */}
             {activeTab === 'compte' && (
               <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
@@ -347,7 +350,9 @@ function SettingsContent() {
                   <div>
                     <p className="font-bold text-stone-900 text-sm">{user?.email}</p>
                     <span className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200 mt-1">
-                      {church?.role === 'PASTOR' || !church ? 'Pasteur Titulaire & Administrateur' : 'Trésorier de Paroisse'}
+                      {church?.role === 'PASTOR' || !church
+                        ? 'Pasteur Titulaire & Administrateur'
+                        : 'Trésorier de Paroisse'}
                     </span>
                   </div>
                 </div>
@@ -364,7 +369,9 @@ function SettingsContent() {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-stone-700 mb-1">Adresse email officielle</label>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Adresse email officielle
+                    </label>
                     <input
                       type="email"
                       disabled
@@ -375,8 +382,10 @@ function SettingsContent() {
                 </div>
 
                 <div className="rounded-xl border border-stone-100 bg-stone-50 p-4 text-xs text-stone-600 leading-relaxed">
-                  🏛️ <strong className="text-stone-800">Paroisse de rattachement principale :</strong>{' '}
-                  {currentBranch?.name || 'Paroisse Centrale de Libreville'}. Toutes les écritures enregistrées seront automatiquement signées sous votre identité.
+                  🏛️{' '}
+                  <strong className="text-stone-800">Paroisse de rattachement principale :</strong>{' '}
+                  {currentBranch?.name || 'Paroisse Centrale de Libreville'}. Toutes les écritures
+                  enregistrées seront automatiquement signées sous votre identité.
                 </div>
 
                 <div className="pt-2 flex justify-end">
@@ -484,7 +493,9 @@ function SettingsContent() {
                         Protection et Confidentialité des Comptes
                       </h3>
                       <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                        Chaque responsable paroissial dispose de ses propres identifiants sécurisés. Les connexions sont chiffrées de bout en bout et les actions comptables sont tracées pour garantir l'intégrité des finances de l'église.
+                        Chaque responsable paroissial dispose de ses propres identifiants sécurisés.
+                        Les connexions sont chiffrées de bout en bout et les actions comptables sont
+                        tracées pour garantir l'intégrité des finances de l'église.
                       </p>
                     </div>
                   </div>
@@ -502,7 +513,8 @@ function SettingsContent() {
                       Ajouter une Personne & Attribuer un Rôle
                     </h2>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      Déléguez la gestion financière à vos trésoriers, secrétaires et commissaires aux comptes
+                      Déléguez la gestion financière à vos trésoriers, secrétaires et commissaires
+                      aux comptes
                     </p>
                   </div>
 
@@ -544,13 +556,25 @@ function SettingsContent() {
                         </label>
                         <select
                           value={newMemberRole}
-                          onChange={(e) => setNewMemberRole(e.target.value as any)}
+                          onChange={(e) =>
+                            setNewMemberRole(
+                              e.target.value as 'PASTOR' | 'TREASURER' | 'SECRETARY' | 'AUDITOR',
+                            )
+                          }
                           className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 bg-white shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all cursor-pointer"
                         >
-                          <option value="TREASURER">Trésorier de Paroisse (Saisie & Décaissements)</option>
-                          <option value="PASTOR">Pasteur Titulaire / Adjoint (Supervision Totale)</option>
-                          <option value="SECRETARY">Secrétaire de Séance (PV de Culte & Registres)</option>
-                          <option value="AUDITOR">Commissaire aux Comptes / Auditeur (Contrôle)</option>
+                          <option value="TREASURER">
+                            Trésorier de Paroisse (Saisie & Décaissements)
+                          </option>
+                          <option value="PASTOR">
+                            Pasteur Titulaire / Adjoint (Supervision Totale)
+                          </option>
+                          <option value="SECRETARY">
+                            Secrétaire de Séance (PV de Culte & Registres)
+                          </option>
+                          <option value="AUDITOR">
+                            Commissaire aux Comptes / Auditeur (Contrôle)
+                          </option>
                         </select>
                       </div>
 
@@ -580,7 +604,11 @@ function SettingsContent() {
                         className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs flex items-center gap-1.5"
                       >
                         <PlusIcon className="h-4 w-4" />
-                        <span>{invitingMember ? 'Enregistrement…' : 'Ajouter cette personne et activer son rôle'}</span>
+                        <span>
+                          {invitingMember
+                            ? 'Enregistrement…'
+                            : 'Ajouter cette personne et activer son rôle'}
+                        </span>
                       </button>
                     </div>
                   </form>
@@ -593,7 +621,9 @@ function SettingsContent() {
                       <h3 className="font-serif text-lg font-bold text-stone-900">
                         Équipe Pastorale & Trésorerie ({members.length})
                       </h3>
-                      <p className="text-xs text-stone-500">Personnes autorisées à opérer sur la comptabilité de l'église</p>
+                      <p className="text-xs text-stone-500">
+                        Personnes autorisées à opérer sur la comptabilité de l'église
+                      </p>
                     </div>
                     <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700">
                       Rôles Actifs
@@ -602,7 +632,10 @@ function SettingsContent() {
 
                   <div className="divide-y divide-stone-100">
                     {members.map((m) => (
-                      <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div
+                        key={m.id}
+                        className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-sm">
                             {m.name.charAt(0).toUpperCase()}
@@ -615,19 +648,19 @@ function SettingsContent() {
                                   m.role === 'PASTOR'
                                     ? 'bg-purple-50 text-purple-800 border border-purple-200'
                                     : m.role === 'TREASURER'
-                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                    : m.role === 'AUDITOR'
-                                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                    : 'bg-stone-100 text-stone-800'
+                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                      : m.role === 'AUDITOR'
+                                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                        : 'bg-stone-100 text-stone-800'
                                 }`}
                               >
                                 {m.role === 'PASTOR'
                                   ? 'PASTEUR'
                                   : m.role === 'TREASURER'
-                                  ? 'TRÉSORIER'
-                                  : m.role === 'AUDITOR'
-                                  ? 'COMMISSAIRE'
-                                  : 'SECRÉTAIRE'}
+                                    ? 'TRÉSORIER'
+                                    : m.role === 'AUDITOR'
+                                      ? 'COMMISSAIRE'
+                                      : 'SECRÉTAIRE'}
                               </span>
                             </div>
                             <p className="text-[11px] text-stone-500 mt-0.5">{m.email}</p>
@@ -638,7 +671,10 @@ function SettingsContent() {
                           <span className="text-[11px] text-stone-600 font-medium bg-stone-50 border border-stone-200 px-2 py-0.5 rounded">
                             {m.branchName}
                           </span>
-                          <span className="rounded-full bg-emerald-100 h-2 w-2" title="Compte actif" />
+                          <span
+                            className="rounded-full bg-emerald-100 h-2 w-2"
+                            title="Compte actif"
+                          />
                         </div>
                       </div>
                     ))}
@@ -756,7 +792,9 @@ function SettingsContent() {
                     </p>
                   </div>
                   <span className="self-start sm:self-auto rounded-md bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                    {church?.plan === 'PREMIUM' ? 'Formule Premium (15 000 FCFA)' : 'Formule Essentiel (3 500 FCFA)'}
+                    {church?.plan === 'PREMIUM'
+                      ? 'Formule Premium (15 000 FCFA)'
+                      : 'Formule Essentiel (3 500 FCFA)'}
                   </span>
                 </div>
 
@@ -771,7 +809,8 @@ function SettingsContent() {
                         Abonnement Actif &bull; {church?.plan || 'PREMIUM'}
                       </p>
                       <p className="text-xs text-emerald-100/80 mt-1">
-                        Accès complet multi-paroisses, pièces justificatives Cloudinary illimitées et reçus dominicaux.
+                        Accès complet multi-paroisses, pièces justificatives Cloudinary illimitées
+                        et reçus dominicaux.
                       </p>
                     </div>
 
@@ -784,8 +823,12 @@ function SettingsContent() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-emerald-800 flex items-center justify-between text-xs text-emerald-200/90">
-                    <span>Opérateur partenaire : <strong>Chariow Mobile Money Gabon</strong></span>
-                    <span>Prochaine échéance : <strong>14 Octobre 2026</strong></span>
+                    <span>
+                      Opérateur partenaire : <strong>Chariow Mobile Money Gabon</strong>
+                    </span>
+                    <span>
+                      Prochaine échéance : <strong>14 Octobre 2026</strong>
+                    </span>
                   </div>
                 </div>
 
@@ -812,9 +855,7 @@ function SettingsContent() {
                             Abonnement Goshen Premium (30 jours)
                           </td>
                           <td className="py-3 text-stone-600">Airtel Money Gabon</td>
-                          <td className="py-3 text-right font-bold text-stone-900">
-                            15 000 FCFA
-                          </td>
+                          <td className="py-3 text-right font-bold text-stone-900">15 000 FCFA</td>
                           <td className="py-3 text-center">
                             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                               RÉGLÉ
@@ -827,9 +868,7 @@ function SettingsContent() {
                             Abonnement Goshen Premium (30 jours)
                           </td>
                           <td className="py-3 text-stone-600">Moov Money Gabon</td>
-                          <td className="py-3 text-right font-bold text-stone-900">
-                            15 000 FCFA
-                          </td>
+                          <td className="py-3 text-right font-bold text-stone-900">15 000 FCFA</td>
                           <td className="py-3 text-center">
                             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                               RÉGLÉ

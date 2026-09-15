@@ -27,7 +27,7 @@ interface RecurrentModel {
 }
 
 export default function RecurrentExpensesPage() {
-  const { church, branches, currentBranch, isConsolidated } = useBranch();
+  const { branches, currentBranch, isConsolidated } = useBranch();
   const { toast } = useToast();
 
   const [models, setModels] = useState<RecurrentModel[]>([]);
@@ -178,7 +178,9 @@ export default function RecurrentExpensesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Montant fixe (FCFA) *</label>
+                  <label className="block font-bold text-stone-700 mb-1">
+                    Montant fixe (FCFA) *
+                  </label>
                   <input
                     type="number"
                     min="500"
@@ -206,7 +208,9 @@ export default function RecurrentExpensesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">
-                    {frequency === 'MONTHLY' ? 'Jour du mois (ex: 28)' : 'Jour de semaine (0=Dimanche)'}
+                    {frequency === 'MONTHLY'
+                      ? 'Jour du mois (ex: 28)'
+                      : 'Jour de semaine (0=Dimanche)'}
                   </label>
                   <input
                     type="number"
@@ -331,7 +335,8 @@ export default function RecurrentExpensesPage() {
                 <div>
                   <div className="flex justify-between items-start">
                     <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-stone-600">
-                      {m.frequency === 'MONTHLY' ? 'MENSUEL' : 'HEBDOMADAIRE'} &bull; Jour {m.dueDay}
+                      {m.frequency === 'MONTHLY' ? 'MENSUEL' : 'HEBDOMADAIRE'} &bull; Jour{' '}
+                      {m.dueDay}
                     </span>
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                       {m.status === 'ACTIVE' ? 'Actif' : 'Suspendu'}
@@ -343,7 +348,8 @@ export default function RecurrentExpensesPage() {
                     <span className="text-xs font-sans font-normal text-stone-500">FCFA</span>
                   </p>
                   <p className="mt-3 text-xs text-stone-500">
-                    Catégorie : <span className="font-medium text-stone-700">{m.category.name}</span>
+                    Catégorie :{' '}
+                    <span className="font-medium text-stone-700">{m.category.name}</span>
                   </p>
                   <p className="text-xs text-stone-500">
                     Annexe : <span className="font-medium text-stone-700">{m.branch.name}</span>

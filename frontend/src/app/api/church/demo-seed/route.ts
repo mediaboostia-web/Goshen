@@ -15,10 +15,7 @@ export async function POST(req: NextRequest) {
     // Check existing or create church for this user
     let org = await prisma.organization.findFirst({
       where: {
-        OR: [
-          { ownerId: userId },
-          { members: { some: { userId } } },
-        ],
+        OR: [{ ownerId: userId }, { members: { some: { userId } } }],
       },
       include: {
         branches: true,
@@ -156,7 +153,8 @@ export async function POST(req: NextRequest) {
           receiptNumber: 'CULTE-2026-09-A',
           beneficiary: 'Culte de louange & Sainte Cène',
           notes: 'Règlement global dîmes par Airtel Money et espèces post-culte',
-          receiptUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80',
+          receiptUrl:
+            'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80',
         },
         {
           branchId: branchAkanda.id,
@@ -179,7 +177,8 @@ export async function POST(req: NextRequest) {
           receiptNumber: 'REC-SEEG-9842',
           beneficiary: 'SEEG Agence Mont-Bouët',
           notes: 'Règlement compteur édifice principal réf #984210',
-          receiptUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=600&auto=format&fit=crop&q=80',
+          receiptUrl:
+            'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=600&auto=format&fit=crop&q=80',
         },
         {
           branchId: branchCentrale.id,
@@ -202,7 +201,8 @@ export async function POST(req: NextRequest) {
           receiptNumber: 'REC-SONO-12',
           beneficiary: 'Atelier Audio Libreville',
           notes: 'Réparation 2 micros sans fil Shure et câblage table de mixage',
-          receiptUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80',
+          receiptUrl:
+            'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80',
         },
       ];
 
@@ -233,7 +233,8 @@ export async function POST(req: NextRequest) {
       where: { organizationId: org.id },
     });
 
-    const defaultExpenseCatId = categoryMap['Loyer des lieux de culte'] || Object.values(categoryMap)[0] || '';
+    const defaultExpenseCatId =
+      categoryMap['Loyer des lieux de culte'] || Object.values(categoryMap)[0] || '';
     const defaultSeegCatId = categoryMap['Facture SEEG (Électricité & Eau)'] || defaultExpenseCatId;
 
     if (recCount < 2 && defaultExpenseCatId) {
@@ -287,7 +288,7 @@ export async function POST(req: NextRequest) {
     console.error('Failed to seed demo church data:', err);
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Erreur lors de l’injection des données de démo.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

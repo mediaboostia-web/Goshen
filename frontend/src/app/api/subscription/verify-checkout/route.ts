@@ -7,7 +7,7 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
-import { chariow } from '@/lib/server/payments/chariow';
+import { chariow, ChariowNotConfiguredError } from '@/lib/server/payments/chariow';
 
 const VerifyBody = z.object({
   purchaseId: z.string().min(1, 'ID d’achat Chariow requis'),
@@ -28,12 +28,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = await req.json().catch(() => null);
     const parsed = VerifyBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { purchaseId, plan: fallbackPlan } = parsed.data;
 
-    const sale = await chariow.getSale(purchaseId);
+    let sale;
+    try {
+      sale = await chariow.getSale(purchaseId);
+    } catch (err) {
+      if (err instanceof ChariowNotConfiguredError) {
+        return NextResponse.json(
+          {
+            error: 'PAYMENT_PROVIDER_UNCONFIGURED',
+            message: 'Le paiement en ligne n’est pas encore configuré.',
+          },
+          { status: 503 },
+        );
+      }
+      return NextResponse.json(
+        {
+          error: 'VERIFY_FAILED',
+          message: err instanceof Error ? err.message : 'Échec de la vérification du paiement',
+        },
+        { status: 502 },
+      );
+    }
 
     if (sale.status !== 'succeeded') {
       return NextResponse.json({

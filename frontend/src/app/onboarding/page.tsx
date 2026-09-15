@@ -2,16 +2,12 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import {
-  ChurchIcon,
-  BuildingBranchIcon,
   ShieldCheckIcon,
   CheckCircleIcon,
-  CoinsHandIcon,
   ArrowRightIcon,
   PlusIcon,
 } from '@/components/icons/ChurchIcons';
@@ -113,10 +109,8 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#064e3b]/10 via-[#f8fafc] to-[#022c22]/15 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      
       {/* ── SPLIT-CARD BIFOLD ONBOARDING CONTAINER ── */}
       <div className="relative w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row min-h-[620px]">
-        
         {/* ── LEFT VOLET: GOSHEN PROGRESS BLUEPRINT & LIVE CARD ── */}
         <div className="relative flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] p-8 sm:p-10 text-white md:w-5/12">
           {/* Subtle Decorative Backdrop Elements */}
@@ -464,7 +458,8 @@ export default function OnboardingPage() {
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-500 mt-1">
-                      Si vous migrez depuis un cahier physique, saisissez le montant présent en caisse.
+                      Si vous migrez depuis un cahier physique, saisissez le montant présent en
+                      caisse.
                     </p>
                   </div>
 
@@ -486,7 +481,8 @@ export default function OnboardingPage() {
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-500 mt-1">
-                      Une notification vous avertira dès que la trésorerie approche ce niveau de réserve.
+                      Une notification vous avertira dès que la trésorerie approche ce niveau de
+                      réserve.
                     </p>
                   </div>
                 </div>
@@ -537,7 +533,9 @@ export default function OnboardingPage() {
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-stone-200">
                     <span className="text-stone-500">Siège Principal :</span>
-                    <span className="font-bold text-stone-900">{mainBranchName} ({mainBranchCity})</span>
+                    <span className="font-bold text-stone-900">
+                      {mainBranchName} ({mainBranchCity})
+                    </span>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-stone-200">
                     <span className="text-stone-500">Nombre d&apos;Annexes :</span>
@@ -556,7 +554,10 @@ export default function OnboardingPage() {
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-900 flex items-start gap-2.5">
                   <CheckCircleIcon className="h-4 w-4 shrink-0 text-emerald-700 mt-0.5" />
                   <p className="leading-relaxed">
-                    Les modules de <strong>saisie de culte</strong>, de <strong>décaissement</strong> et d’<strong>édition du rapport A4 dominical</strong> seront instantanément opérationnels.
+                    Les modules de <strong>saisie de culte</strong>, de{' '}
+                    <strong>décaissement</strong> et d’
+                    <strong>édition du rapport A4 dominical</strong> seront instantanément
+                    opérationnels.
                   </p>
                 </div>
 

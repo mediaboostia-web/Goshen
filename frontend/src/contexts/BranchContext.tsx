@@ -104,7 +104,9 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isConsolidated = activeBranchId === 'CONSOLIDATED';
-  const currentBranch = isConsolidated ? null : branches.find((b) => b.id === activeBranchId) || null;
+  const currentBranch = isConsolidated
+    ? null
+    : branches.find((b) => b.id === activeBranchId) || null;
 
   return (
     <BranchContext.Provider

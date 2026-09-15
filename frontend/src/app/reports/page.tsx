@@ -44,22 +44,24 @@ interface ArchivedReport {
 }
 
 export default function ReportsPage() {
-  const { church, branches, currentBranch, isConsolidated } = useBranch();
+  const { church, branches, currentBranch } = useBranch();
   const { toast } = useToast();
 
   const [periodType, setPeriodType] = useState<
     'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM'
   >('SUNDAY_SERVICE');
   const [selectedDate, setSelectedDate] = useState<string>(
-    () => new Date().toISOString().split('T')[0] ?? ''
+    () => new Date().toISOString().split('T')[0] ?? '',
   );
   const [startDate, setStartDate] = useState<string>(
-    () => new Date().toISOString().split('T')[0] ?? ''
+    () => new Date().toISOString().split('T')[0] ?? '',
   );
   const [endDate, setEndDate] = useState<string>(
-    () => new Date().toISOString().split('T')[0] ?? ''
+    () => new Date().toISOString().split('T')[0] ?? '',
   );
-  const [branchScope, setBranchScope] = useState<string>(() => currentBranch?.id || 'br_main_libreville');
+  const [branchScope, setBranchScope] = useState<string>(
+    () => currentBranch?.id || 'br_main_libreville',
+  );
 
   const [preview, setPreview] = useState<ReportPreview | null>(null);
   const [archived, setArchived] = useState<ArchivedReport[]>([]);
@@ -92,10 +94,8 @@ export default function ReportsPage() {
       setEndDate(lastDay);
     } else if (periodType === 'QUARTERLY') {
       const q = Math.floor(now.getMonth() / 3);
-      const firstDay =
-        new Date(now.getFullYear(), q * 3, 1).toISOString().split('T')[0] ?? '';
-      const lastDay =
-        new Date(now.getFullYear(), (q + 1) * 3, 0).toISOString().split('T')[0] ?? '';
+      const firstDay = new Date(now.getFullYear(), q * 3, 1).toISOString().split('T')[0] ?? '';
+      const lastDay = new Date(now.getFullYear(), (q + 1) * 3, 0).toISOString().split('T')[0] ?? '';
       setStartDate(firstDay);
       setEndDate(lastDay);
     }
@@ -105,7 +105,7 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const res = await api<{ preview: ReportPreview }>(
-        `/api/reports?preview=true&startDate=${startDate}T00:00:00.000Z&endDate=${endDate}T23:59:59.999Z&branchId=${branchScope}`
+        `/api/reports?preview=true&startDate=${startDate}T00:00:00.000Z&endDate=${endDate}T23:59:59.999Z&branchId=${branchScope}`,
       );
       setPreview(res.preview);
     } catch {
@@ -180,8 +180,12 @@ export default function ReportsPage() {
       preview?.transactions && preview.transactions.length > 0
         ? preview.transactions.slice(0, 6).map((tx, idx) => ({
             no: String(idx + 1).padStart(2, '0'),
-            description: tx.category?.name || (tx.type === 'INCOME' ? 'Offrande de culte' : 'Charge de fonctionnement'),
-            subDescription: tx.notes || `Écriture enregistrée le ${new Date(tx.date).toLocaleDateString('fr-FR')}`,
+            description:
+              tx.category?.name ||
+              (tx.type === 'INCOME' ? 'Offrande de culte' : 'Charge de fonctionnement'),
+            subDescription:
+              tx.notes ||
+              `Écriture enregistrée le ${new Date(tx.date).toLocaleDateString('fr-FR')}`,
             price: tx.amount,
             qty: '1',
             total: tx.amount,
@@ -278,7 +282,7 @@ export default function ReportsPage() {
               value={periodType}
               onChange={(e) =>
                 setPeriodType(
-                  e.target.value as 'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM'
+                  e.target.value as 'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM',
                 )
               }
               className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-hidden bg-white cursor-pointer"
@@ -303,7 +307,9 @@ export default function ReportsPage() {
           </div>
 
           <div>
-            <label className="block font-bold text-stone-700 mb-1">Paroisse / Annexe concernée</label>
+            <label className="block font-bold text-stone-700 mb-1">
+              Paroisse / Annexe concernée
+            </label>
             <div className="w-full rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-stone-800 flex items-center justify-between">
               <span className="font-semibold truncate">
                 {currentBranch?.name || branches[0]?.name || 'Siège Principal'}
@@ -380,7 +386,9 @@ export default function ReportsPage() {
                 </p>
               </div>
               <div>
-                <span className="text-[11px] text-stone-600 font-medium">- Total Décaissements</span>
+                <span className="text-[11px] text-stone-600 font-medium">
+                  - Total Décaissements
+                </span>
                 <p className="font-serif text-lg sm:text-xl font-bold text-stone-800 mt-1">
                   -{preview.totalExpense.toLocaleString('fr-FR')} FCFA
                 </p>
@@ -408,7 +416,10 @@ export default function ReportsPage() {
                     <p className="text-stone-400 italic">Aucune entrée sur cette période.</p>
                   ) : (
                     Object.entries(preview.incomesByCategory).map(([catName, sum]) => (
-                      <div key={catName} className="flex justify-between py-1 border-b border-stone-100">
+                      <div
+                        key={catName}
+                        className="flex justify-between py-1 border-b border-stone-100"
+                      >
                         <span className="text-stone-700 font-medium">{catName}</span>
                         <span className="font-bold text-stone-900">
                           {sum.toLocaleString('fr-FR')} FCFA
@@ -432,7 +443,10 @@ export default function ReportsPage() {
                     <p className="text-stone-400 italic">Aucune dépense sur cette période.</p>
                   ) : (
                     Object.entries(preview.expensesByCategory).map(([catName, sum]) => (
-                      <div key={catName} className="flex justify-between py-1 border-b border-stone-100">
+                      <div
+                        key={catName}
+                        className="flex justify-between py-1 border-b border-stone-100"
+                      >
                         <span className="text-stone-700 font-medium">{catName}</span>
                         <span className="font-bold text-stone-900">
                           {sum.toLocaleString('fr-FR')} FCFA
@@ -460,8 +474,8 @@ export default function ReportsPage() {
 
             {/* Theological stamp / footer */}
             <div className="mt-10 pt-4 border-t border-stone-100 text-center text-[10px] text-stone-400 italic">
-              « Que tout se fasse avec bienséance et avec ordre. » &mdash; 1 Corinthiens 14:40 &bull; Document
-              généré via Goshen Finance.
+              « Que tout se fasse avec bienséance et avec ordre. » &mdash; 1 Corinthiens 14:40
+              &bull; Document généré via Goshen Finance.
             </div>
           </div>
         )}

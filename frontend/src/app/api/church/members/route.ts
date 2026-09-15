@@ -47,13 +47,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const access = await resolveChurchUser(auth.user.sub);
     if (!access || !access.isPastor) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Seul le pasteur peut inviter des membres.' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Seul le pasteur peut inviter des membres.' },
+        { status: 403 },
+      );
     }
 
     const body = await req.json().catch(() => null);
     const parsed = InviteMemberBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { email, name, role, branchIds } = parsed.data;
@@ -81,7 +87,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     if (existing) {
-      return NextResponse.json({ error: 'ALREADY_MEMBER', message: 'Cet utilisateur est déjà membre de l’église.' }, { status: 409 });
+      return NextResponse.json(
+        { error: 'ALREADY_MEMBER', message: 'Cet utilisateur est déjà membre de l’église.' },
+        { status: 409 },
+      );
     }
 
     const newMembership = await prisma.$transaction(async (tx) => {

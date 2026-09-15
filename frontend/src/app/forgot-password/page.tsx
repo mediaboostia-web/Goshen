@@ -8,7 +8,6 @@ import { api, ApiError } from '@/lib/api';
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,12 +20,9 @@ export default function ForgotPasswordPage() {
         method: 'POST',
         body: { email: email.trim() },
       });
-      setSent(true);
       router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`);
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Erreur réseau. Veuillez réessayer.'
-      );
+      setError(err instanceof ApiError ? err.message : 'Erreur réseau. Veuillez réessayer.');
     } finally {
       setSubmitting(false);
     }

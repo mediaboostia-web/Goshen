@@ -7,7 +7,7 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
-import { chariow } from '@/lib/server/payments/chariow';
+import { chariow, ChariowNotConfiguredError } from '@/lib/server/payments/chariow';
 
 const CheckoutBody = z.object({
   plan: z.enum(['ESSENTIAL', 'PREMIUM']),
@@ -30,13 +30,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (!access.isPastor) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Seul le pasteur peut souscrire un abonnement.' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Seul le pasteur peut souscrire un abonnement.' },
+        { status: 403 },
+      );
     }
 
     const body = await req.json().catch(() => null);
     const parsed = CheckoutBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { plan, phone, phoneCountry, phoneLocal, firstName, lastName } = parsed.data;
@@ -86,11 +92,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         },
       });
 
-      return NextResponse.json({ checkoutUrl: checkoutRes.checkoutUrl, purchaseId: checkoutRes.purchaseId });
+      return NextResponse.json({
+        checkoutUrl: checkoutRes.checkoutUrl,
+        purchaseId: checkoutRes.purchaseId,
+      });
     } catch (err) {
+      if (err instanceof ChariowNotConfiguredError) {
+        return NextResponse.json(
+          {
+            error: 'PAYMENT_PROVIDER_UNCONFIGURED',
+            message: 'Le paiement en ligne n’est pas encore configuré.',
+          },
+          { status: 503 },
+        );
+      }
       return NextResponse.json(
-        { error: 'CHECKOUT_FAILED', message: err instanceof Error ? err.message : 'Échec de création du checkout' },
-        { status: 500 }
+        {
+          error: 'CHECKOUT_FAILED',
+          message: err instanceof Error ? err.message : 'Échec de création du checkout',
+        },
+        { status: 500 },
       );
     }
   });

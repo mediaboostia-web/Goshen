@@ -21,7 +21,7 @@ interface PendingExecution {
 }
 
 export default function RecurrentValidationPage() {
-  const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
+  const { currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
 
   const [executions, setExecutions] = useState<PendingExecution[]>([]);
@@ -37,7 +37,7 @@ export default function RecurrentValidationPage() {
     try {
       const activeBranchParam = isConsolidated ? 'CONSOLIDATED' : currentBranch?.id;
       const res = await api<{ pendingExecutions: PendingExecution[] }>(
-        `/api/recurrent-expenses?branchId=${activeBranchParam}`
+        `/api/recurrent-expenses?branchId=${activeBranchParam}`,
       );
       setExecutions(res.pendingExecutions || []);
     } catch {
@@ -64,16 +64,16 @@ export default function RecurrentValidationPage() {
 
       toast(
         `Dépense "${execution.recurringExpense.name}" de ${execution.amount.toLocaleString(
-          'fr-FR'
+          'fr-FR',
         )} FCFA validée et décaissée !`,
-        'success'
+        'success',
       );
       await loadPending();
       await refreshBranches();
     } catch (err) {
       toast(
         err instanceof ApiError ? err.message : 'Erreur lors de la validation du décaissement',
-        'error'
+        'error',
       );
     } finally {
       setProcessingId(null);

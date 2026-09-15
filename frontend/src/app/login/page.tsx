@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,42 +32,17 @@ export default function LoginPage() {
       setError(
         err instanceof ApiError
           ? err.message || 'Identifiants invalides.'
-          : 'Erreur réseau. Veuillez réessayer.'
+          : 'Erreur réseau. Veuillez réessayer.',
       );
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Connexion rapide et sécurisée avec Google (seul moyen rapide)
-  async function handleGoogleLogin() {
-    setGoogleLoading(true);
-    setError(null);
-    try {
-      // Si OAuth Google backend configuré on redirige, sinon fallback immédiat pour test fluide
-      setEmail('admin@example.com');
-      setPassword('AdminPassword123!');
-      const res = await api<{ csrfToken?: string }>('/api/auth/login', {
-        method: 'POST',
-        body: { email: 'admin@example.com', password: 'AdminPassword123!' },
-      });
-      if (res.csrfToken) storeCsrfToken(res.csrfToken);
-      await refresh();
-      router.push('/dashboard');
-    } catch {
-      // Fallback local direct
-      router.push('/dashboard');
-    } finally {
-      setGoogleLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#064e3b]/10 via-[#f8fafc] to-[#022c22]/15 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      
       {/* ── SPLIT-CARD BIFOLD CONTAINER ── */}
       <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row min-h-[560px]">
-        
         {/* ── LEFT VOLET: GOSHEN BRAND & ECCLESIASTICAL WELCOME ── */}
         <div className="relative flex flex-col justify-between bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] p-8 sm:p-10 text-white md:w-5/12">
           {/* Subtle Decorative Backdrop Elements (No Glows/Sparkles) */}
@@ -103,7 +77,8 @@ export default function LoginPage() {
               La Paix soit avec vous.
             </h2>
             <p className="text-xs text-emerald-100/80 leading-relaxed font-normal">
-              Gestion financière sainte, transparente et collaborative au service du Royaume. Dîmes, offrandes et décaissements gérés avec fidélité.
+              Gestion financière sainte, transparente et collaborative au service du Royaume. Dîmes,
+              offrandes et décaissements gérés avec fidélité.
             </p>
           </div>
 
@@ -162,9 +137,7 @@ export default function LoginPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="font-bold text-stone-700">
-                    Mot de passe
-                  </label>
+                  <label className="font-bold text-stone-700">Mot de passe</label>
                   <Link
                     href="/forgot-password"
                     className="text-[11px] text-emerald-800 hover:text-emerald-950 font-medium"
@@ -197,7 +170,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={submitting || googleLoading}
+                disabled={submitting}
                 className="w-full rounded-xl bg-emerald-800 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-50 transition-all active:scale-[0.99] cursor-pointer"
               >
                 {submitting ? 'Connexion en cours…' : 'Se connecter au tableau de bord'}
@@ -218,15 +191,13 @@ export default function LoginPage() {
 
             {/* LE SEUL MOYEN RAPIDE EST AVEC GOOGLE */}
             <div>
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading || submitting}
-                className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 py-2.5 px-4 text-xs font-bold text-stone-700 shadow-2xs hover:shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+              <a
+                href="/api/auth/oauth/google/start?next=/dashboard"
+                className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 py-2.5 px-4 text-xs font-bold text-stone-700 shadow-2xs hover:shadow-xs transition-all active:scale-[0.99]"
               >
                 <GoogleIcon className="h-5 w-5 shrink-0" />
-                <span>{googleLoading ? 'Connexion Google en cours…' : 'Continuer avec Google'}</span>
-              </button>
+                <span>Continuer avec Google</span>
+              </a>
             </div>
           </div>
 

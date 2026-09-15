@@ -43,6 +43,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         select: {
           id: true,
           email: true,
+          name: true,
           emailVerifiedAt: true,
           createdAt: true,
           updatedAt: true,
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       sub: auth.user.sub,
       id: dbUser?.id ?? auth.user.sub,
       email: dbUser?.email ?? auth.user.email,
+      name: dbUser?.name ?? null,
       emailVerifiedAt: dbUser?.emailVerifiedAt
         ? dbUser.emailVerifiedAt instanceof Date
           ? dbUser.emailVerifiedAt.toISOString()

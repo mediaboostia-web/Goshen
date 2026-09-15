@@ -33,7 +33,7 @@ function VerifyEmailContent() {
       setError(
         err instanceof ApiError
           ? err.message || 'Code de vérification invalide ou expiré.'
-          : 'Erreur réseau. Veuillez réessayer.'
+          : 'Erreur réseau. Veuillez réessayer.',
       );
     } finally {
       setSubmitting(false);
@@ -120,4 +120,3 @@ export default function VerifyEmailPage() {
     </Suspense>
   );
 }
-

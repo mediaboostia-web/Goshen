@@ -80,13 +80,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (!access.isTreasurer && !access.isPastor) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Seul le pasteur ou trésorier peut créer un modèle.' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Seul le pasteur ou trésorier peut créer un modèle.' },
+        { status: 403 },
+      );
     }
 
     const body = await req.json().catch(() => null);
     const parsed = CreateRecurrentExpenseBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
     const { branchId, name, amount, frequency, dueDay, categoryId } = parsed.data;

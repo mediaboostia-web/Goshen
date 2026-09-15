@@ -19,10 +19,9 @@ interface DefaultCategory {
   type: 'INCOME' | 'EXPENSE';
 }
 
-declare global {
-  var __goshenCategories: DefaultCategory[] | undefined;
-}
-
+// Read-only suggestions shown to a church that hasn't created any category
+// yet. Never persisted from here and never returned as if they were a write
+// result — a real category is only created via POST below.
 const INITIAL_CATEGORIES: DefaultCategory[] = [
   { id: 'cat_dimes', name: 'Dîmes régulières', type: 'INCOME' },
   { id: 'cat_offrandes', name: 'Offrandes dominicales', type: 'INCOME' },
@@ -37,74 +36,67 @@ const INITIAL_CATEGORIES: DefaultCategory[] = [
   { id: 'cat_evenements', name: 'Conférences & événements spéciaux', type: 'EXPENSE' },
 ];
 
-if (!global.__goshenCategories) {
-  global.__goshenCategories = [...INITIAL_CATEGORIES];
-}
-
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    try {
-      const auth = await requireAuth(req.headers.get('authorization'));
-      if (!(auth instanceof NextResponse)) {
-        const access = await resolveChurchUser(auth.user.sub);
-        if (access) {
-          const dbCategories = await prisma.churchCategory.findMany({
-            where: { organizationId: access.church.id },
-            orderBy: [{ type: 'asc' }, { name: 'asc' }],
-          });
-          if (dbCategories.length > 0) {
-            return NextResponse.json({ categories: dbCategories });
-          }
-        }
-      }
-    } catch {
-      // Fallback
+    const auth = await requireAuth(req.headers.get('authorization'));
+    if (auth instanceof NextResponse) return auth;
+
+    const access = await resolveChurchUser(auth.user.sub);
+    if (!access) {
+      return NextResponse.json({ error: 'CHURCH_NOT_FOUND', categories: [] }, { status: 404 });
     }
 
-    return NextResponse.json({ categories: global.__goshenCategories ?? INITIAL_CATEGORIES });
+    const dbCategories = await prisma.churchCategory.findMany({
+      where: { organizationId: access.church.id },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+    });
+
+    // A brand-new church has no categories yet — show read-only suggestions
+    // instead of an empty list. These are never persisted from here.
+    if (dbCategories.length === 0) {
+      return NextResponse.json({ categories: INITIAL_CATEGORIES, suggested: true });
+    }
+
+    return NextResponse.json({ categories: dbCategories });
   });
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const auth = await requireAuth(req.headers.get('authorization'));
+    if (auth instanceof NextResponse) return auth;
+
+    const access = await resolveChurchUser(auth.user.sub);
+    if (!access) {
+      return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
+    }
+    // PRD F12/F15: category CRUD is reserved to the Pastor role.
+    if (!access.isPastor) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Seul le pasteur peut gérer les catégories.' },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json().catch(() => null);
     const parsed = CreateCategoryBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
-    const newCategory: DefaultCategory = {
-      id: `cat_${Date.now()}`,
-      name: parsed.data.name.trim(),
-      type: parsed.data.type,
-    };
+    const created = await prisma.churchCategory.create({
+      data: {
+        organizationId: access.church.id,
+        name: parsed.data.name.trim(),
+        type: parsed.data.type,
+      },
+    });
 
-    try {
-      const auth = await requireAuth(req.headers.get('authorization'));
-      if (!(auth instanceof NextResponse)) {
-        const access = await resolveChurchUser(auth.user.sub);
-        if (access) {
-          const created = await prisma.churchCategory.create({
-            data: {
-              organizationId: access.church.id,
-              name: parsed.data.name,
-              type: parsed.data.type,
-            },
-          });
-          return NextResponse.json({ category: created }, { status: 201 });
-        }
-      }
-    } catch {
-      // Fallback in-memory
-    }
-
-    if (!global.__goshenCategories) {
-      global.__goshenCategories = [...INITIAL_CATEGORIES];
-    }
-    global.__goshenCategories.push(newCategory);
-
-    return NextResponse.json({ category: newCategory }, { status: 201 });
+    return NextResponse.json({ category: created }, { status: 201 });
   });
 }

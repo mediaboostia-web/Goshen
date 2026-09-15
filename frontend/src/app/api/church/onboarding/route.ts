@@ -37,7 +37,7 @@ const OnboardingBody = z.object({
       z.object({
         name: z.string().min(2),
         city: z.string().optional(),
-      })
+      }),
     )
     .optional()
     .default([]),
@@ -52,10 +52,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = await req.json().catch(() => null);
     const parsed = OnboardingBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_FAILED', details: parsed.error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
-    const { churchName, denomination, mainBranchName, mainBranchCity, initialBalance, annexes } = parsed.data;
+    const { churchName, denomination, mainBranchName, mainBranchCity, initialBalance, annexes } =
+      parsed.data;
 
     const baseSlug = slugify(churchName);
     let finalSlug = baseSlug;
@@ -116,8 +120,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       // 5. Create Default Categories
       const categoriesData = [
-        ...DEFAULT_INCOMES.map((name) => ({ organizationId: org.id, name, type: 'INCOME', isDefault: true })),
-        ...DEFAULT_EXPENSES.map((name) => ({ organizationId: org.id, name, type: 'EXPENSE', isDefault: true })),
+        ...DEFAULT_INCOMES.map((name) => ({
+          organizationId: org.id,
+          name,
+          type: 'INCOME',
+          isDefault: true,
+        })),
+        ...DEFAULT_EXPENSES.map((name) => ({
+          organizationId: org.id,
+          name,
+          type: 'EXPENSE',
+          isDefault: true,
+        })),
       ];
 
       await tx.churchCategory.createMany({
