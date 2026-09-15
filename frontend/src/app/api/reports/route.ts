@@ -7,6 +7,9 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { generateReportPdf } from '@/lib/server/reports/pdf';
+import { uploadBuffer, StorageNotConfiguredError } from '@/lib/server/upload/cloudinary-client';
+import { log } from '@/lib/server/observability/log';
 
 const GenerateReportBody = z.object({
   title: z.string().min(3, 'Titre du rapport requis'),
@@ -191,12 +194,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const closingBalance = currentBalance;
     const openingBalance = closingBalance - (totalIncome - totalExpense);
 
+    const branchName = isConsolidated
+      ? 'Toutes les annexes (Consolidé)'
+      : transactions[0]?.branch.name || 'Annexe';
+
+    // PRD F25/US06: the persisted report keeps the full operation list (not
+    // just the count) so the archived JSON and the generated PDF agree.
+    const transactionRows = transactions.map((t) => ({
+      date: t.date.toISOString(),
+      type: t.type as 'INCOME' | 'EXPENSE',
+      categoryName: t.category.name,
+      amount: t.amount,
+      beneficiary: t.beneficiary,
+      authorName: t.author.name || t.author.email,
+    }));
+
     const reportData = {
       churchName: access.church.name,
       denomination: access.church.denomination,
-      branchName: isConsolidated
-        ? 'Toutes les annexes (Consolidé)'
-        : transactions[0]?.branch.name || 'Annexe',
+      branchName,
       incomesByCategory,
       expensesByCategory,
       openingBalance,
@@ -204,6 +220,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       totalIncome,
       totalExpense,
       transactionsCount: transactions.length,
+      transactions: transactionRows,
       generatedAt: new Date().toISOString(),
     };
 
@@ -224,6 +241,50 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     });
 
-    return NextResponse.json({ report }, { status: 201 });
+    // Generate + upload the PDF. Best-effort: the Report row above is
+    // already the source of truth — a PDF failure (e.g. Cloudinary not
+    // configured) must not fail report creation, it just leaves pdfUrl
+    // null and the frontend falls back to showing the on-screen summary.
+    try {
+      const pdfBuffer = await generateReportPdf({
+        title,
+        churchName: access.church.name,
+        denomination: access.church.denomination,
+        branchName,
+        startDate,
+        endDate,
+        openingBalance,
+        closingBalance,
+        totalIncome,
+        totalExpense,
+        incomesByCategory,
+        expensesByCategory,
+        transactions: transactionRows,
+        currency: access.church.currency,
+      });
+
+      const uploaded = await uploadBuffer(
+        `reports/${access.church.id}/${report.id}.pdf`,
+        pdfBuffer,
+        'application/pdf',
+      );
+
+      const updated = await prisma.report.update({
+        where: { id: report.id },
+        data: { pdfUrl: uploaded.secureUrl },
+      });
+
+      return NextResponse.json({ report: updated }, { status: 201 });
+    } catch (err) {
+      if (err instanceof StorageNotConfiguredError) {
+        log.warn('report PDF not uploaded: storage not configured', { reportId: report.id });
+      } else {
+        log.warn('report PDF generation/upload failed', {
+          reportId: report.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+      return NextResponse.json({ report }, { status: 201 });
+    }
   });
 }

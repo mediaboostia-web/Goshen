@@ -41,6 +41,7 @@ interface ArchivedReport {
   totalExpense: number;
   createdAt: string;
   branch: { name: string } | null;
+  pdfUrl: string | null;
 }
 
 export default function ReportsPage() {
@@ -500,6 +501,25 @@ export default function ReportsPage() {
                     <span className="font-bold text-emerald-800">
                       Solde : {rep.closingBalance.toLocaleString('fr-FR')} FCFA
                     </span>
+                    {rep.pdfUrl ? (
+                      <a
+                        href={rep.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 hover:bg-emerald-100 font-bold text-emerald-800 flex items-center gap-1"
+                        title="Télécharger le rapport PDF"
+                      >
+                        <DocumentReportIcon className="h-3.5 w-3.5" />
+                        <span className="text-[11px]">PDF</span>
+                      </a>
+                    ) : (
+                      <span
+                        className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-stone-400 text-[11px] font-semibold"
+                        title="PDF indisponible (stockage non configuré au moment de la génération)"
+                      >
+                        PDF indisponible
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => setIsInvoiceModalOpen(true)}
