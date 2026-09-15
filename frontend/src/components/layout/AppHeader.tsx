@@ -1,17 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
+import { api } from '@/lib/api';
 import { SearchIcon, BellIcon } from '@/components/icons/ChurchIcons';
+
+const NOTIFICATION_POLL_MS = 60_000;
 
 export function AppHeader() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { church, branches, currentBranch, isConsolidated, selectBranch } = useBranch();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const refreshUnreadCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api<{ count: number }>('/api/notifications/count');
+      setUnreadCount(res.count);
+    } catch {
+      // Non-critical — leave the last known count on the badge.
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void refreshUnreadCount();
+    const timer = setInterval(() => void refreshUnreadCount(), NOTIFICATION_POLL_MS);
+    return () => clearInterval(timer);
+  }, [refreshUnreadCount]);
 
   async function handleLogout() {
     await logout();
@@ -96,12 +116,18 @@ export function AppHeader() {
           <Link
             href="/notifications"
             className="group relative rounded-xl p-2 text-stone-500 hover:bg-stone-100 hover:text-emerald-900 transition-colors"
-            title="Centre de notifications"
+            title={
+              unreadCount > 0
+                ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}`
+                : 'Centre de notifications'
+            }
           >
             <BellIcon className="h-5 w-5 text-stone-600 group-hover:text-emerald-900 transition-colors" />
-            <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-600" />
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </Link>
 
           {/* User Profile Avatar with Dropdown */}

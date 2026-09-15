@@ -1,9 +1,10 @@
 // frontend/src/lib/server/observability/vercel-json-shape.test.ts — Phase 5 D-20.
 //
-// Tripwire: verifies vercel.json declares all 5 cron schedules with valid
+// Tripwire: verifies vercel.json declares all 6 cron schedules with valid
 // cron-format strings and paths that correspond to actual route.ts files.
 // (order-expiration was removed along with the Order/Bictorys/withdrawals
-// subsystem — see PRUNING.md.)
+// subsystem — see PRUNING.md; recurring-expense-reminders was added for
+// PRD F19.)
 //
 // Wave 0 status: RED until Wave 1 plan 05-08 ships frontend/vercel.json.
 // Once GREEN, this test guards against route-rename / schedule-drift
@@ -34,11 +35,11 @@ describe('vercel.json schema (CRON-07, D-20)', () => {
     expect(existsSync(VERCEL_JSON)).toBe(true);
   });
 
-  it('declares exactly 5 cron schedules', () => {
+  it('declares exactly 6 cron schedules', () => {
     if (!existsSync(VERCEL_JSON)) return; // skip silently when RED-by-design
     const cfg = JSON.parse(readFileSync(VERCEL_JSON, 'utf8')) as VercelConfig;
     expect(cfg.crons).toBeDefined();
-    expect(cfg.crons!.length).toBe(5);
+    expect(cfg.crons!.length).toBe(6);
   });
 
   it('every cron path matches /^\\/api\\/cron\\/[a-z-]+$/ and schedule is valid 5-field cron', () => {
@@ -64,7 +65,7 @@ describe('vercel.json schema (CRON-07, D-20)', () => {
     }
   });
 
-  it('declares schedules for the 5 canonical crons (post-prune)', () => {
+  it('declares schedules for the 6 canonical crons (post-prune + F19 reminder cron)', () => {
     if (!existsSync(VERCEL_JSON)) return;
     const cfg = JSON.parse(readFileSync(VERCEL_JSON, 'utf8')) as VercelConfig;
     const paths = (cfg.crons ?? []).map((c) => c.path).sort();
@@ -72,6 +73,7 @@ describe('vercel.json schema (CRON-07, D-20)', () => {
       '/api/cron/email-job-purge',
       '/api/cron/email-queue-drain',
       '/api/cron/outbox-drain',
+      '/api/cron/recurring-expense-reminders',
       '/api/cron/verification-cleanup',
       '/api/cron/webhook-log-purge',
     ]);
