@@ -225,8 +225,8 @@ export default function ReportsPage() {
     paymentMethod: 'Virement UGB / Airtel Money / Caisse Locale',
     terms:
       'Cette facture et récépissé comptable atteste la régularité des écritures inscrites dans les registres de l’église conformément aux normes comptables en vigueur.',
-    signatoryName: 'Steven Joe',
-    signatoryRole: 'Accounting Manager / Trésorier Général',
+    signatoryName: 'Le Trésorier',
+    signatoryRole: 'Trésorier Général',
   };
 
   return (

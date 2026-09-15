@@ -329,6 +329,7 @@ export default function DashboardPage() {
   // Open invoice for a specific transaction (durant un enregistrement précis)
   const handleOpenTransactionInvoice = (tx: DisplayTransaction) => {
     setActiveInvoiceData({
+      ...(tx.id ? { transactionId: tx.id } : {}),
       invoiceNumber: `INV-${tx.id ? String(tx.id).slice(0, 8).toUpperCase() : '2026-0841'}`,
       date: tx.date || new Date().toLocaleDateString('fr-FR'),
       churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
@@ -364,8 +365,8 @@ export default function DashboardPage() {
         : 'Caisse Espèces Libreville',
       terms:
         'Certifié conforme aux écritures du grand livre de la communauté. Pièce justificative officielle.',
-      signatoryName: tx.authorName || 'Steven Joe',
-      signatoryRole: 'Accounting Manager / Trésorier de Caisse',
+      signatoryName: tx.authorName || 'Le Trésorier',
+      signatoryRole: 'Trésorier de Caisse',
     });
   };
 
@@ -405,8 +406,8 @@ export default function DashboardPage() {
       paymentMethod: 'Virement UGB / Airtel Money / Caisse Locale',
       terms:
         'Synthèse officielle des opérations financières de la période certifiée par la trésorerie.',
-      signatoryName: 'Steven Joe',
-      signatoryRole: 'Accounting Manager / Trésorier Général',
+      signatoryName: 'Le Trésorier',
+      signatoryRole: 'Trésorier Général',
     });
   };
 

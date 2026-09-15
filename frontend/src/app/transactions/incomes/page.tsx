@@ -117,7 +117,7 @@ export default function IncomesPage() {
       const selectedCat = categories.find((c) => c.id === categoryId);
       const selectedBr = branches.find((b) => b.id === branchId);
 
-      await api('/api/transactions', {
+      const createdTx = await api<{ transaction?: { id: string } }>('/api/transactions', {
         method: 'POST',
         body: {
           branchId,
@@ -130,7 +130,7 @@ export default function IncomesPage() {
       });
 
       const savedTxInfo = {
-        id: `REC-${Date.now().toString().slice(-6)}`,
+        id: createdTx?.transaction?.id || `REC-${Date.now().toString().slice(-6)}`,
         amount: parsedAmount,
         categoryName: selectedCat?.name || 'Offrande de culte',
         branchName: selectedBr?.name || currentBranch?.name || 'Paroisse Locale',
@@ -165,6 +165,7 @@ export default function IncomesPage() {
     notes?: string | null;
   }) => {
     setActiveInvoiceData({
+      transactionId: tx.id,
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
       churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',

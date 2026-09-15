@@ -213,6 +213,7 @@ export default function ExpensesPage() {
     notes?: string | null;
   }) => {
     setActiveInvoiceData({
+      transactionId: tx.id,
       invoiceNumber: `DEP-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
       churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
@@ -242,7 +243,7 @@ export default function ExpensesPage() {
         'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique.',
       tax: 0,
       discount: 0,
-      signatoryName: 'Steven Joe',
+      signatoryName: 'Le Trésorier',
       signatoryRole: 'Trésorier Général & Comptable',
       phone: '+241 01 23 45 67',
       email: 'tresorerie@goshen-finance.org',
