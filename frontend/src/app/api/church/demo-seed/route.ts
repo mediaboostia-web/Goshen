@@ -4,6 +4,7 @@ import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
+import { resolveChurchUser } from '@/lib/server/church/resolve-church';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,23 @@ export async function POST(req: NextRequest) {
     if (auth instanceof NextResponse) return auth;
 
     const userId = auth.user.sub;
+
+    // This injects fabricated income/expense rows into the caller's real
+    // church ledger (convertible to real data via the "Injecter en base
+    // réelle" dashboard action) — only the Pastor should be able to trigger
+    // that, same as every other church-domain write (categories, branches,
+    // members). A pre-existing org is checked here; a first-time call for a
+    // brand-new user (no org yet) is allowed through, same as onboarding.
+    const existingAccess = await resolveChurchUser(userId);
+    if (existingAccess && !existingAccess.isPastor) {
+      return NextResponse.json(
+        {
+          error: 'FORBIDDEN',
+          message: 'Seul le pasteur peut injecter des données de démonstration.',
+        },
+        { status: 403 },
+      );
+    }
 
     // Check existing or create church for this user
     let org = await prisma.organization.findFirst({
@@ -54,7 +72,7 @@ export async function POST(req: NextRequest) {
         data: {
           organizationId: org.id,
           name: 'Paroisse Centrale (Mont-Bouët)',
-          location: 'Libreville, Gabon',
+          city: 'Libreville',
           isMain: true,
           currentBalance: 3450000,
           lowBalanceThreshold: 600000,
@@ -76,7 +94,7 @@ export async function POST(req: NextRequest) {
         data: {
           organizationId: org.id,
           name: 'Annexe Akanda (Cap Estérias)',
-          location: 'Akanda, Gabon',
+          city: 'Akanda',
           isMain: false,
           currentBalance: 980000,
           lowBalanceThreshold: 250000,
@@ -90,7 +108,7 @@ export async function POST(req: NextRequest) {
         data: {
           organizationId: org.id,
           name: 'Annexe Owendo (Alénakiri)',
-          location: 'Owendo, Gabon',
+          city: 'Owendo',
           isMain: false,
           currentBalance: 520000,
           lowBalanceThreshold: 150000,
@@ -208,6 +226,10 @@ export async function POST(req: NextRequest) {
 
       for (const t of demoTransactions) {
         if (t.categoryId) {
+          // FinancialTransaction has no paymentMethod/receiptNumber columns
+          // (schema.prisma) — fold that context into `notes` instead of
+          // passing unknown fields to Prisma (which would throw).
+          const notesWithPaymentInfo = `${t.notes} — Réf. ${t.receiptNumber} (${t.paymentMethod.replace('_', ' ')})`;
           await prisma.financialTransaction.create({
             data: {
               organizationId: org.id,
@@ -217,10 +239,8 @@ export async function POST(req: NextRequest) {
               type: t.type,
               amount: t.amount,
               date: t.date,
-              paymentMethod: t.paymentMethod,
-              receiptNumber: t.receiptNumber,
               beneficiary: t.beneficiary,
-              notes: t.notes,
+              notes: notesWithPaymentInfo,
               receiptUrl: t.receiptUrl || null,
             },
           });
