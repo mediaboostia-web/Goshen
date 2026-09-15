@@ -128,28 +128,31 @@ export async function POST(req: NextRequest): Promise<Response> {
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
-    await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { email, passwordHash },
-        select: { id: true },
-      });
-      await tx.verificationCode.create({
-        data: {
-          userId: user.id,
-          code,
-          type: 'EMAIL_VERIFY',
-          expiresAt,
-        },
-      });
-      await enqueueOutbox(tx, {
-        kind: 'email.verification_code',
-        payload: {
-          to: email,
-          code,
-          expiresAt: expiresAt.toISOString(),
-        },
-      });
-    });
+    await prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.create({
+          data: { email, passwordHash },
+          select: { id: true },
+        });
+        await tx.verificationCode.create({
+          data: {
+            userId: user.id,
+            code,
+            type: 'EMAIL_VERIFY',
+            expiresAt,
+          },
+        });
+        await enqueueOutbox(tx, {
+          kind: 'email.verification_code',
+          payload: {
+            to: email,
+            code,
+            expiresAt: expiresAt.toISOString(),
+          },
+        });
+      },
+      { timeout: 15000 },
+    );
 
     log.info('signup successful');
     const res = NextResponse.json({ ok: true }, { status: 201 });

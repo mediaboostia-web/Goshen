@@ -89,24 +89,27 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (user && !user.emailVerifiedAt) {
       const code = generateVerificationCode();
       const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
-      await prisma.$transaction(async (tx) => {
-        await tx.verificationCode.create({
-          data: {
-            userId: user.id,
-            code,
-            type: 'EMAIL_VERIFY',
-            expiresAt,
-          },
-        });
-        await enqueueOutbox(tx, {
-          kind: 'email.verification_code',
-          payload: {
-            to: user.email,
-            code,
-            expiresAt: expiresAt.toISOString(),
-          },
-        });
-      });
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.verificationCode.create({
+            data: {
+              userId: user.id,
+              code,
+              type: 'EMAIL_VERIFY',
+              expiresAt,
+            },
+          });
+          await enqueueOutbox(tx, {
+            kind: 'email.verification_code',
+            payload: {
+              to: user.email,
+              code,
+              expiresAt: expiresAt.toISOString(),
+            },
+          });
+        },
+        { timeout: 15000 },
+      );
       log.info('resend-verification: code re-issued', { userId: user.id });
     } else {
       // No user, OR already verified — log without leaking which case it is.

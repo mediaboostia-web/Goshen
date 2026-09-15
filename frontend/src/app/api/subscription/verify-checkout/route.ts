@@ -73,36 +73,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const targetPlan = fallbackPlan || 'ESSENTIAL';
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Update Subscription
-      await tx.subscription.upsert({
-        where: { organizationId: access.church.id },
-        create: {
-          organizationId: access.church.id,
-          plan: targetPlan,
-          status: 'ACTIVE',
-          provider: 'CHARIOW',
-          chariowPurchaseId: purchaseId,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: nextMonth,
-        },
-        update: {
-          plan: targetPlan,
-          status: 'ACTIVE',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: nextMonth,
-        },
-      });
+    await prisma.$transaction(
+      async (tx) => {
+        // 1. Update Subscription
+        await tx.subscription.upsert({
+          where: { organizationId: access.church.id },
+          create: {
+            organizationId: access.church.id,
+            plan: targetPlan,
+            status: 'ACTIVE',
+            provider: 'CHARIOW',
+            chariowPurchaseId: purchaseId,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: nextMonth,
+          },
+          update: {
+            plan: targetPlan,
+            status: 'ACTIVE',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: nextMonth,
+          },
+        });
 
-      // 2. Update Organization
-      await tx.organization.update({
-        where: { id: access.church.id },
-        data: {
-          plan: targetPlan,
-          planExpiresAt: nextMonth,
-        },
-      });
-    });
+        // 2. Update Organization
+        await tx.organization.update({
+          where: { id: access.church.id },
+          data: {
+            plan: targetPlan,
+            planExpiresAt: nextMonth,
+          },
+        });
+      },
+      { timeout: 15000 },
+    );
 
     return NextResponse.json({
       verified: true,

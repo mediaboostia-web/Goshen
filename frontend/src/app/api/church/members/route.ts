@@ -93,26 +93,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const newMembership = await prisma.$transaction(async (tx) => {
-      const member = await tx.organizationMember.create({
-        data: {
-          organizationId: access.church.id,
-          userId: targetUser.id,
-          role,
-        },
-      });
-
-      if (branchIds && branchIds.length > 0) {
-        await tx.memberBranchAccess.createMany({
-          data: branchIds.map((branchId) => ({
-            memberId: member.id,
-            branchId,
-          })),
+    const newMembership = await prisma.$transaction(
+      async (tx) => {
+        const member = await tx.organizationMember.create({
+          data: {
+            organizationId: access.church.id,
+            userId: targetUser.id,
+            role,
+          },
         });
-      }
 
-      return member;
-    });
+        if (branchIds && branchIds.length > 0) {
+          await tx.memberBranchAccess.createMany({
+            data: branchIds.map((branchId) => ({
+              memberId: member.id,
+              branchId,
+            })),
+          });
+        }
+
+        return member;
+      },
+      { timeout: 15000 },
+    );
 
     return NextResponse.json({ success: true, member: newMembership }, { status: 201 });
   });

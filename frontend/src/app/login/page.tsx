@@ -210,8 +210,8 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                setEmail('admin@example.com');
-                setPassword('AdminPassword123!');
+                setEmail('demo@goshen.app');
+                setPassword('GoshenDemo2026!');
               }}
               className="font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
             >

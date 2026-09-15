@@ -98,46 +98,49 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { branchId, name, amount, frequency, dueDay, categoryId } = parsed.data;
 
     // Create the recurring model and its first pending execution
-    const model = await prisma.$transaction(async (tx) => {
-      const rec = await tx.recurringExpense.create({
-        data: {
-          organizationId: access.church.id,
-          branchId,
-          name,
-          amount,
-          frequency,
-          dueDay,
-          categoryId,
-          status: 'ACTIVE',
-        },
-      });
+    const model = await prisma.$transaction(
+      async (tx) => {
+        const rec = await tx.recurringExpense.create({
+          data: {
+            organizationId: access.church.id,
+            branchId,
+            name,
+            amount,
+            frequency,
+            dueDay,
+            categoryId,
+            status: 'ACTIVE',
+          },
+        });
 
-      // Calculate initial due date
-      const now = new Date();
-      const dueDate = new Date();
-      if (frequency === 'MONTHLY') {
-        dueDate.setDate(Math.min(dueDay, 28));
-        if (dueDate < now) {
-          dueDate.setMonth(dueDate.getMonth() + 1);
+        // Calculate initial due date
+        const now = new Date();
+        const dueDate = new Date();
+        if (frequency === 'MONTHLY') {
+          dueDate.setDate(Math.min(dueDay, 28));
+          if (dueDate < now) {
+            dueDate.setMonth(dueDate.getMonth() + 1);
+          }
+        } else {
+          // Weekly (dueDay 0=Sunday)
+          const currentDay = now.getDay();
+          const diff = (dueDay - currentDay + 7) % 7;
+          dueDate.setDate(now.getDate() + (diff === 0 ? 7 : diff));
         }
-      } else {
-        // Weekly (dueDay 0=Sunday)
-        const currentDay = now.getDay();
-        const diff = (dueDay - currentDay + 7) % 7;
-        dueDate.setDate(now.getDate() + (diff === 0 ? 7 : diff));
-      }
 
-      await tx.recurringExpenseExecution.create({
-        data: {
-          recurringExpenseId: rec.id,
-          dueDate,
-          amount,
-          status: 'PENDING',
-        },
-      });
+        await tx.recurringExpenseExecution.create({
+          data: {
+            recurringExpenseId: rec.id,
+            dueDate,
+            amount,
+            status: 'PENDING',
+          },
+        });
 
-      return rec;
-    });
+        return rec;
+      },
+      { timeout: 15000 },
+    );
 
     return NextResponse.json({ model }, { status: 201 });
   });

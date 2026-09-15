@@ -60,60 +60,63 @@ export async function PATCH(
       );
     }
 
-    const result: Discriminator = await prisma.$transaction(async (tx) => {
-      const target = await tx.user.findUnique({
-        where: { id },
-        select: { id: true, status: true, email: true, name: true, role: true },
-      });
-      if (!target) return { kind: 'NOT_FOUND' as const };
+    const result: Discriminator = await prisma.$transaction(
+      async (tx) => {
+        const target = await tx.user.findUnique({
+          where: { id },
+          select: { id: true, status: true, email: true, name: true, role: true },
+        });
+        if (!target) return { kind: 'NOT_FOUND' as const };
 
-      // Idempotent no-op: same status → return without writing AdminAction.
-      // Mitigation T-03-06-08 (audit-log noise from repeated PATCH).
-      if (target.status === parsed.data.status) {
-        return {
-          kind: 'OK' as const,
-          user: { id: target.id, status: target.status },
-        };
-      }
+        // Idempotent no-op: same status → return without writing AdminAction.
+        // Mitigation T-03-06-08 (audit-log noise from repeated PATCH).
+        if (target.status === parsed.data.status) {
+          return {
+            kind: 'OK' as const,
+            user: { id: target.id, status: target.status },
+          };
+        }
 
-      // SUSPENDED → ACTIVE = restore. Only SUPERADMIN allowed (D-ADMIN-02).
-      const isRestore = target.status === 'SUSPENDED' && parsed.data.status === 'ACTIVE';
-      if (isRestore && auth.admin.role !== 'SUPERADMIN') {
-        return { kind: 'RESTORE_REQUIRES_SUPERADMIN' as const };
-      }
+        // SUSPENDED → ACTIVE = restore. Only SUPERADMIN allowed (D-ADMIN-02).
+        const isRestore = target.status === 'SUSPENDED' && parsed.data.status === 'ACTIVE';
+        if (isRestore && auth.admin.role !== 'SUPERADMIN') {
+          return { kind: 'RESTORE_REQUIRES_SUPERADMIN' as const };
+        }
 
-      // CR-01: ACTIVE → SUSPENDED on a SUPERADMIN target requires SUPERADMIN
-      // actor. Without this an ADMIN could lock every higher-privilege account
-      // out of the system in one PATCH (combined with the ACCOUNT_SUSPENDED
-      // 403 on /api/auth/login + /api/auth/refresh), bypassing the
-      // last-SUPERADMIN guard which only watches `User.role`. Mirrors the
-      // CLAUDE.md rule "Only SUPERADMIN can change roles" — suspension is
-      // functionally a role change because it strips authentication.
-      const isSuspend = target.status === 'ACTIVE' && parsed.data.status === 'SUSPENDED';
-      if (isSuspend && target.role === 'SUPERADMIN' && auth.admin.role !== 'SUPERADMIN') {
-        return { kind: 'SUSPEND_REQUIRES_SUPERADMIN' as const };
-      }
+        // CR-01: ACTIVE → SUSPENDED on a SUPERADMIN target requires SUPERADMIN
+        // actor. Without this an ADMIN could lock every higher-privilege account
+        // out of the system in one PATCH (combined with the ACCOUNT_SUSPENDED
+        // 403 on /api/auth/login + /api/auth/refresh), bypassing the
+        // last-SUPERADMIN guard which only watches `User.role`. Mirrors the
+        // CLAUDE.md rule "Only SUPERADMIN can change roles" — suspension is
+        // functionally a role change because it strips authentication.
+        const isSuspend = target.status === 'ACTIVE' && parsed.data.status === 'SUSPENDED';
+        if (isSuspend && target.role === 'SUPERADMIN' && auth.admin.role !== 'SUPERADMIN') {
+          return { kind: 'SUSPEND_REQUIRES_SUPERADMIN' as const };
+        }
 
-      const updated = await tx.user.update({
-        where: { id },
-        data: { status: parsed.data.status },
-        select: { id: true, status: true },
-      });
+        const updated = await tx.user.update({
+          where: { id },
+          data: { status: parsed.data.status },
+          select: { id: true, status: true },
+        });
 
-      await logAdminAction(tx, {
-        actorId: auth.admin.id,
-        action: isRestore ? 'user.restore' : 'user.suspend',
-        targetType: 'User',
-        targetId: id,
-        metadata: {
-          from: target.status,
-          to: parsed.data.status,
-          ...(parsed.data.reason ? { reason: parsed.data.reason } : {}),
-        },
-      });
+        await logAdminAction(tx, {
+          actorId: auth.admin.id,
+          action: isRestore ? 'user.restore' : 'user.suspend',
+          targetType: 'User',
+          targetId: id,
+          metadata: {
+            from: target.status,
+            to: parsed.data.status,
+            ...(parsed.data.reason ? { reason: parsed.data.reason } : {}),
+          },
+        });
 
-      return { kind: 'OK' as const, user: updated };
-    });
+        return { kind: 'OK' as const, user: updated };
+      },
+      { timeout: 15000 },
+    );
 
     if (result.kind === 'NOT_FOUND') {
       return NextResponse.json(

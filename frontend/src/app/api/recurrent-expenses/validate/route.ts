@@ -81,66 +81,69 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Action === 'VALIDATE': 1-click execution
-    const res = await prisma.$transaction(async (tx) => {
-      const { recurringExpense } = execution;
+    const res = await prisma.$transaction(
+      async (tx) => {
+        const { recurringExpense } = execution;
 
-      // 1. Deduct from branch balance
-      const updatedBranch = await tx.branch.update({
-        where: { id: recurringExpense.branchId },
-        data: {
-          currentBalance: { decrement: execution.amount },
-        },
-      });
+        // 1. Deduct from branch balance
+        const updatedBranch = await tx.branch.update({
+          where: { id: recurringExpense.branchId },
+          data: {
+            currentBalance: { decrement: execution.amount },
+          },
+        });
 
-      // 2. Create financial transaction
-      const transaction = await tx.financialTransaction.create({
-        data: {
-          organizationId: access.church.id,
-          branchId: recurringExpense.branchId,
-          type: 'EXPENSE',
-          amount: execution.amount,
-          categoryId: recurringExpense.categoryId,
-          beneficiary: recurringExpense.name,
-          notes: `Dépense récurrente validée : ${recurringExpense.name}`,
-          authorId: auth.user.sub,
-          recurringExpenseExecutionId: execution.id,
-        },
-      });
+        // 2. Create financial transaction
+        const transaction = await tx.financialTransaction.create({
+          data: {
+            organizationId: access.church.id,
+            branchId: recurringExpense.branchId,
+            type: 'EXPENSE',
+            amount: execution.amount,
+            categoryId: recurringExpense.categoryId,
+            beneficiary: recurringExpense.name,
+            notes: `Dépense récurrente validée : ${recurringExpense.name}`,
+            authorId: auth.user.sub,
+            recurringExpenseExecutionId: execution.id,
+          },
+        });
 
-      // 3. Mark execution as VALIDATED
-      const updatedExecution = await tx.recurringExpenseExecution.update({
-        where: { id: executionId },
-        data: {
-          status: 'VALIDATED',
-          validatedAt: new Date(),
-          validatedById: auth.user.sub,
-          transactionId: transaction.id,
-        },
-      });
+        // 3. Mark execution as VALIDATED
+        const updatedExecution = await tx.recurringExpenseExecution.update({
+          where: { id: executionId },
+          data: {
+            status: 'VALIDATED',
+            validatedAt: new Date(),
+            validatedById: auth.user.sub,
+            transactionId: transaction.id,
+          },
+        });
 
-      // 4. Schedule next recurring execution
-      const nextDue = new Date(execution.dueDate);
-      if (recurringExpense.frequency === 'MONTHLY') {
-        nextDue.setMonth(nextDue.getMonth() + 1);
-      } else {
-        nextDue.setDate(nextDue.getDate() + 7);
-      }
+        // 4. Schedule next recurring execution
+        const nextDue = new Date(execution.dueDate);
+        if (recurringExpense.frequency === 'MONTHLY') {
+          nextDue.setMonth(nextDue.getMonth() + 1);
+        } else {
+          nextDue.setDate(nextDue.getDate() + 7);
+        }
 
-      await tx.recurringExpenseExecution.create({
-        data: {
-          recurringExpenseId: recurringExpense.id,
-          dueDate: nextDue,
-          amount: recurringExpense.amount,
-          status: 'PENDING',
-        },
-      });
+        await tx.recurringExpenseExecution.create({
+          data: {
+            recurringExpenseId: recurringExpense.id,
+            dueDate: nextDue,
+            amount: recurringExpense.amount,
+            status: 'PENDING',
+          },
+        });
 
-      return {
-        transaction,
-        execution: updatedExecution,
-        newBalance: updatedBranch.currentBalance,
-      };
-    });
+        return {
+          transaction,
+          execution: updatedExecution,
+          newBalance: updatedBranch.currentBalance,
+        };
+      },
+      { timeout: 15000 },
+    );
 
     return NextResponse.json({ success: true, ...res });
   });

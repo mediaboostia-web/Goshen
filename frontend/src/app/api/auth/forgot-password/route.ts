@@ -86,24 +86,27 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (user) {
       const code = generateVerificationCode();
       const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
-      await prisma.$transaction(async (tx) => {
-        await tx.verificationCode.create({
-          data: {
-            userId: user.id,
-            code,
-            type: 'PASSWORD_RESET',
-            expiresAt,
-          },
-        });
-        await enqueueOutbox(tx, {
-          kind: 'email.password_reset',
-          payload: {
-            to: email,
-            code,
-            expiresAt: expiresAt.toISOString(),
-          },
-        });
-      });
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.verificationCode.create({
+            data: {
+              userId: user.id,
+              code,
+              type: 'PASSWORD_RESET',
+              expiresAt,
+            },
+          });
+          await enqueueOutbox(tx, {
+            kind: 'email.password_reset',
+            payload: {
+              to: email,
+              code,
+              expiresAt: expiresAt.toISOString(),
+            },
+          });
+        },
+        { timeout: 15000 },
+      );
       log.info('forgot-password code issued', { userId: user.id });
     } else {
       log.info('forgot-password no-user (enumeration-resist)');

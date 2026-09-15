@@ -155,22 +155,25 @@ export async function POST(req: NextRequest): Promise<Response> {
     // update below. Use updateMany with the usedAt:null guard so the second
     // concurrent request finds 0 rows and we surface INVALID.
     try {
-      await prisma.$transaction(async (tx) => {
-        const consumed = await tx.verificationCode.updateMany({
-          where: { id: codeRow.id, usedAt: null },
-          data: { usedAt: new Date() },
-        });
-        if (consumed.count === 0) {
-          throw new Error('VERIFICATION_CODE_RACE');
-        }
-        await tx.user.update({
-          where: { id: user.id },
-          data: {
-            passwordHash,
-            tokenVersion: { increment: 1 },
-          },
-        });
-      });
+      await prisma.$transaction(
+        async (tx) => {
+          const consumed = await tx.verificationCode.updateMany({
+            where: { id: codeRow.id, usedAt: null },
+            data: { usedAt: new Date() },
+          });
+          if (consumed.count === 0) {
+            throw new Error('VERIFICATION_CODE_RACE');
+          }
+          await tx.user.update({
+            where: { id: user.id },
+            data: {
+              passwordHash,
+              tokenVersion: { increment: 1 },
+            },
+          });
+        },
+        { timeout: 15000 },
+      );
     } catch (err) {
       if (err instanceof Error && err.message === 'VERIFICATION_CODE_RACE') {
         const res = NextResponse.json(

@@ -58,38 +58,41 @@ export async function PATCH(
       );
     }
 
-    const result: Discriminator = await prisma.$transaction(async (tx) => {
-      const target = await tx.user.findUnique({
-        where: { id },
-        select: { id: true, role: true },
-      });
-      if (!target) return { kind: 'NOT_FOUND' as const };
+    const result: Discriminator = await prisma.$transaction(
+      async (tx) => {
+        const target = await tx.user.findUnique({
+          where: { id },
+          select: { id: true, role: true },
+        });
+        if (!target) return { kind: 'NOT_FOUND' as const };
 
-      // CF-09 / Pitfall 1: COUNT + UPDATE in same tx prevents the race where
-      // two concurrent demotions both see count=2 and both succeed.
-      if (target.role === 'SUPERADMIN' && parsed.data.role !== 'SUPERADMIN') {
-        const superadminCount = await tx.user.count({ where: { role: 'SUPERADMIN' } });
-        if (superadminCount <= 1) {
-          return { kind: 'LAST_SUPERADMIN' as const };
+        // CF-09 / Pitfall 1: COUNT + UPDATE in same tx prevents the race where
+        // two concurrent demotions both see count=2 and both succeed.
+        if (target.role === 'SUPERADMIN' && parsed.data.role !== 'SUPERADMIN') {
+          const superadminCount = await tx.user.count({ where: { role: 'SUPERADMIN' } });
+          if (superadminCount <= 1) {
+            return { kind: 'LAST_SUPERADMIN' as const };
+          }
         }
-      }
 
-      const updated = await tx.user.update({
-        where: { id },
-        data: { role: parsed.data.role },
-        select: { id: true, role: true },
-      });
+        const updated = await tx.user.update({
+          where: { id },
+          data: { role: parsed.data.role },
+          select: { id: true, role: true },
+        });
 
-      await logAdminAction(tx, {
-        actorId: auth.admin.id,
-        action: 'user.role_change',
-        targetType: 'User',
-        targetId: id,
-        metadata: { from: target.role, to: parsed.data.role },
-      });
+        await logAdminAction(tx, {
+          actorId: auth.admin.id,
+          action: 'user.role_change',
+          targetType: 'User',
+          targetId: id,
+          metadata: { from: target.role, to: parsed.data.role },
+        });
 
-      return { kind: 'OK' as const, user: updated };
-    });
+        return { kind: 'OK' as const, user: updated };
+      },
+      { timeout: 15000 },
+    );
 
     if (result.kind === 'NOT_FOUND') {
       return NextResponse.json(
