@@ -1,0 +1,486 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  // Nullable: OAuth-only users (e.g. signed up with Google) never set a
+  // password. Email/password signup still requires it; the auth route
+  // enforces presence at runtime.
+  passwordHash      String?
+  emailVerifiedAt   DateTime?
+  tokenVersion      Int       @default(0)
+  withdrawalPinHash String? // bcrypt hash of withdrawal PIN; null = no PIN set
+  // Optional display name — populated from OAuth profile on first sign-in.
+  // Email/password users can fill it later via /api/auth/me PATCH (future).
+  name              String?
+  // Optional avatar URL — populated from OAuth profile on first sign-in.
+  avatarUrl         String?
+  // App-wide role. USER is the default; ADMIN unlocks /admin back-office;
+  // SUPERADMIN can promote/demote other admins. Bootstrap an initial
+  // SUPERADMIN via `pnpm db:make-superadmin <email>` (see scripts).
+  role              String    @default("USER") // USER | ADMIN | SUPERADMIN
+  // Account status. ACTIVE = login + refresh allowed; SUSPENDED = both
+  // refused with 403 ACCOUNT_SUSPENDED. Mutated via /api/admin/users/[id]/status
+  // (ADMIN can suspend; only SUPERADMIN can restore).
+  status            String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  verificationCodes VerificationCode[]
+  uploads           FileUpload[]
+  notifications     Notification[]
+  notifPrefs        NotificationPreferences?
+  orders            Order[]
+  withdrawals       Withdrawal[]
+  oauthAccounts     OAuthAccount[]
+  adminActions      AdminAction[]
+
+  // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
+  // Apps that need it (marketplace, B2B SaaS, classifieds) wire owner relations
+  // on their domain models.
+  ownedOrganizations Organization[]      @relation("OrgOwner")
+  memberships        OrganizationMember[] @relation("OrgMembership")
+  financialTransactions FinancialTransaction[]
+  reportsCreated       Report[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Admin audit log — every back-office mutation is recorded here so we can
+// answer "who did what when" during incidents / compliance reviews.
+//
+// `action` is a free-form dotted string the UI groups by (e.g.
+// "withdrawal.cancel", "user.role_change", "order.refund").
+// `targetType` + `targetId` reference the affected row when applicable.
+// `metadata` carries the diff or extra context as JSON.
+//
+// Retention: not pruned automatically (compliance). If your jurisdiction
+// requires deletion after N years, add a cron in backend/src/index.ts
+// modeled on the WebhookLog purge.
+// ───────────────────────────────────────────────────────────────────────
+model AdminAction {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Goshen Multi-tenancy & Church models
+// ───────────────────────────────────────────────────────────────────────
+model Organization {
+  id                String    @id @default(cuid())
+  slug              String    @unique
+  name              String
+  denomination      String?   // ex: "Assemblées de Dieu du Gabon"
+  logoUrl           String?
+  currency          String    @default("XAF") // FCFA CEMAC
+  plan              String    @default("FREE") // FREE | ESSENTIAL | PREMIUM
+  planExpiresAt     DateTime?
+  ownerId           String
+  owner             User      @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members           OrganizationMember[]
+  branches          Branch[]
+  categories        ChurchCategory[]
+  transactions      FinancialTransaction[]
+  recurringExpenses RecurringExpense[]
+  reports           Report[]
+  subscription      Subscription?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([ownerId])
+}
+
+// Role values: PASTOR | TREASURER | SECRETARY | AUDITOR | OWNER | ADMIN | MEMBER
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("OrgMembership", fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("TREASURER")
+  branchAccess   MemberBranchAccess[]
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Branch {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                String       // ex: "Église Mère - Libreville", "Annexe Owendo"
+  city                String?      // ex: "Libreville", "Owendo", "Ntoum"
+  isMain              Boolean      @default(false)
+  currentBalance      Int          @default(0) // en FCFA
+  lowBalanceThreshold Int          @default(25000) // Seuil d'alerte solde bas en FCFA
+  status              String       @default("ACTIVE") // ACTIVE | ARCHIVED
+  transactions        FinancialTransaction[]
+  recurringExpenses   RecurringExpense[]
+  reports             Report[]
+  memberAccess        MemberBranchAccess[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model MemberBranchAccess {
+  id          String             @id @default(cuid())
+  memberId    String
+  member      OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, branchId])
+}
+
+model ChurchCategory {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           String       // "INCOME" | "EXPENSE"
+  name           String       // ex: "Dîmes", "Offrandes", "Dons bâtiment", "Cotisation Caisse Nationale"
+  isDefault      Boolean      @default(false)
+  transactions   FinancialTransaction[]
+  recurring      RecurringExpense[]
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, type])
+}
+
+model FinancialTransaction {
+  id                          String         @id @default(cuid())
+  organizationId              String
+  organization                Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branchId                    String
+  branch                      Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  type                        String         // "INCOME" | "EXPENSE"
+  amount                      Int            // en FCFA
+  date                        DateTime       @default(now())
+  categoryId                  String
+  category                    ChurchCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  beneficiary                 String?        // Nom du bénéficiaire (si dépense)
+  receiptUrl                  String?        // Image Cloudinary
+  receiptPublicId             String?
+  notes                       String?        // Commentaire
+  authorId                    String
+  author                      User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  recurringExpenseExecutionId String?
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+
+  @@index([organizationId, branchId, date])
+  @@index([type, date])
+}
+
+model RecurringExpense {
+  id              String         @id @default(cuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branchId        String
+  branch          Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name            String         // ex: "Cotisation Caisse Nationale ADD", "Loyer Annexe"
+  amount          Int            // en FCFA
+  frequency       String         // "WEEKLY" | "MONTHLY"
+  dueDay          Int            // Jour du mois (1-31) ou jour de semaine (0-6)
+  categoryId      String
+  category        ChurchCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  status          String         @default("ACTIVE") // ACTIVE | PAUSED
+  executions      RecurringExpenseExecution[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([organizationId, branchId, status])
+}
+
+model RecurringExpenseExecution {
+  id                 String           @id @default(cuid())
+  recurringExpenseId String
+  recurringExpense   RecurringExpense @relation(fields: [recurringExpenseId], references: [id], onDelete: Cascade)
+  dueDate            DateTime
+  amount             Int
+  status             String           @default("PENDING") // PENDING | VALIDATED | POSTPONED | SKIPPED
+  postponedReason    String?
+  validatedAt        DateTime?
+  validatedById      String?
+  transactionId      String?
+  createdAt          DateTime         @default(now())
+
+  @@index([recurringExpenseId, status, dueDate])
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branchId       String?      // Null = Vue consolidée
+  branch         Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  title          String
+  periodType     String       // "SUNDAY_SERVICE" | "MONTHLY" | "QUARTERLY" | "ANNUAL" | "CUSTOM"
+  startDate      DateTime
+  endDate        DateTime
+  openingBalance Int
+  closingBalance Int
+  totalIncome    Int
+  totalExpense   Int
+  data           Json         // Données agrégées JSON
+  pdfUrl         String?
+  createdById    String
+  createdBy      User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+model Subscription {
+  id                  String       @id @default(cuid())
+  organizationId      String       @unique
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                String       @default("FREE") // FREE | ESSENTIAL | PREMIUM
+  status              String       @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELED
+  currentPeriodStart  DateTime     @default(now())
+  currentPeriodEnd    DateTime?
+  provider            String       @default("CHARIOW")
+  chariowPurchaseId   String?      @unique
+  chariowProductId    String?
+  customerPhone       String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([status, currentPeriodEnd])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// OAuth identities — one User can have N linked providers (Google, GitHub, …).
+// (provider, providerAccountId) is unique so the same Google account can't
+// link twice. Email matching at sign-in is intentional: if a user signed up
+// with email/password and later "Sign in with Google" using the same email,
+// we link the Google account to the existing user instead of creating a
+// duplicate (see backend/src/routes/oauth.ts).
+// ───────────────────────────────────────────────────────────────────────
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String // "google" | "github" | …
+  providerAccountId String // sub from the OIDC ID token
+  // Optional refresh token (encrypted at rest if you store one) — Google
+  // only returns it on first consent with `access_type=offline`. Most
+  // boilerplate flows don't need it; we keep the column for future use.
+  refreshToken      String?
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model VerificationCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  type      String // EMAIL_VERIFY | PASSWORD_RESET
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+  @@index([code, type])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// File uploads — Cloudinary (column names kept from the R2 era; no migration needed)
+// ───────────────────────────────────────────────────────────────────────
+model FileUpload {
+  id        String   @id @default(cuid())
+  userId    String? // nullable — uploads can be anonymous if route allows
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  key       String   @unique // Cloudinary public_id (column name historical — was R2 object key)
+  filename  String
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Phase 2 — durable email queue rows
+// ───────────────────────────────────────────────────────────────────────
+model EmailJob {
+  id          String    @id @default(cuid())
+  to          String
+  subject     String
+  html        String
+  text        String?
+  status      String    @default("PENDING") // PENDING | SENT | FAILED | DEAD
+  attempts    Int       @default(0)
+  lastError   String?
+  scheduledAt DateTime  @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, scheduledAt])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Phase 2 — notifications (at-most-once via dedupeKey)
+// ───────────────────────────────────────────────────────────────────────
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  data      Json?
+  dedupeKey String    @unique
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreferences {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // JSON map of { eventType: { email: bool, inApp: bool } } — flexible without migrations.
+  prefs     Json     @default("{}")
+  updatedAt DateTime @updatedAt
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Outbox — durable side-effects (notifications, emails) emitted from
+// inside transactions (e.g. webhook handlers, withdrawal flow). Side-effect
+// rows are inserted in the same tx as the state change, then a worker
+// drains them. Survives crashes the previous postCommit-callback pattern
+// silently dropped.
+//
+// `kind` is a free-form string the dispatcher routes on
+// (e.g. "notification.payment_received", "email.payment_confirmation").
+// ───────────────────────────────────────────────────────────────────────
+model OutboxEvent {
+  id          String    @id @default(cuid())
+  kind        String
+  payload     Json
+  status      String    @default("PENDING") // PENDING | SENT | FAILED | DEAD
+  attempts    Int       @default(0)
+  lastError   String?
+  scheduledAt DateTime  @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, scheduledAt])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Phase 2 — webhook idempotency log
+// ───────────────────────────────────────────────────────────────────────
+model WebhookLog {
+  id          String    @id @default(cuid())
+  provider    String
+  externalId  String
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([externalId, eventType])
+  @@index([provider, createdAt])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Phase 3 — payments (Order + Withdrawal)
+//
+// `amount` is stored in the smallest unit of `currency` (no decimals).
+// For XOF (FCFA, Senegal) that's 1 = 1 FCFA. For USD adapt to cents
+// at the call site — the schema is currency-agnostic.
+// ───────────────────────────────────────────────────────────────────────
+model Order {
+  id              String    @id @default(cuid())
+  userId          String? // nullable — guest checkout supported
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  amount          Int // gross amount, smallest unit
+  currency        String    @default("XOF") // ISO 4217
+  status          String    @default("PENDING") // PENDING | PAID | EXPIRED | FAILED | REFUNDED
+  customerEmail   String?
+  customerPhone   String?
+  customerName    String?
+  metadata        Json? // app-specific fields
+
+  // Stripe-grade idempotency. Required header on POST /api/orders; replay
+  // with same value returns the original Order row instead of double-charging.
+  // Nullable so existing rows pre-migration don't break the @unique constraint.
+  idempotencyKey  String?   @unique
+
+  // Provider reference
+  provider         String // e.g. "bictorys"
+  providerChargeId String? @unique
+  paymentUrl       String? // checkout/redirect URL returned by provider
+  paymentMethod    String? // WAVE | ORANGE_MONEY | FREE_MONEY (set on PAID by webhook)
+
+  // Optional commission (for marketplace-style apps)
+  commissionAmount Int?
+  netAmount        Int?
+
+  // Lifecycle
+  expiresAt DateTime // PENDING expiry; not cleared on PAID (history)
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+  @@index([provider, providerChargeId])
+}
+
+model Withdrawal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  amount      Int // requested amount, smallest unit
+  currency    String   @default("XOF")
+  status      String   @default("PENDING") // PENDING | PROCESSING | COMPLETED | FAILED | CANCELLED
+  destination Json // { method: "WAVE" | "ORANGE_MONEY" | ..., phone: "+221...", accountName?: "..." }
+
+  // Provider reference
+  provider         String // e.g. "bictorys"
+  providerPayoutId String? @unique
+  failureReason    String?
+
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
+  completedAt DateTime?
+
+  @@index([userId, requestedAt])
+  @@index([status, requestedAt])
+  @@index([provider, providerPayoutId])
+}
