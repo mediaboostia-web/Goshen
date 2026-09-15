@@ -18,7 +18,6 @@ model User {
   passwordHash      String?
   emailVerifiedAt   DateTime?
   tokenVersion      Int       @default(0)
-  withdrawalPinHash String? // bcrypt hash of withdrawal PIN; null = no PIN set
   // Optional display name — populated from OAuth profile on first sign-in.
   // Email/password users can fill it later via /api/auth/me PATCH (future).
   name              String?
@@ -39,8 +38,6 @@ model User {
   uploads           FileUpload[]
   notifications     Notification[]
   notifPrefs        NotificationPreferences?
-  orders            Order[]
-  withdrawals       Withdrawal[]
   oauthAccounts     OAuthAccount[]
   adminActions      AdminAction[]
 
@@ -417,70 +414,3 @@ model WebhookLog {
   @@index([provider, createdAt])
 }
 
-// ───────────────────────────────────────────────────────────────────────
-// Phase 3 — payments (Order + Withdrawal)
-//
-// `amount` is stored in the smallest unit of `currency` (no decimals).
-// For XOF (FCFA, Senegal) that's 1 = 1 FCFA. For USD adapt to cents
-// at the call site — the schema is currency-agnostic.
-// ───────────────────────────────────────────────────────────────────────
-model Order {
-  id              String    @id @default(cuid())
-  userId          String? // nullable — guest checkout supported
-  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  amount          Int // gross amount, smallest unit
-  currency        String    @default("XOF") // ISO 4217
-  status          String    @default("PENDING") // PENDING | PAID | EXPIRED | FAILED | REFUNDED
-  customerEmail   String?
-  customerPhone   String?
-  customerName    String?
-  metadata        Json? // app-specific fields
-
-  // Stripe-grade idempotency. Required header on POST /api/orders; replay
-  // with same value returns the original Order row instead of double-charging.
-  // Nullable so existing rows pre-migration don't break the @unique constraint.
-  idempotencyKey  String?   @unique
-
-  // Provider reference
-  provider         String // e.g. "bictorys"
-  providerChargeId String? @unique
-  paymentUrl       String? // checkout/redirect URL returned by provider
-  paymentMethod    String? // WAVE | ORANGE_MONEY | FREE_MONEY (set on PAID by webhook)
-
-  // Optional commission (for marketplace-style apps)
-  commissionAmount Int?
-  netAmount        Int?
-
-  // Lifecycle
-  expiresAt DateTime // PENDING expiry; not cleared on PAID (history)
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@index([userId, createdAt])
-  @@index([status, expiresAt])
-  @@index([provider, providerChargeId])
-}
-
-model Withdrawal {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  amount      Int // requested amount, smallest unit
-  currency    String   @default("XOF")
-  status      String   @default("PENDING") // PENDING | PROCESSING | COMPLETED | FAILED | CANCELLED
-  destination Json // { method: "WAVE" | "ORANGE_MONEY" | ..., phone: "+221...", accountName?: "..." }
-
-  // Provider reference
-  provider         String // e.g. "bictorys"
-  providerPayoutId String? @unique
-  failureReason    String?
-
-  requestedAt DateTime  @default(now())
-  processedAt DateTime?
-  completedAt DateTime?
-
-  @@index([userId, requestedAt])
-  @@index([status, requestedAt])
-  @@index([provider, providerPayoutId])
-}

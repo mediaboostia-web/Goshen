@@ -50,20 +50,17 @@ describe('.env.example shape (OPS-01, OPS-04)', () => {
 });
 
 // ───────────────────────────────────────────────────────────────────────
-// Phase 4 — UPLOAD + Cloudinary + WITHDRAWAL safety knobs.
+// Phase 4 — UPLOAD + Cloudinary knobs.
 //
 // These assertions are tripwires: refactors that "tidy up" .env.example by
-// stripping the FINANCIAL-SAFETY warning block or the verbatim defaults
-// will fail CI here. The wording is the product — the test quotes it
-// character-for-character.
+// stripping the verbatim defaults will fail CI here. The wording is the
+// product — the test quotes it character-for-character.
+//
+// (The WITHDRAWAL_* assertions that used to live here were removed along
+// with the withdrawals/orders/Bictorys subsystem — see PRUNING.md.)
 // ───────────────────────────────────────────────────────────────────────
-describe('.env.example phase 4 additions (UP-01, UP-02, WD-01..04)', () => {
+describe('.env.example phase 4 additions (UP-01, UP-02)', () => {
   const src = readFileSync(ENV_EXAMPLE, 'utf8');
-
-  it(`contains the verbatim WITHDRAWAL_BALANCE_CHECK FINANCIAL-SAFETY warning (file: ${ENV_EXAMPLE})`, () => {
-    expect(src).toContain('⚠️  FINANCIAL-SAFETY WARNING — DO NOT CASUALLY DISABLE  ⚠️');
-    expect(src).toContain('WITHDRAWAL_BALANCE_CHECK="1"');
-  });
 
   it('declares the upload allow-list and max-bytes defaults', () => {
     expect(src).toContain('UPLOAD_ALLOWED_MIME="image/jpeg,image/png,image/webp"');
@@ -75,25 +72,19 @@ describe('.env.example phase 4 additions (UP-01, UP-02, WD-01..04)', () => {
     expect(src).toMatch(/^CLOUDINARY_API_KEY=""$/m);
     expect(src).toMatch(/^CLOUDINARY_API_SECRET=""$/m);
   });
-
-  it('declares production-safe withdrawal-policy defaults', () => {
-    expect(src).toContain('WITHDRAWAL_MIN_AMOUNT="1000"');
-    expect(src).toContain('WITHDRAWAL_REQUIRE_PIN="1"');
-  });
 });
 
 // ───────────────────────────────────────────────────────────────────────
-// Phase 5 — webhook log retention + order expiration knobs.
+// Phase 5 — webhook log retention.
 //
-// Tripwires for the two new env keys CRON-05 (webhook-log-purge retention)
-// and the Phase-3 fork-knob ORDER_EXPIRATION_MINUTES. Refactors that drop
-// either default fail CI here.
+// Tripwire for CRON-05 (webhook-log-purge retention), which now covers the
+// Chariow subscription webhook log. Refactors that drop the default fail
+// CI here. (ORDER_EXPIRATION_MINUTES was removed along with Order/Bictorys.)
 // ───────────────────────────────────────────────────────────────────────
-describe('.env.example phase 5 additions (CRON-05 + Phase 5 ENV)', () => {
+describe('.env.example phase 5 additions (CRON-05)', () => {
   const src = readFileSync(ENV_EXAMPLE, 'utf8');
 
-  it('contains WEBHOOK_LOG_RETENTION_DAYS and ORDER_EXPIRATION_MINUTES with defaults', () => {
+  it('contains WEBHOOK_LOG_RETENTION_DAYS with its default', () => {
     expect(src).toContain('WEBHOOK_LOG_RETENTION_DAYS="90"');
-    expect(src).toContain('ORDER_EXPIRATION_MINUTES="30"');
   });
 });

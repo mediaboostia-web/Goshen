@@ -11,20 +11,27 @@
 //   4. on dispatch failure with attempts >= MAX_ATTEMPTS, marks the row DEAD.
 //   5. concurrent claim losing the race (claimed.count === 0) is skipped
 //      without further work.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mockDeep, mockReset, type DeepMockProxy } from 'vitest-mock-extended';
 import type { PrismaClient } from '@prisma/client';
 import { drainOutbox } from './dispatcher';
+import type { EmailQueue } from '../queues/email-queue';
 
 const prismaMock = mockDeep<PrismaClient>() as unknown as DeepMockProxy<PrismaClient>;
 
 beforeEach(() => mockReset(prismaMock));
 
+function makeEmailQueue(): EmailQueue & { enqueue: ReturnType<typeof vi.fn> } {
+  return { enqueue: vi.fn().mockResolvedValue('job_1') } as unknown as EmailQueue & {
+    enqueue: ReturnType<typeof vi.fn>;
+  };
+}
+
 function makeRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
   return {
     id: 'oe_1',
-    kind: 'notification.payment_received',
-    payload: { userId: 'u_1', orderId: 'o_1', amount: 1000, currency: 'XOF' },
+    kind: 'email.verification_code',
+    payload: { to: 'u@test.local', code: '12345678', expiresAt: '2026-01-01T00:15:00Z' },
     status: 'PROCESSING',
     attempts: 1,
     scheduledAt: new Date('2026-01-01T00:00:00Z'),
@@ -40,11 +47,9 @@ describe('drainOutbox (TEST-02)', () => {
     prismaMock.outboxEvent.findMany.mockResolvedValue([{ id: 'oe_1' }] as never);
     prismaMock.outboxEvent.updateMany.mockResolvedValue({ count: 1 } as never);
     prismaMock.outboxEvent.findUnique.mockResolvedValue(row as never);
-    // Make the dispatch succeed (notification.payment_received → createNotification).
-    prismaMock.notification.create.mockResolvedValue({} as never);
     prismaMock.outboxEvent.update.mockResolvedValue({} as never);
 
-    await drainOutbox({ prisma: prismaMock });
+    await drainOutbox({ prisma: prismaMock, emailQueue: makeEmailQueue() });
 
     expect(prismaMock.outboxEvent.updateMany).toHaveBeenCalledWith({
       where: { id: 'oe_1', status: 'PENDING' },
@@ -57,10 +62,9 @@ describe('drainOutbox (TEST-02)', () => {
     prismaMock.outboxEvent.findMany.mockResolvedValue([{ id: 'oe_1' }] as never);
     prismaMock.outboxEvent.updateMany.mockResolvedValue({ count: 1 } as never);
     prismaMock.outboxEvent.findUnique.mockResolvedValue(row as never);
-    prismaMock.notification.create.mockResolvedValue({} as never);
     prismaMock.outboxEvent.update.mockResolvedValue({} as never);
 
-    const stats = await drainOutbox({ prisma: prismaMock });
+    const stats = await drainOutbox({ prisma: prismaMock, emailQueue: makeEmailQueue() });
 
     expect(stats.succeeded).toBe(1);
     const finalUpdate = prismaMock.outboxEvent.update.mock.calls[0]?.[0];
@@ -78,20 +82,19 @@ describe('drainOutbox (TEST-02)', () => {
     prismaMock.outboxEvent.findMany.mockResolvedValue([{ id: 'oe_1' }] as never);
     prismaMock.outboxEvent.updateMany.mockResolvedValue({ count: 1 } as never);
     prismaMock.outboxEvent.findUnique.mockResolvedValue(row as never);
-    // Force the dispatch path to throw — createNotification rejects.
-    prismaMock.notification.create.mockRejectedValueOnce(
-      new Error('notification provider down') as never,
-    );
+    // Force the dispatch path to throw — the email queue rejects.
+    const emailQueue = makeEmailQueue();
+    emailQueue.enqueue.mockRejectedValueOnce(new Error('mailer provider down'));
     prismaMock.outboxEvent.update.mockResolvedValue({} as never);
 
-    const stats = await drainOutbox({ prisma: prismaMock });
+    const stats = await drainOutbox({ prisma: prismaMock, emailQueue });
 
     expect(stats.failed).toBe(1);
     expect(stats.dead).toBe(0);
     const finalUpdate = prismaMock.outboxEvent.update.mock.calls[0]?.[0];
     expect(finalUpdate?.data).toMatchObject({
       status: 'PENDING',
-      lastError: 'notification provider down',
+      lastError: 'mailer provider down',
     });
     // Backoff schedule pushes scheduledAt into the future.
     const scheduledAt = finalUpdate?.data?.scheduledAt as Date;
@@ -105,10 +108,11 @@ describe('drainOutbox (TEST-02)', () => {
     prismaMock.outboxEvent.findMany.mockResolvedValue([{ id: 'oe_1' }] as never);
     prismaMock.outboxEvent.updateMany.mockResolvedValue({ count: 1 } as never);
     prismaMock.outboxEvent.findUnique.mockResolvedValue(row as never);
-    prismaMock.notification.create.mockRejectedValueOnce(new Error('still down') as never);
+    const emailQueue = makeEmailQueue();
+    emailQueue.enqueue.mockRejectedValueOnce(new Error('still down'));
     prismaMock.outboxEvent.update.mockResolvedValue({} as never);
 
-    const stats = await drainOutbox({ prisma: prismaMock });
+    const stats = await drainOutbox({ prisma: prismaMock, emailQueue });
 
     expect(stats.dead).toBe(1);
     expect(stats.failed).toBe(0);

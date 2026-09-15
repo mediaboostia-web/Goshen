@@ -30,23 +30,3 @@ export function welcomeNotification(userId: string, email: string): CreateNotifi
     dedupeKey: `welcome:${userId}`,
   };
 }
-
-/**
- * Example: notification dispatched after a successful payment.
- * Called from the Bictorys webhook handler's `onPaid` post-commit hook.
- */
-export function paymentReceived(
-  userId: string,
-  orderId: string,
-  amount: number,
-  currency: string,
-): CreateNotificationInput {
-  return {
-    userId,
-    type: 'PAYMENT_RECEIVED',
-    title: 'Payment received',
-    body: `Order ${orderId} for ${amount} ${currency} confirmed.`,
-    data: { orderId, amount, currency },
-    dedupeKey: `payment-received:${orderId}`,
-  };
-}
