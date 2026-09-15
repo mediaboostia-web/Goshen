@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
+import { Select } from '@/components/ui/Select';
 
 interface MemberItem {
   id: string;
@@ -21,11 +22,11 @@ interface MemberItem {
 }
 
 export default function MembersPage() {
-  const { branches } = useBranch();
+  const { church, branches } = useBranch();
   const { toast } = useToast();
+  const isPastor = church ? Boolean(church.isPastor) : false;
 
   const [members, setMembers] = useState<MemberItem[]>([]);
-  const [isPastor, setIsPastor] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [showInviteModal, setShowInviteModal] = useState<boolean>(false);
   const [inviting, setInviting] = useState<boolean>(false);
@@ -40,9 +41,8 @@ export default function MembersPage() {
   const loadMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api<{ members: MemberItem[]; isPastor: boolean }>('/api/church/members');
+      const res = await api<{ members: MemberItem[] }>('/api/church/members');
       setMembers(res.members || []);
-      setIsPastor(res.isPastor);
     } catch {
       // Handled
     } finally {
@@ -154,18 +154,23 @@ export default function MembersPage() {
 
               <div>
                 <label className="block font-bold text-stone-700 mb-1">Rôle attribué *</label>
-                <select
+                <Select
+                  aria-label="Rôle attribué"
                   value={role}
-                  onChange={(e) =>
-                    setRole(e.target.value as 'TREASURER' | 'SECRETARY' | 'AUDITOR' | 'PASTOR')
-                  }
-                  className="w-full rounded-lg border border-stone-300 p-2 text-stone-900 focus:outline-hidden"
-                >
-                  <option value="TREASURER">Trésorier (Saisie entrées/dépenses, validation)</option>
-                  <option value="AUDITOR">Auditeur (Contrôle lecture seule & justificatifs)</option>
-                  <option value="SECRETARY">Secrétaire (Consultation & comptes rendus)</option>
-                  <option value="PASTOR">Pasteur Adjoint (Gestion complète)</option>
-                </select>
+                  onChange={(v) => setRole(v as 'TREASURER' | 'SECRETARY' | 'AUDITOR' | 'PASTOR')}
+                  options={[
+                    {
+                      value: 'TREASURER',
+                      label: 'Trésorier (Saisie entrées/dépenses, validation)',
+                    },
+                    {
+                      value: 'AUDITOR',
+                      label: 'Auditeur (Contrôle lecture seule & justificatifs)',
+                    },
+                    { value: 'SECRETARY', label: 'Secrétaire (Consultation & comptes rendus)' },
+                    { value: 'PASTOR', label: 'Pasteur Adjoint (Gestion complète)' },
+                  ]}
+                />
               </div>
 
               <div>
@@ -200,7 +205,7 @@ export default function MembersPage() {
                   disabled={inviting}
                   className="rounded-lg bg-emerald-800 px-4 py-2 font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  {inviting ? 'Envoi…' : 'Envoyer l’invitation'}
+                  {inviting ? 'Envoi…' : 'Envoyer'}
                 </button>
               </div>
             </form>

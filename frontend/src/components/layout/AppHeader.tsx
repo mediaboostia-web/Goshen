@@ -5,17 +5,42 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
+import { useToast } from '@/contexts/ToastContext';
 import { api } from '@/lib/api';
 import { SearchIcon, BellIcon } from '@/components/icons/ChurchIcons';
+import { Select } from '@/components/ui/Select';
 
 const NOTIFICATION_POLL_MS = 60_000;
 
 export function AppHeader() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { church, branches, currentBranch, isConsolidated, selectBranch } = useBranch();
+  const {
+    church,
+    branches,
+    currentBranch,
+    isConsolidated,
+    selectBranch,
+    memberships,
+    switchChurch,
+  } = useBranch();
+  const { toast } = useToast();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [switchingChurch, setSwitchingChurch] = useState(false);
+
+  async function handleSwitchChurch(organizationId: string) {
+    if (organizationId === church?.id) return;
+    setSwitchingChurch(true);
+    try {
+      await switchChurch(organizationId);
+      router.refresh();
+    } catch {
+      toast('Impossible de changer d’église pour le moment.', 'error');
+    } finally {
+      setSwitchingChurch(false);
+    }
+  }
 
   const refreshUnreadCount = useCallback(async () => {
     if (!user) return;
@@ -57,6 +82,34 @@ export function AppHeader() {
             </div>
           </Link>
 
+          {/* Church switcher — only rendered when the user actually
+              belongs to more than one church; otherwise the name above
+              already says it all and nothing should invite a "switch". */}
+          {memberships.length > 1 && (
+            <Select
+              variant="ghost"
+              aria-label="Changer d’église"
+              disabled={switchingChurch}
+              value={church?.id || ''}
+              onChange={(id) => void handleSwitchChurch(id)}
+              options={memberships.map((m) => ({
+                value: m.id,
+                label: m.name,
+                meta: (
+                  <div className="text-[10px] text-stone-400">
+                    {m.role === 'PASTOR'
+                      ? 'Pasteur'
+                      : m.role === 'TREASURER'
+                        ? 'Trésorier'
+                        : m.role === 'SECRETARY'
+                          ? 'Secrétaire'
+                          : 'Auditeur'}
+                  </div>
+                ),
+              }))}
+            />
+          )}
+
           {/* Plan badge */}
           {church && (
             <span
@@ -96,19 +149,17 @@ export function AppHeader() {
           {branches.length > 0 && (
             <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5">
               <span className="text-xs text-stone-500 hidden md:inline">Annexe :</span>
-              <select
+              <Select
+                variant="ghost"
+                align="right"
                 aria-label="Sélectionner une annexe"
                 value={isConsolidated ? 'CONSOLIDATED' : currentBranch?.id || ''}
-                onChange={(e) => selectBranch(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-stone-900 focus:outline-hidden cursor-pointer rounded-lg"
-              >
-                <option value="CONSOLIDATED">Vue consolidée (Toutes)</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                onChange={selectBranch}
+                options={[
+                  { value: 'CONSOLIDATED', label: 'Vue consolidée (Toutes)' },
+                  ...branches.map((b) => ({ value: b.id, label: b.name })),
+                ]}
+              />
             </div>
           )}
 

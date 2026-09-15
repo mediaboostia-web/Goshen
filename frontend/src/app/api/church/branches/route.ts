@@ -35,7 +35,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({
-      church: { ...access.church, role: access.member.role },
+      church: {
+        ...access.church,
+        role: access.member.role,
+        isPastor: access.isPastor,
+        isTreasurer: access.isTreasurer,
+        isSecretary: access.isSecretary,
+        isAuditor: access.isAuditor,
+      },
       branches,
     });
   });

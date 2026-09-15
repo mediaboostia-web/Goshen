@@ -1,5 +1,14 @@
 import 'server-only';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/server/prisma';
+
+const COOKIE_PREFIX = process.env.COOKIE_PREFIX || 'app';
+// A user can legitimately belong to more than one Organization
+// (OrganizationMember is unique per organizationId+userId, not per userId).
+// This cookie remembers which one is "active" so resolveChurchUser doesn't
+// have to pick arbitrarily — set by POST /api/church/switch after verifying
+// membership. Absent/invalid cookie falls back to the original behavior.
+export const ACTIVE_ORG_COOKIE = `${COOKIE_PREFIX}-active-org`;
 
 export interface ChurchUserAccess {
   church: {
@@ -25,14 +34,31 @@ export interface ChurchUserAccess {
 }
 
 export async function resolveChurchUser(userId: string): Promise<ChurchUserAccess | null> {
-  // Check membership first
-  const membership = await prisma.organizationMember.findFirst({
-    where: { userId },
-    include: {
-      organization: true,
-      branchAccess: { select: { branchId: true } },
-    },
-  });
+  const store = await cookies();
+  const preferredOrgId = store.get(ACTIVE_ORG_COOKIE)?.value;
+
+  const membershipInclude = {
+    organization: true,
+    branchAccess: { select: { branchId: true } },
+  } as const;
+
+  // Prefer the church the user explicitly switched to, if they're still a
+  // member of it; otherwise fall through to the original "first found"
+  // behavior (correct for the common single-church case, and a reasonable
+  // default if the cookie is stale/invalid — e.g. removed from that org).
+  let membership = preferredOrgId
+    ? await prisma.organizationMember.findFirst({
+        where: { userId, organizationId: preferredOrgId },
+        include: membershipInclude,
+      })
+    : null;
+
+  if (!membership) {
+    membership = await prisma.organizationMember.findFirst({
+      where: { userId },
+      include: membershipInclude,
+    });
+  }
 
   if (membership) {
     const role = membership.role.toUpperCase();

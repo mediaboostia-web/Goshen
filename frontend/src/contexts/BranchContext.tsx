@@ -24,6 +24,18 @@ export interface Church {
   plan: string;
   planExpiresAt: string | null;
   role?: string;
+  isPastor?: boolean;
+  isTreasurer?: boolean;
+  isSecretary?: boolean;
+  isAuditor?: boolean;
+}
+
+export interface Membership {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  isCurrent: boolean;
 }
 
 interface BranchContextValue {
@@ -35,6 +47,9 @@ interface BranchContextValue {
   error: string | null;
   selectBranch: (branchId: string | 'CONSOLIDATED') => void;
   refreshBranches: () => Promise<void>;
+  // Multi-church support — `memberships` almost always has exactly one row.
+  memberships: Membership[];
+  switchChurch: (organizationId: string) => Promise<void>;
 }
 
 const BranchContext = createContext<BranchContextValue | null>(null);
@@ -45,6 +60,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const user = useUser();
   const [church, setChurch] = useState<Church | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [activeBranchId, setActiveBranchId] = useState<string | 'CONSOLIDATED'>('CONSOLIDATED');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +69,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setChurch(null);
       setBranches([]);
+      setMemberships([]);
       setLoading(false);
       return;
     }
@@ -60,7 +77,15 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await api<{ church: Church; branches: Branch[] }>('/api/church/branches');
+      const [res] = await Promise.all([
+        api<{ church: Church; branches: Branch[] }>('/api/church/branches'),
+        // Best-effort: memberships is a UI nicety (multi-church switcher).
+        // A failure here must never block the branches load that every page
+        // depends on.
+        api<{ memberships: Membership[] }>('/api/church/memberships')
+          .then((m) => setMemberships(m.memberships || []))
+          .catch(() => setMemberships([])),
+      ]);
       setChurch(res.church);
       setBranches(res.branches || []);
 
@@ -103,6 +128,20 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const switchChurch = useCallback(
+    async (organizationId: string) => {
+      await api('/api/church/switch', { method: 'POST', body: { organizationId } });
+      // Dropping the saved annexe: it belongs to the church we're leaving
+      // and could otherwise collide with an unrelated branch id in the
+      // newly active church.
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY_BRANCH);
+      }
+      await fetchBranches();
+    },
+    [fetchBranches],
+  );
+
   const isConsolidated = activeBranchId === 'CONSOLIDATED';
   const currentBranch = isConsolidated
     ? null
@@ -119,6 +158,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
         error,
         selectBranch,
         refreshBranches: fetchBranches,
+        memberships,
+        switchChurch,
       }}
     >
       {children}

@@ -8,6 +8,7 @@ import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { CheckCircleIcon, LightningBoltIcon } from '@/components/icons/ChurchIcons';
+import { Select } from '@/components/ui/Select';
 
 interface Category {
   id: string;
@@ -27,8 +28,9 @@ interface RecurrentModel {
 }
 
 export default function RecurrentExpensesPage() {
-  const { branches, currentBranch, isConsolidated } = useBranch();
+  const { church, branches, currentBranch, isConsolidated } = useBranch();
   const { toast } = useToast();
+  const canManage = church ? church.isPastor || church.isTreasurer : true;
 
   const [models, setModels] = useState<RecurrentModel[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -95,7 +97,7 @@ export default function RecurrentExpensesPage() {
       return;
     }
     if (!branchId) {
-      setError('Veuillez choisir une annexe.');
+      setError('Choisissez une annexe précise dans l’en-tête avant de créer un modèle.');
       return;
     }
     if (!categoryId) {
@@ -139,17 +141,22 @@ export default function RecurrentExpensesPage() {
       <AppNav />
 
       {/* Modal to add a new model */}
-      {showAddModal && (
+      {showAddModal && canManage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="max-w-lg w-full bg-white rounded-2xl p-6 shadow-xl border border-stone-200">
-            <div className="flex justify-between items-center pb-3 border-b border-stone-100">
-              <h3 className="font-serif text-lg font-bold text-stone-900">
-                Créer un modèle de dépense récurrente
-              </h3>
+            <div className="flex justify-between items-center pb-3 border-b border-stone-100 gap-3">
+              <div className="min-w-0">
+                <h3 className="font-serif text-lg font-bold text-stone-900">
+                  Créer un modèle de dépense récurrente
+                </h3>
+                <p className="text-[11px] font-medium text-stone-400 truncate">
+                  {isConsolidated ? 'Choisir une annexe dans l’en-tête' : currentBranch?.name}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-stone-400 hover:text-stone-600 font-bold"
+                className="shrink-0 text-stone-400 hover:text-stone-600 font-bold"
               >
                 ✕
               </button>
@@ -194,62 +201,46 @@ export default function RecurrentExpensesPage() {
                 </div>
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">Périodicité *</label>
-                  <select
+                  <Select
+                    aria-label="Périodicité"
+                    options={[
+                      { value: 'MONTHLY', label: 'Mensuelle' },
+                      { value: 'WEEKLY', label: 'Hebdomadaire' },
+                    ]}
                     value={frequency}
-                    onChange={(e) => setFrequency(e.target.value as 'MONTHLY' | 'WEEKLY')}
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                  >
-                    <option value="MONTHLY">Mensuelle</option>
-                    <option value="WEEKLY">Hebdomadaire</option>
-                  </select>
+                    onChange={(v) => setFrequency(v as 'MONTHLY' | 'WEEKLY')}
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">
-                    {frequency === 'MONTHLY'
-                      ? 'Jour du mois (ex: 28)'
-                      : 'Jour de semaine (0=Dimanche)'}
-                  </label>
-                  <input
-                    type="number"
-                    min={frequency === 'MONTHLY' ? 1 : 0}
-                    max={frequency === 'MONTHLY' ? 31 : 6}
-                    value={dueDay}
-                    onChange={(e) => setDueDay(Number(e.target.value))}
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Annexe rattachée *</label>
-                  <select
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                  >
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* No annexe/branch field here on purpose — the model is
+                  created for whichever annexe is active in the header
+                  switcher. */}
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">
+                  {frequency === 'MONTHLY'
+                    ? 'Jour du mois (ex: 28)'
+                    : 'Jour de semaine (0=Dimanche)'}
+                </label>
+                <input
+                  type="number"
+                  min={frequency === 'MONTHLY' ? 1 : 0}
+                  max={frequency === 'MONTHLY' ? 31 : 6}
+                  value={dueDay}
+                  onChange={(e) => setDueDay(Number(e.target.value))}
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                />
               </div>
 
               <div>
                 <label className="block font-bold text-stone-700 mb-1">Catégorie comptable *</label>
-                <select
+                <Select
+                  aria-label="Catégorie comptable"
+                  options={categories.map((c) => ({ value: c.id, label: c.name }))}
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCategoryId}
+                  placeholder="Choisir une catégorie"
+                />
               </div>
 
               <div className="pt-3 flex justify-end gap-2 border-t border-stone-100">
@@ -285,22 +276,24 @@ export default function RecurrentExpensesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/recurrent-expenses/validation"
-              className="rounded-xl bg-stone-900 hover:bg-stone-800 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <CheckCircleIcon className="h-4 w-4 text-emerald-400" />
-              <span>Valider les échéances</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="rounded-xl bg-emerald-800 hover:bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer"
-            >
-              + Nouveau modèle
-            </button>
-          </div>
+          {canManage && (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/recurrent-expenses/validation"
+                className="rounded-xl bg-stone-900 hover:bg-stone-800 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <CheckCircleIcon className="h-4 w-4 text-emerald-400" />
+                <span>Valider les échéances</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="rounded-xl bg-emerald-800 hover:bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer"
+              >
+                + Nouveau modèle
+              </button>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -314,16 +307,19 @@ export default function RecurrentExpensesPage() {
               Aucun modèle de dépense récurrente
             </h3>
             <p className="mt-1 text-xs text-stone-500 max-w-md mx-auto">
-              Créez vos modèles habituels (ex: Cotisation caisse nationale ADD de 50 000 FCFA le 28
-              de chaque mois) pour recevoir des rappels automatiques.
+              {canManage
+                ? 'Créez vos modèles habituels (ex: Cotisation caisse nationale ADD de 50 000 FCFA le 28 de chaque mois) pour recevoir des rappels automatiques.'
+                : 'Aucun modèle configuré pour le moment.'}
             </p>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="mt-5 rounded-xl bg-emerald-800 hover:bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
-            >
-              Créer un modèle
-            </button>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="mt-5 rounded-xl bg-emerald-800 hover:bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+              >
+                Créer un modèle
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

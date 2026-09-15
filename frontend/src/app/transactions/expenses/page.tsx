@@ -8,6 +8,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { DocumentReportIcon, CheckCircleIcon } from '@/components/icons/ChurchIcons';
+import { Select } from '@/components/ui/Select';
 
 interface Category {
   id: string;
@@ -143,7 +144,7 @@ export default function ExpensesPage() {
       return;
     }
     if (!branchId) {
-      setError('Veuillez sélectionner une annexe.');
+      setError('Choisissez une annexe précise dans l’en-tête avant de saisir une dépense.');
       return;
     }
     if (!categoryId) {
@@ -339,150 +340,148 @@ export default function ExpensesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Card (1 col) */}
           <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs h-fit">
-            <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 border-b border-stone-100 mb-4">
-              Nouveau Décaissement
+            <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 mb-4 flex items-center justify-between gap-2 border-b border-stone-100">
+              <span>Nouveau Décaissement</span>
+              <span className="text-[11px] font-medium text-stone-400 truncate">
+                {isConsolidated ? 'Choisir une annexe ↑' : currentBranch?.name}
+              </span>
             </h2>
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700 border border-red-200">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleAddExpense} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">
-                  Montant décaissé (en FCFA) *
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="100"
-                    step="100"
-                    required
-                    placeholder="Ex: 35000"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-bold text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
-                  />
-                  <span className="absolute inset-y-0 right-3 flex items-center font-bold text-stone-400">
-                    FCFA
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">
-                  Catégorie de dépense *
-                </label>
-                <select
-                  required
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">
-                  Lieu de culte / Annexe *
-                </label>
-                <select
-                  required
-                  value={branchId}
-                  onChange={(e) => setBranchId(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.isMain ? '⭐ ' : ''}
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Bénéficiaire / Payé à</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Quincaillerie du Carrefour, Électricien M. Ondo..."
-                  value={beneficiary}
-                  onChange={(e) => setBeneficiary(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Date du décaissement</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                />
-              </div>
-
-              {/* Photo du reçu */}
-              <div className="rounded-xl border border-dashed border-stone-300 p-3 bg-stone-50">
-                <label className="block font-bold text-stone-700 mb-1">
-                  Photo du Reçu / Justificatif (Recommandé)
-                </label>
-                {receiptUrl ? (
-                  <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-stone-200 mt-1">
-                    <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
-                      <span>✓</span> Reçu attaché
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setReceiptUrl('')}
-                      className="text-[11px] text-red-600 hover:underline"
-                    >
-                      Supprimer
-                    </button>
+            {church?.isAuditor ? (
+              <p className="rounded-lg bg-stone-50 border border-stone-200 p-3 text-xs text-stone-500">
+                Accès en lecture seule : votre rôle d’Auditeur permet de consulter les dépenses mais
+                pas d’en saisir.
+              </p>
+            ) : (
+              <>
+                {error && (
+                  <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700 border border-red-200">
+                    {error}
                   </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileUpload}
-                    disabled={uploadingReceipt}
-                    className="block w-full text-[11px] text-stone-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-900 hover:file:bg-emerald-200 cursor-pointer"
-                  />
                 )}
-                {uploadingReceipt && (
-                  <p className="mt-1 text-[10px] text-stone-500">Téléversement du reçu en cours…</p>
-                )}
-              </div>
 
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">
-                  Commentaire / Motif du décaissement
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Ex: Remplacement du câble d'ampli sono endommagé..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                />
-              </div>
+                <form onSubmit={handleAddExpense} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Montant décaissé (en FCFA) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="100"
+                        step="100"
+                        required
+                        placeholder="Ex: 35000"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-bold text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
+                      />
+                      <span className="absolute inset-y-0 right-3 flex items-center font-bold text-stone-400">
+                        FCFA
+                      </span>
+                    </div>
+                  </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full rounded-lg bg-stone-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-stone-800 disabled:opacity-50 transition-colors"
-              >
-                {submitting ? 'Validation…' : 'Enregistrer le décaissement &rarr;'}
-              </button>
-            </form>
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Catégorie de dépense *
+                    </label>
+                    <Select
+                      aria-label="Catégorie de dépense"
+                      options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                      value={categoryId}
+                      onChange={setCategoryId}
+                      placeholder="Choisir une catégorie"
+                    />
+                  </div>
+
+                  {/* No annexe/branch field here on purpose — see incomes/page.tsx
+                  for the same note. The expense is recorded against whichever
+                  annexe is active in the header switcher. */}
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Bénéficiaire / Payé à
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Quincaillerie du Carrefour, Électricien M. Ondo..."
+                      value={beneficiary}
+                      onChange={(e) => setBeneficiary(e.target.value)}
+                      className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Date du décaissement
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                    />
+                  </div>
+
+                  {/* Photo du reçu */}
+                  <div className="rounded-xl border border-dashed border-stone-300 p-3 bg-stone-50">
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Photo du Reçu / Justificatif (Recommandé)
+                    </label>
+                    {receiptUrl ? (
+                      <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-stone-200 mt-1">
+                        <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
+                          <span>✓</span> Reçu attaché
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setReceiptUrl('')}
+                          className="text-[11px] text-red-600 hover:underline"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileUpload}
+                        disabled={uploadingReceipt}
+                        className="block w-full text-[11px] text-stone-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-900 hover:file:bg-emerald-200 cursor-pointer"
+                      />
+                    )}
+                    {uploadingReceipt && (
+                      <p className="mt-1 text-[10px] text-stone-500">
+                        Téléversement du reçu en cours…
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Commentaire / Motif du décaissement
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Ex: Remplacement du câble d'ampli sono endommagé..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full rounded-lg bg-stone-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-stone-800 disabled:opacity-50 transition-colors"
+                  >
+                    {submitting ? 'Validation…' : 'Valider la dépense'}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
           {/* Table Card (2 cols) */}

@@ -21,8 +21,9 @@ interface PendingExecution {
 }
 
 export default function RecurrentValidationPage() {
-  const { currentBranch, isConsolidated, refreshBranches } = useBranch();
+  const { church, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const canManage = church ? church.isPastor || church.isTreasurer : true;
 
   const [executions, setExecutions] = useState<PendingExecution[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -163,7 +164,15 @@ export default function RecurrentValidationPage() {
           </p>
         </div>
 
-        {loading ? (
+        {!canManage ? (
+          <div className="rounded-2xl border border-stone-200 bg-white p-12 text-center shadow-xs">
+            <h3 className="font-serif text-lg font-bold text-stone-900">Accès réservé</h3>
+            <p className="mt-1 text-xs text-stone-500 max-w-sm mx-auto">
+              Seuls le trésorier et le pasteur peuvent valider ou reporter une échéance. Votre rôle
+              vous donne un accès en lecture seule aux autres pages.
+            </p>
+          </div>
+        ) : loading ? (
           <p className="py-12 text-center text-xs text-stone-500">
             Chargement des échéances en attente…
           </p>

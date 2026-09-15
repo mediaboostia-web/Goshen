@@ -10,6 +10,7 @@ import { AppNav } from '@/components/layout/AppNav';
 export default function BranchesPage() {
   const { church, branches, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const canManage = church ? church.isPastor : true;
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
@@ -59,7 +60,7 @@ export default function BranchesPage() {
       <AppNav />
 
       {/* Add Branch Modal */}
-      {showAddModal && (
+      {showAddModal && canManage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="max-w-md w-full bg-white rounded-2xl p-6 shadow-xl border border-stone-200 text-xs">
             <div className="flex justify-between items-center pb-3 border-b border-stone-100">
@@ -135,7 +136,7 @@ export default function BranchesPage() {
                   disabled={loading}
                   className="rounded-lg bg-emerald-800 px-4 py-2 font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  {loading ? 'Création…' : 'Créer l’annexe'}
+                  {loading ? 'Création…' : 'Créer'}
                 </button>
               </div>
             </form>
@@ -154,13 +155,15 @@ export default function BranchesPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="rounded-lg bg-emerald-800 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors"
-          >
-            + Ajouter une annexe
-          </button>
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="rounded-lg bg-emerald-800 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors"
+            >
+              + Ajouter une annexe
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
