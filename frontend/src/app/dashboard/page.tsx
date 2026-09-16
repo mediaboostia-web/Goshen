@@ -216,12 +216,12 @@ export default function DashboardPage() {
       } else {
         await api('/api/church/branches', {
           method: 'POST',
-          body: JSON.stringify({
+          body: {
             name: newBranchName.trim(),
             city: newBranchCity.trim() || null,
             lowBalanceThreshold: Number(newBranchThreshold) || 200000,
             initialBalance: Number(newBranchBalance) || 0,
-          }),
+          },
         });
         await refreshBranches();
         setBranchActionMessage(`Nouvelle annexe "${newBranchName.trim()}" enregistrée.`);
@@ -635,34 +635,38 @@ export default function DashboardPage() {
                             })}
                           </div>
 
-                          <div className="border-t border-emerald-800/80 pt-1 mt-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsBranchDropdownOpen(false);
-                                setIsAddBranchModalOpen(true);
-                              }}
-                              className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700/90 py-2 text-xs font-bold text-emerald-100 border border-emerald-600/40 transition-colors cursor-pointer"
-                            >
-                              <PlusIcon className="h-3.5 w-3.5" />
-                              <span>Ajouter une annexe</span>
-                            </button>
-                          </div>
+                          {church?.isPastor && (
+                            <div className="border-t border-emerald-800/80 pt-1 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsBranchDropdownOpen(false);
+                                  setIsAddBranchModalOpen(true);
+                                }}
+                                className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700/90 py-2 text-xs font-bold text-emerald-100 border border-emerald-600/40 transition-colors cursor-pointer"
+                              >
+                                <PlusIcon className="h-3.5 w-3.5" />
+                                <span>Ajouter une annexe</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
                   </div>
 
-                  {/* Direct Add Branch button on Card */}
-                  <button
-                    type="button"
-                    onClick={() => setIsAddBranchModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-900/70 hover:bg-emerald-800 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:text-white border border-emerald-700/60 shadow-xs transition-colors cursor-pointer"
-                    title="Ajouter une nouvelle annexe ou paroisse"
-                  >
-                    <PlusIcon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Ajouter une annexe</span>
-                  </button>
+                  {/* Direct Add Branch button on Card — Pastor only, mirrors the 403 in api/church/branches */}
+                  {church?.isPastor && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddBranchModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-900/70 hover:bg-emerald-800 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:text-white border border-emerald-700/60 shadow-xs transition-colors cursor-pointer"
+                      title="Ajouter une nouvelle annexe ou paroisse"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Ajouter une annexe</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

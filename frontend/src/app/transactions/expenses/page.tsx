@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
+import { COOKIE_PREFIX } from '@/lib/constants';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
@@ -113,8 +114,16 @@ export default function ExpensesPage() {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Raw fetch (not api()) because api() forces a JSON Content-Type,
+      // incompatible with multipart FormData — so the CSRF header that
+      // api() normally attaches automatically has to be read and set here.
+      const csrfCookieName = `${COOKIE_PREFIX}-csrf`;
+      const csrfMatch = document.cookie.match(new RegExp(`(?:^|;\\s*)${csrfCookieName}=([^;]*)`));
+      const csrfToken = csrfMatch && csrfMatch[1] ? decodeURIComponent(csrfMatch[1]) : '';
+
       const res = await fetch('/api/upload', {
         method: 'POST',
+        headers: { 'x-csrf-token': csrfToken },
         body: formData,
       });
 
@@ -348,10 +357,10 @@ export default function ExpensesPage() {
               </span>
             </h2>
 
-            {church?.isAuditor ? (
+            {!church?.isTreasurer && !church?.isPastor ? (
               <p className="rounded-lg bg-stone-50 border border-stone-200 p-3 text-xs text-stone-500">
-                Accès en lecture seule : votre rôle d’Auditeur permet de consulter les dépenses mais
-                pas d’en saisir.
+                Accès en lecture seule : seuls le trésorier et le pasteur peuvent saisir une
+                dépense.
               </p>
             ) : (
               <>
