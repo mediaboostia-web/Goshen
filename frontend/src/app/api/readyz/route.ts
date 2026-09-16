@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/server/prisma';
 import { redis } from '@/lib/server/redis';
+import { log } from '@/lib/server/observability/log';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,10 +33,17 @@ export async function GET() {
       checks.database = { ok: true, latencyMs: Date.now() - t0 };
     } catch (err) {
       allOk = false;
+      // Detailed connection errors (hostnames, driver internals) go to the
+      // server log only — this probe is unauthenticated by design (load
+      // balancers can't hold a bearer token), so its response body must not
+      // leak infra details to anonymous callers.
+      log.warn('readyz database probe failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       checks.database = {
         ok: false,
         latencyMs: Date.now() - t0,
-        error: err instanceof Error ? err.message : String(err),
+        error: 'unavailable',
       };
     }
   }
@@ -47,10 +55,13 @@ export async function GET() {
       checks.redis = { ok: true, latencyMs: Date.now() - t0 };
     } catch (err) {
       allOk = false;
+      log.warn('readyz redis probe failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       checks.redis = {
         ok: false,
         latencyMs: Date.now() - t0,
-        error: err instanceof Error ? err.message : String(err),
+        error: 'unavailable',
       };
     }
   }
