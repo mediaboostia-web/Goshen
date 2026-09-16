@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -71,6 +72,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
 
@@ -96,6 +100,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { branchId, name, amount, frequency, dueDay, categoryId } = parsed.data;
+
+    // branchId/categoryId come from the client — must be verified to belong
+    // to the caller's own organization before use. Without this, a pastor
+    // of Church A could target Church B's branchId; on later validation
+    // (validate/route.ts) that branch's real cash balance gets decremented
+    // for a church that never authorized the expense.
+    const [targetBranch, targetCategory] = await Promise.all([
+      prisma.branch.findFirst({ where: { id: branchId, organizationId: access.church.id } }),
+      prisma.churchCategory.findFirst({
+        where: { id: categoryId, organizationId: access.church.id },
+      }),
+    ]);
+    if (!targetBranch) {
+      return NextResponse.json({ error: 'BRANCH_NOT_FOUND' }, { status: 404 });
+    }
+    if (!targetCategory) {
+      return NextResponse.json({ error: 'CATEGORY_NOT_FOUND' }, { status: 404 });
+    }
 
     // Create the recurring model and its first pending execution
     const model = await prisma.$transaction(

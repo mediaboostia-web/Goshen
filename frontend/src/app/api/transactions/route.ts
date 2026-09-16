@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -86,6 +87,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
 
@@ -124,11 +128,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       receiptPublicId,
     } = parsed.data;
 
-    const targetBranch = await prisma.branch.findFirst({
-      where: { id: branchId, organizationId: access.church.id },
-    });
+    const [targetBranch, targetCategory] = await Promise.all([
+      prisma.branch.findFirst({ where: { id: branchId, organizationId: access.church.id } }),
+      prisma.churchCategory.findFirst({
+        where: { id: categoryId, organizationId: access.church.id },
+      }),
+    ]);
     if (!targetBranch) {
       return NextResponse.json({ error: 'BRANCH_NOT_FOUND' }, { status: 404 });
+    }
+    if (!targetCategory) {
+      return NextResponse.json({ error: 'CATEGORY_NOT_FOUND' }, { status: 404 });
     }
 
     const balanceDelta = type === 'INCOME' ? amount : -amount;

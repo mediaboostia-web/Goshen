@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -42,6 +43,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
 
@@ -91,6 +95,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { error: 'ALREADY_MEMBER', message: 'Cet utilisateur est déjà membre de l’église.' },
         { status: 409 },
       );
+    }
+
+    // branchIds come from the client — verify they all belong to the
+    // caller's own organization before granting access, otherwise a pastor
+    // could grant a new member access to another church's branch id.
+    if (branchIds && branchIds.length > 0) {
+      const ownedBranches = await prisma.branch.findMany({
+        where: { id: { in: branchIds }, organizationId: access.church.id },
+        select: { id: true },
+      });
+      if (ownedBranches.length !== branchIds.length) {
+        return NextResponse.json({ error: 'BRANCH_NOT_FOUND' }, { status: 404 });
+      }
     }
 
     const newMembership = await prisma.$transaction(

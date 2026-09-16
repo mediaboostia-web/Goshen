@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -79,8 +80,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       // Current balance of target branch or all branches
       let currentBalance = 0;
       if (branchId && branchId !== 'CONSOLIDATED') {
-        const b = await prisma.branch.findUnique({ where: { id: branchId } });
-        currentBalance = b?.currentBalance || 0;
+        const b = await prisma.branch.findFirst({
+          where: { id: branchId, organizationId: access.church.id },
+        });
+        if (!b) {
+          return NextResponse.json({ error: 'BRANCH_NOT_FOUND' }, { status: 404 });
+        }
+        currentBalance = b.currentBalance;
       } else {
         const agg = await prisma.branch.aggregate({
           where: { organizationId: access.church.id, status: 'ACTIVE' },
@@ -124,6 +130,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
 
@@ -181,8 +190,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     let currentBalance = 0;
     if (!isConsolidated) {
-      const b = await prisma.branch.findUnique({ where: { id: branchId } });
-      currentBalance = b?.currentBalance || 0;
+      const b = await prisma.branch.findFirst({
+        where: { id: branchId, organizationId: access.church.id },
+      });
+      if (!b) {
+        return NextResponse.json({ error: 'BRANCH_NOT_FOUND' }, { status: 404 });
+      }
+      currentBalance = b.currentBalance;
     } else {
       const agg = await prisma.branch.aggregate({
         where: { organizationId: access.church.id, status: 'ACTIVE' },

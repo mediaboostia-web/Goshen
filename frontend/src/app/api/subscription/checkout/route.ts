@@ -3,11 +3,13 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
 import { chariow, ChariowNotConfiguredError } from '@/lib/server/payments/chariow';
+import { log } from '@/lib/server/observability/log';
 
 const CheckoutBody = z.object({
   plan: z.enum(['ESSENTIAL', 'PREMIUM']),
@@ -21,6 +23,9 @@ const CheckoutBody = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
 
@@ -106,11 +111,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           { status: 503 },
         );
       }
+      log.warn('subscription checkout failed', {
+        organizationId: access.church.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return NextResponse.json(
-        {
-          error: 'CHECKOUT_FAILED',
-          message: err instanceof Error ? err.message : 'Échec de création du checkout',
-        },
+        { error: 'CHECKOUT_FAILED', message: 'Échec de création du paiement.' },
         { status: 500 },
       );
     }

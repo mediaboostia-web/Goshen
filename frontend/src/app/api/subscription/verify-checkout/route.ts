@@ -3,11 +3,13 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
 import { chariow, ChariowNotConfiguredError } from '@/lib/server/payments/chariow';
+import { log } from '@/lib/server/observability/log';
 
 const VerifyBody = z.object({
   purchaseId: z.string().min(1, 'ID d’achat Chariow requis'),
@@ -17,6 +19,9 @@ const VerifyBody = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
 
@@ -34,7 +39,41 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { purchaseId, plan: fallbackPlan } = parsed.data;
+    const { purchaseId } = parsed.data;
+
+    // The purchaseId must be the one this org's own checkout created
+    // (Subscription.chariowPurchaseId, written by POST /api/subscription/checkout).
+    // Without this check, any authenticated user could pass ANY other
+    // church's valid purchaseId and activate/extend their own subscription
+    // with it — or self-select a plan that was never actually paid for.
+    const subscription = await prisma.subscription.findUnique({
+      where: { organizationId: access.church.id },
+    });
+    if (!subscription || subscription.chariowPurchaseId !== purchaseId) {
+      return NextResponse.json(
+        {
+          error: 'PURCHASE_NOT_FOUND',
+          message: 'Cet achat ne correspond à aucune souscription initiée par votre église.',
+        },
+        { status: 404 },
+      );
+    }
+
+    // Replay guard: this purchaseId was already verified and applied —
+    // don't let a repeated call push currentPeriodEnd another 30 days out.
+    if (
+      subscription.status === 'ACTIVE' &&
+      subscription.currentPeriodEnd &&
+      subscription.currentPeriodEnd.getTime() > Date.now()
+    ) {
+      return NextResponse.json({
+        verified: true,
+        status: 'succeeded',
+        plan: subscription.plan,
+        expiresAt: subscription.currentPeriodEnd.toISOString(),
+        alreadyProcessed: true,
+      });
+    }
 
     let sale;
     try {
@@ -49,10 +88,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           { status: 503 },
         );
       }
+      log.warn('subscription verify-checkout failed', {
+        organizationId: access.church.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return NextResponse.json(
         {
           error: 'VERIFY_FAILED',
-          message: err instanceof Error ? err.message : 'Échec de la vérification du paiement',
+          message: 'Échec de la vérification du paiement.',
         },
         { status: 502 },
       );
@@ -67,28 +110,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // Payment succeeded! Update church plan for 30 days
+    // Payment succeeded! Update church plan for 30 days. The plan is the one
+    // recorded at checkout time (server-trusted) — never the client-supplied
+    // body field, which would let a caller self-upgrade to a plan they never
+    // paid for.
     const nextMonth = new Date();
     nextMonth.setDate(nextMonth.getDate() + 30);
 
-    const targetPlan = fallbackPlan || 'ESSENTIAL';
+    const targetPlan = subscription.plan;
 
     await prisma.$transaction(
       async (tx) => {
         // 1. Update Subscription
-        await tx.subscription.upsert({
+        await tx.subscription.update({
           where: { organizationId: access.church.id },
-          create: {
-            organizationId: access.church.id,
-            plan: targetPlan,
-            status: 'ACTIVE',
-            provider: 'CHARIOW',
-            chariowPurchaseId: purchaseId,
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: nextMonth,
-          },
-          update: {
-            plan: targetPlan,
+          data: {
             status: 'ACTIVE',
             currentPeriodStart: new Date(),
             currentPeriodEnd: nextMonth,

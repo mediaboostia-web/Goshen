@@ -18,6 +18,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 import { mockCloudinaryClient } from '@/test-utils/cloudinary-mock';
 
+vi.mock('@/lib/server/auth', () => ({
+  verifyCsrf: vi.fn(() => null),
+}));
+
 const cl = mockCloudinaryClient();
 
 vi.mock('@/lib/server/upload/cloudinary-client', () => ({
@@ -62,7 +66,7 @@ vi.mock('@/lib/server/church/resolve-church', () => ({
 }));
 
 const findManyTx = vi.fn();
-const branchFindUnique = vi.fn();
+const branchFindFirst = vi.fn();
 const branchAggregate = vi.fn();
 const reportFindMany = vi.fn();
 const reportCreate = vi.fn();
@@ -72,7 +76,7 @@ vi.mock('@/lib/server/prisma', () => ({
   prisma: {
     financialTransaction: { findMany: (...args: unknown[]) => findManyTx(...args) },
     branch: {
-      findUnique: (...args: unknown[]) => branchFindUnique(...args),
+      findFirst: (...args: unknown[]) => branchFindFirst(...args),
       aggregate: (...args: unknown[]) => branchAggregate(...args),
     },
     report: {
@@ -123,7 +127,7 @@ const SAMPLE_TX = [
 beforeEach(() => {
   vi.clearAllMocks();
   findManyTx.mockResolvedValue(SAMPLE_TX);
-  branchFindUnique.mockResolvedValue({ currentBalance: 500_000 });
+  branchFindFirst.mockResolvedValue({ currentBalance: 500_000 });
   branchAggregate.mockResolvedValue({ _sum: { currentBalance: 500_000 } });
   reportFindMany.mockResolvedValue([]);
   reportCreate.mockImplementation(async (args: { data: Record<string, unknown> }) => ({
