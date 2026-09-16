@@ -6,14 +6,33 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { ChurchIcon, GoogleIcon, ShieldCheckIcon } from '@/components/icons/ChurchIcons';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import { ChurchIdentityFields } from '@/components/onboarding/ChurchIdentityFields';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [churchName, setChurchName] = useState('');
+  const [denomination, setDenomination] = useState('');
+  const [country, setCountry] = useState('GA');
+  const [city, setCity] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Church-identity fields ride along as URL query params from this
+  // unauthenticated screen through /verify-email to /onboarding — there is
+  // no session yet to persist them server-side against, and this mirrors
+  // the app's only existing cross-screen state pattern (signup already
+  // passes ?email= the same way, and OAuth passes ?next=).
+  function churchParams(): URLSearchParams {
+    const params = new URLSearchParams();
+    if (churchName.trim()) params.set('churchName', churchName.trim());
+    if (denomination.trim()) params.set('denomination', denomination.trim());
+    if (country) params.set('country', country);
+    if (city.trim()) params.set('city', city.trim());
+    return params;
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,7 +57,9 @@ export default function SignupPage() {
         method: 'POST',
         body: { email: email.trim(), password },
       });
-      router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+      const params = churchParams();
+      params.set('email', email.trim());
+      router.push(`/verify-email?${params.toString()}`);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -49,6 +70,15 @@ export default function SignupPage() {
       setSubmitting(false);
     }
   }
+
+  // Google skips signup+verify-email entirely (the OAuth email is already
+  // verified) and lands straight on /onboarding — so whatever was already
+  // typed here needs to ride along on `next=` too, or it's lost.
+  const googleNext = (() => {
+    const params = churchParams();
+    const qs = params.toString();
+    return qs ? `/onboarding?${qs}` : '/onboarding';
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-800/10 via-stone-50 to-stone-950/15 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-emerald-100 selection:text-emerald-900">
@@ -128,8 +158,19 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* Email/Password Signup Form */}
+            {/* Church Identity + Email/Password Signup Form */}
             <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
+              <ChurchIdentityFields
+                churchName={churchName}
+                onChurchNameChange={setChurchName}
+                denomination={denomination}
+                onDenominationChange={setDenomination}
+                country={country}
+                onCountryChange={setCountry}
+                city={city}
+                onCityChange={setCity}
+              />
+
               <div>
                 <label className="block font-bold text-stone-700 mb-1">
                   Adresse email du pasteur ou trésorier
@@ -206,7 +247,7 @@ export default function SignupPage() {
             {/* LE SEUL MOYEN RAPIDE EST AVEC GOOGLE */}
             <div>
               <a
-                href="/api/auth/oauth/google/start?next=/onboarding"
+                href={`/api/auth/oauth/google/start?next=${encodeURIComponent(googleNext)}`}
                 className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 py-2.5 px-4 text-xs font-bold text-stone-700 shadow-2xs hover:shadow-xs transition-all active:scale-[0.99]"
               >
                 <GoogleIcon className="h-5 w-5 shrink-0" />

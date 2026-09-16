@@ -29,7 +29,16 @@ function VerifyEmailContent() {
       });
       if (res.csrfToken) storeCsrfToken(res.csrfToken);
       await refresh();
-      router.push('/onboarding');
+      // Carry the church-identity fields collected at signup through to
+      // the onboarding screen — same cross-screen query-param pattern used
+      // to get `email` here in the first place.
+      const forward = new URLSearchParams();
+      for (const key of ['churchName', 'denomination', 'country', 'city']) {
+        const value = searchParams.get(key);
+        if (value) forward.set(key, value);
+      }
+      const qs = forward.toString();
+      router.push(qs ? `/onboarding?${qs}` : '/onboarding');
     } catch (err) {
       setError(
         err instanceof ApiError

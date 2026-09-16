@@ -1,63 +1,19 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, type FormEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
-import { ShieldCheckIcon, CheckCircleIcon, ArrowRightIcon } from '@/components/icons/ChurchIcons';
+import {
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  ArrowRightIcon,
+  ChurchIcon,
+  BuildingBranchIcon,
+} from '@/components/icons/ChurchIcons';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
-
-// Goshen's primary market is Gabon, but the CEMAC zone (same OHADA legal
-// framework, same FCFA/XAF currency — see the footer badge below) is fair
-// game for a church signing up here. The flag is the "illustration" for
-// picking a country; city suggestions below just adapt to the pick.
-const COUNTRIES: { code: string; name: string; flag: string }[] = [
-  { code: 'GA', name: 'Gabon', flag: '🇬🇦' },
-  { code: 'CM', name: 'Cameroun', flag: '🇨🇲' },
-  { code: 'CG', name: 'Congo', flag: '🇨🇬' },
-  { code: 'TD', name: 'Tchad', flag: '🇹🇩' },
-  { code: 'CF', name: 'Centrafrique', flag: '🇨🇫' },
-  { code: 'GQ', name: 'Guinée Équatoriale', flag: '🇬🇶' },
-];
-
-// Simple suggestions for the city autocomplete below — not an exhaustive or
-// enforced list. The <input list="..."> pattern lets a pastor type any city
-// freely; these just speed up the common cases for the chosen country.
-const CITIES_BY_COUNTRY: Record<string, string[]> = {
-  GA: [
-    'Libreville',
-    'Akanda',
-    'Owendo',
-    'Port-Gentil',
-    'Franceville',
-    'Oyem',
-    'Moanda',
-    'Mouila',
-    'Lambaréné',
-    'Tchibanga',
-    'Ntoum',
-    'Bitam',
-    'Koulamoutou',
-    'Makokou',
-    'Gamba',
-    'Ndendé',
-  ],
-  CM: ['Yaoundé', 'Douala', 'Garoua', 'Bafoussam', 'Bamenda', 'Maroua', 'Ngaoundéré'],
-  CG: ['Brazzaville', 'Pointe-Noire', 'Dolisie', 'Nkayi', 'Ouesso'],
-  TD: ["N'Djamena", 'Moundou', 'Sarh', 'Abéché'],
-  CF: ['Bangui', 'Bimbo', 'Berbérati'],
-  GQ: ['Malabo', 'Bata', 'Ebebiyín'],
-};
-
-const COMMON_DENOMINATIONS = [
-  'Alliance Chrétienne & Missionnaire',
-  'Assemblées de Dieu du Gabon',
-  'Église Évangélique du Gabon',
-  'Communauté Baptiste',
-  'Mission Évangélique de Pentecôte',
-  'Ministère Évangélique Indépendant',
-];
+import { ChurchIdentityFields, COUNTRIES } from '@/components/onboarding/ChurchIdentityFields';
 
 // A church signing up here is, by default, a single autonomous parish —
 // not a denomination pre-planning a branch network. So onboarding asks for
@@ -65,29 +21,28 @@ const COMMON_DENOMINATIONS = [
 // nothing more: no separate "siège" naming, no annexes, no starting-balance
 // step. Everything deferred here (annexes, balances, thresholds) is fully
 // editable afterwards from Settings once the church actually needs it.
-export default function OnboardingPage() {
+//
+// Church-identity fields (name/denomination/country/city) are usually
+// already filled in — carried here as query params from the signup screen
+// via /verify-email (see signup/page.tsx and verify-email/page.tsx). They
+// arrive blank only for the Google OAuth entry point, which skips straight
+// here with a verified email and no prior form — the fields below stay
+// fully editable either way, so this one screen serves both funnels.
+function OnboardingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { refreshBranches } = useBranch();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Every field starts genuinely blank — no pre-filled example data a real
-  // pastor would have to notice and clear out themselves. Country is the one
-  // exception: Gabon is pre-selected since it's the primary market, but any
-  // CEMAC country is one click away.
-  const [churchName, setChurchName] = useState('');
-  const [country, setCountry] = useState('GA');
-  const [city, setCity] = useState('');
-  const [denomination, setDenomination] = useState('');
+  const [churchName, setChurchName] = useState(searchParams.get('churchName') || '');
+  const [denomination, setDenomination] = useState(searchParams.get('denomination') || '');
+  const [country, setCountry] = useState(searchParams.get('country') || 'GA');
+  const [city, setCity] = useState(searchParams.get('city') || '');
   const [isMainBranch, setIsMainBranch] = useState(true);
 
-  const [cityMenuOpen, setCityMenuOpen] = useState(false);
-  const citySuggestions = CITIES_BY_COUNTRY[country] ?? [];
-  const filteredCitySuggestions = citySuggestions.filter((c) =>
-    c.toLowerCase().includes(city.trim().toLowerCase()),
-  );
   const selectedCountry = COUNTRIES.find((c) => c.code === country);
 
   async function handleFinish(e: FormEvent) {
@@ -201,168 +156,91 @@ export default function OnboardingPage() {
             <form onSubmit={handleFinish} className="space-y-5 animate-in fade-in duration-200">
               <div>
                 <h1 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Création de compte
+                  Dernière étape
                 </h1>
                 <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 mt-1">
                   Ouvrons votre Église
                 </h2>
                 <p className="text-xs text-stone-500 mt-1">
-                  L’essentiel pour démarrer. Vous pourrez tout ajuster ensuite — annexes, équipe,
-                  trésorerie — depuis les Paramètres.
+                  Vérifiez vos informations et choisissez le type de paroisse. Tout sera ajustable
+                  ensuite depuis les Paramètres.
                 </p>
               </div>
 
-              <div className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">
-                    Nom de l’Église / Communauté *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    placeholder="Ex : Communauté Évangélique de la Grâce"
-                    value={churchName}
-                    onChange={(e) => setChurchName(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
-                  />
-                </div>
+              <ChurchIdentityFields
+                churchName={churchName}
+                onChurchNameChange={setChurchName}
+                denomination={denomination}
+                onDenominationChange={setDenomination}
+                country={country}
+                onCountryChange={setCountry}
+                city={city}
+                onCityChange={setCity}
+              />
 
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1.5">Pays</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {COUNTRIES.map((c) => (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => setCountry(c.code)}
-                        title={c.name}
-                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer ${
-                          country === c.code
-                            ? 'bg-emerald-800 text-white font-bold'
-                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                        }`}
-                      >
-                        <span className="text-sm leading-none">{c.flag}</span>
-                        <span>{c.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <label className="block font-bold text-stone-700 mb-1">Ville</label>
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    placeholder={`Ex : ${citySuggestions[0] ?? 'votre ville'}`}
-                    value={city}
-                    onChange={(e) => {
-                      setCity(e.target.value);
-                      setCityMenuOpen(true);
-                    }}
-                    onFocus={() => setCityMenuOpen(true)}
-                    onBlur={() => setCityMenuOpen(false)}
-                    className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
-                  />
-                  {/* Custom-styled suggestions — a native <datalist> here
-                      renders with unstyleable browser chrome that clashes
-                      with the rest of the design, so this is a small
-                      hand-built dropdown matching the app's own look. */}
-                  {cityMenuOpen && filteredCitySuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-1.5 w-full max-h-48 overflow-y-auto rounded-xl border border-stone-200 bg-white shadow-lg py-1">
-                      {filteredCitySuggestions.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setCity(c);
-                            setCityMenuOpen(false);
-                          }}
-                          className="block w-full text-left px-3 py-2 text-xs text-stone-700 hover:bg-emerald-50 hover:text-emerald-900 cursor-pointer transition-colors"
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">
-                    Dénomination ou Réseau d&apos;Églises
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex : Alliance Chrétienne & Missionnaire"
-                    value={denomination}
-                    onChange={(e) => setDenomination(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
-                  />
-                  <div className="mt-2">
-                    <p className="text-[11px] font-semibold text-stone-500 mb-1.5">
-                      Suggestions courantes au Gabon (facultatif) :
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {COMMON_DENOMINATIONS.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => setDenomination(item)}
-                          className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
-                            denomination === item
-                              ? 'bg-emerald-800 text-white font-bold'
-                              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1.5">Type de paroisse</label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setIsMainBranch(true)}
-                      className={`rounded-xl border p-3 text-left transition-all cursor-pointer ${
+              <div>
+                <label className="block font-bold text-stone-700 mb-1.5">Type de paroisse</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsMainBranch(true)}
+                    className={`relative rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+                      isMainBranch
+                        ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
+                        : 'border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    {isMainBranch && (
+                      <CheckCircleIcon className="absolute top-3 right-3 h-4 w-4 text-emerald-700" />
+                    )}
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl mb-3 ${
                         isMainBranch
-                          ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
-                          : 'border-stone-200 hover:bg-stone-50'
+                          ? 'bg-gradient-to-br from-emerald-600 to-emerald-800 text-white'
+                          : 'bg-stone-100 text-stone-500'
                       }`}
                     >
-                      <span
-                        className={`block font-bold ${isMainBranch ? 'text-emerald-900' : 'text-stone-700'}`}
-                      >
-                        Église Centrale
-                      </span>
-                      <span className="block text-[11px] text-stone-500 mt-0.5">
-                        Autonome, siège de votre communauté
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsMainBranch(false)}
-                      className={`rounded-xl border p-3 text-left transition-all cursor-pointer ${
+                      <ChurchIcon className="h-5 w-5" />
+                    </div>
+                    <span
+                      className={`block font-bold ${isMainBranch ? 'text-emerald-900' : 'text-stone-700'}`}
+                    >
+                      Église Centrale
+                    </span>
+                    <span className="block text-[11px] text-stone-500 mt-0.5">
+                      Autonome, siège de votre communauté
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMainBranch(false)}
+                    className={`relative rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+                      !isMainBranch
+                        ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
+                        : 'border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    {!isMainBranch && (
+                      <CheckCircleIcon className="absolute top-3 right-3 h-4 w-4 text-emerald-700" />
+                    )}
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl mb-3 ${
                         !isMainBranch
-                          ? 'border-emerald-700 bg-emerald-50 ring-1 ring-emerald-700'
-                          : 'border-stone-200 hover:bg-stone-50'
+                          ? 'bg-gradient-to-br from-emerald-600 to-emerald-800 text-white'
+                          : 'bg-stone-100 text-stone-500'
                       }`}
                     >
-                      <span
-                        className={`block font-bold ${!isMainBranch ? 'text-emerald-900' : 'text-stone-700'}`}
-                      >
-                        Annexe
-                      </span>
-                      <span className="block text-[11px] text-stone-500 mt-0.5">
-                        Rattachée à un réseau d&apos;églises
-                      </span>
-                    </button>
-                  </div>
+                      <BuildingBranchIcon className="h-5 w-5" />
+                    </div>
+                    <span
+                      className={`block font-bold ${!isMainBranch ? 'text-emerald-900' : 'text-stone-700'}`}
+                    >
+                      Annexe
+                    </span>
+                    <span className="block text-[11px] text-stone-500 mt-0.5">
+                      Rattachée à un réseau d&apos;églises
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -392,5 +270,19 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
   );
 }
