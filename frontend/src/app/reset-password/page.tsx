@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { GoshenLogo } from '@/components/icons/GoshenLogo';
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -40,8 +41,8 @@ function ResetPasswordContent() {
     <div className="min-h-screen bg-stone-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link href="/" className="inline-flex items-center gap-2.5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-900 text-white font-serif font-bold text-2xl shadow-sm">
-            G
+          <div className="flex h-12 w-12 items-center justify-center bg-stone-800 text-emerald-500">
+            <GoshenLogo className="h-7 w-7" />
           </div>
         </Link>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-emerald-950">

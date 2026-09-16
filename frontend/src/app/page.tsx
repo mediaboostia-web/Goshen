@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { GoshenLogo } from '@/components/icons/GoshenLogo';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -12,8 +13,8 @@ export default function HomePage() {
       <header className="border-b border-stone-200 bg-white sticky top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-900 text-white font-serif font-bold text-2xl shadow-sm">
-              G
+            <div className="flex h-11 w-11 items-center justify-center bg-stone-800 text-emerald-500">
+              <GoshenLogo className="h-6 w-6" />
             </div>
             <div>
               <span className="font-serif text-2xl font-bold tracking-tight text-emerald-950 block">
@@ -402,8 +403,8 @@ export default function HomePage() {
       <footer className="border-t border-stone-200 bg-stone-900 text-stone-400 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-800 text-white font-serif font-bold text-lg">
-              G
+            <div className="flex h-8 w-8 items-center justify-center bg-stone-800 text-emerald-500">
+              <GoshenLogo className="h-5 w-5" />
             </div>
             <span className="font-serif text-lg font-bold text-white">Goshen Finance</span>
             <span className="text-stone-500">&mdash; La saine gestion au service de la foi.</span>

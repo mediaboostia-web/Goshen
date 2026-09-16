@@ -24,7 +24,6 @@ import {
   CalendarClockIcon,
   CheckCircleIcon,
   ArrowRightIcon,
-  CrossIcon,
   GiftIcon,
   HeartHandIcon,
   ChevronDownIcon,
@@ -1051,7 +1050,7 @@ export default function DashboardPage() {
               {GOSHEN_MOCK_DATA.offeringsBreakdown.map((item, idx) => {
                 const IconComponent =
                   idx === 0
-                    ? CrossIcon
+                    ? TrendingUpIcon
                     : idx === 1
                       ? CoinsHandIcon
                       : idx === 2

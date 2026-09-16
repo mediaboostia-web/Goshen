@@ -1,33 +1,103 @@
 @import 'tailwindcss';
 
+/*
+ * Goshen brand system (Charte graphique v1.0 — 2026).
+ *
+ * These overrides retarget Tailwind's own theme variables rather than
+ * introducing parallel "brand-*" utility classes. Every existing `emerald-*`,
+ * `stone-*`, `amber-*` and `rounded-*` usage across the app (dozens of
+ * pages, all written before this charter existed) repaints automatically —
+ * institutional emerald in place of Tailwind's green emerald, the charter's
+ * cool "bleu nuit" neutral in place of warm stone, matte gold in place of
+ * amber, and zero corner radius everywhere the charter mandates it. No
+ * per-page className changes needed for the palette/radius system itself.
+ */
 @theme {
-  --color-sanctuary-50: #f0fdf4;
-  --color-sanctuary-100: #dcfce7;
-  --color-sanctuary-200: #bbf7d0;
-  --color-sanctuary-500: #10b981;
-  --color-sanctuary-600: #059669;
-  --color-sanctuary-700: #047857;
-  --color-sanctuary-800: #065f46;
-  --color-sanctuary-900: #064e3b;
-  --color-sanctuary-950: #022c22;
+  /* Émeraude institutionnel — anchors at 100/200/400/500/700/900 are the
+     charter's exact gamme tonale (p.06); the rest are interpolated to keep
+     a smooth 11-step scale. */
+  --color-emerald-50: #f0faf9;
+  --color-emerald-100: #e0f2f0;
+  --color-emerald-200: #b6e0db;
+  --color-emerald-300: #8bcdc5;
+  --color-emerald-400: #5ec0b6;
+  --color-emerald-500: #0d9488;
+  --color-emerald-600: #0c8579;
+  --color-emerald-700: #0a6f66;
+  --color-emerald-800: #086158;
+  --color-emerald-900: #064a44;
+  --color-emerald-950: #033330;
 
-  --color-gold-50: #fffbeb;
-  --color-gold-100: #fef3c7;
-  --color-gold-400: #fbbf24;
-  --color-gold-500: #f59e0b;
-  --color-gold-600: #d97706;
-  --color-gold-700: #b45309;
+  /* Bleu Nuit Royal — the charter's neutral scale (p.06), replacing warm
+     `stone` with a cool, slightly blue-tinted neutral. stone-50 stays the
+     charter's cold-white ("surfaces de saisie"), stone-800 lands exactly on
+     the brand's #0F172A. */
+  --color-stone-50: #f8fafc;
+  --color-stone-100: #e8ebf0;
+  --color-stone-200: #c7ceda;
+  --color-stone-300: #adb6c6;
+  --color-stone-400: #8b96ab;
+  --color-stone-500: #6b7690;
+  --color-stone-600: #4a5670;
+  --color-stone-700: #303b54;
+  --color-stone-800: #0f172a;
+  --color-stone-900: #070b14;
+  --color-stone-950: #030509;
 
-  --font-serif-display: var(--font-cormorant, Georgia, serif);
+  /* Or Mat — official/sealed-document accent (p.06 gamme). Retargets both
+     the dedicated `gold-*` tokens and Tailwind's `amber-*` (used across 11
+     pages for badges, CTAs and highlights before this charter existed). */
+  --color-gold-50: #faf6ec;
+  --color-gold-100: #f6f0e4;
+  --color-gold-200: #eadfc4;
+  --color-gold-300: #dcc694;
+  --color-gold-400: #cdb277;
+  --color-gold-500: #c5a059;
+  --color-gold-600: #ab8a4c;
+  --color-gold-700: #9a7b3e;
+  --color-gold-800: #7f6634;
+  --color-gold-900: #6b5427;
+  --color-gold-950: #453619;
+
+  --color-amber-50: var(--color-gold-50);
+  --color-amber-100: var(--color-gold-100);
+  --color-amber-200: var(--color-gold-200);
+  --color-amber-300: var(--color-gold-300);
+  --color-amber-400: var(--color-gold-400);
+  --color-amber-500: var(--color-gold-500);
+  --color-amber-600: var(--color-gold-600);
+  --color-amber-700: var(--color-gold-700);
+  --color-amber-800: var(--color-gold-800);
+  --color-amber-900: var(--color-gold-900);
+  --color-amber-950: var(--color-gold-950);
+
+  /* No serif family in the charter's 2-family system — `font-serif` stays a
+     valid utility (used for every heading across the app) but now resolves
+     to Archivo, same as `font-sans`, matching "Archivo — titres et texte". */
+  --font-serif: var(--font-sans);
+  --font-serif-display: var(--font-serif, Georgia, serif);
+
+  /* Rayon de courbure zéro partout (p.08) — boutons, cartes, champs,
+     encadrés, vignettes, sans exception. `rounded-full` (avatars, status
+     dots) is intentionally left alone: it isn't backed by a `--radius-*`
+     variable in Tailwind v4 and a fully round dot/avatar isn't a "corner". */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
 }
 
 :root {
   --bg-app: #f8fafc;
   --surface-card: #ffffff;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-light: #e2e8f0;
+  --text-secondary: #4a5670;
+  --text-muted: #8b96ab;
+  --border-light: #c7ceda;
 }
 
 body {

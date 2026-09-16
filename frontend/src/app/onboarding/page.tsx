@@ -6,6 +6,7 @@ import { api, ApiError } from '@/lib/api';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { ShieldCheckIcon, CheckCircleIcon, ArrowRightIcon } from '@/components/icons/ChurchIcons';
+import { GoshenLogo } from '@/components/icons/GoshenLogo';
 
 // Goshen's primary market is Gabon, but the CEMAC zone (same OHADA legal
 // framework, same FCFA/XAF currency — see the footer badge below) is fair
@@ -133,8 +134,8 @@ export default function OnboardingPage() {
 
           <div className="relative z-10">
             <div className="inline-flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-950 font-serif font-bold text-xl shadow-md">
-                G
+              <div className="flex h-11 w-11 items-center justify-center bg-white text-emerald-700 shadow-md">
+                <GoshenLogo className="h-6 w-6" />
               </div>
               <div>
                 <span className="block font-serif text-xl font-bold tracking-tight text-white">

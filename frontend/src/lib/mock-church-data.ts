@@ -28,7 +28,6 @@ export interface MockChurchDataset {
     amount: number;
     percentage: number;
     color: string;
-    icon: string;
   }>;
   expensesBreakdown: Array<{
     category: string;
@@ -109,29 +108,25 @@ export const GOSHEN_MOCK_DATA: MockChurchDataset = {
       category: 'Dîmes des fidèles',
       amount: 2450000,
       percentage: 46.4,
-      color: '#065f46', // Emerald 800
-      icon: '✝️',
+      color: '#0a6f66', // Charte — Émeraude 700
     },
     {
       category: 'Offrandes ordinaires de culte',
       amount: 1420000,
       percentage: 26.9,
-      color: '#0d9488', // Teal 600
-      icon: '🕊️',
+      color: '#0d9488', // Charte — Émeraude 500
     },
     {
       category: 'Dons Projet Construction Temple',
       amount: 980000,
       percentage: 18.6,
-      color: '#d97706', // Amber 600
-      icon: '🏛️',
+      color: '#c5a059', // Charte — Or Mat 500
     },
     {
       category: 'Aumônes & Actions Sociales',
       amount: 430000,
       percentage: 8.1,
-      color: '#475569', // Slate 600
-      icon: '🤝',
+      color: '#4a5670', // Charte — Bleu Nuit 600
     },
   ],
   expensesBreakdown: [

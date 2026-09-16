@@ -1,23 +1,26 @@
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans, Newsreader } from 'next/font/google';
+import { Archivo, Space_Mono } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { BranchProvider } from '@/contexts/BranchContext';
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+// Charte graphique p.07 — "Deux familles, un rôle chacune": Archivo carries
+// both titres and texte courant (so `font-sans` AND `font-serif` point at
+// it — every existing `font-serif` heading across the app repaints without
+// per-page edits), Space Mono is reserved for montants/références/dates.
+const archivo = Archivo({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
 });
 
-const newsreader = Newsreader({
+const spaceMono = Space_Mono({
   subsets: ['latin'],
-  variable: '--font-serif',
+  variable: '--font-mono',
   display: 'swap',
-  weight: ['400', '600', '700'],
-  style: ['normal', 'italic'],
+  weight: ['400', '700'],
 });
 
 export const metadata: Metadata = {
@@ -32,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${plusJakartaSans.variable} ${newsreader.variable}`}>
-      <body className={`${plusJakartaSans.className} font-sans antialiased`}>
+    <html lang="fr" className={`${archivo.variable} ${spaceMono.variable}`}>
+      <body className={`${archivo.className} font-sans antialiased`}>
         <ToastProvider>
           <AuthProvider>
             <BranchProvider>{children}</BranchProvider>

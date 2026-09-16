@@ -8,6 +8,7 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api } from '@/lib/api';
 import { SearchIcon, BellIcon } from '@/components/icons/ChurchIcons';
+import { GoshenLogo } from '@/components/icons/GoshenLogo';
 import { Select } from '@/components/ui/Select';
 
 const NOTIFICATION_POLL_MS = 60_000;
@@ -69,8 +70,8 @@ export function AppHeader() {
         {/* Brand & Church Name */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-800 text-white font-serif font-bold text-xl shadow-xs">
-              G
+            <div className="flex h-10 w-10 items-center justify-center bg-stone-800 text-emerald-500">
+              <GoshenLogo className="h-6 w-6" />
             </div>
             <div>
               <span className="block font-serif text-lg font-bold tracking-tight text-emerald-950">

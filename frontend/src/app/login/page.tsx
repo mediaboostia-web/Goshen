@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChurchIcon, GoogleIcon, ShieldCheckIcon } from '@/components/icons/ChurchIcons';
+import { GoshenLogo } from '@/components/icons/GoshenLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,8 +53,8 @@ export default function LoginPage() {
           {/* Top Brand Header */}
           <div className="relative z-10">
             <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-950 font-serif font-bold text-xl shadow-md group-hover:scale-105 transition-transform">
-                G
+              <div className="flex h-11 w-11 items-center justify-center bg-white text-emerald-700 shadow-md group-hover:scale-105 transition-transform">
+                <GoshenLogo className="h-6 w-6" />
               </div>
               <div>
                 <span className="block font-serif text-xl font-bold tracking-tight text-white">
