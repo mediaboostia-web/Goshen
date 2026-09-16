@@ -259,10 +259,9 @@ export default function IncomesPage() {
               </span>
             </h2>
 
-            {church?.isAuditor ? (
+            {!church?.isTreasurer && !church?.isPastor ? (
               <p className="rounded-lg bg-stone-50 border border-stone-200 p-3 text-xs text-stone-500">
-                Accès en lecture seule : votre rôle d’Auditeur permet de consulter les entrées mais
-                pas d’en saisir.
+                Accès en lecture seule : seuls le trésorier et le pasteur peuvent saisir une entrée.
               </p>
             ) : (
               <>

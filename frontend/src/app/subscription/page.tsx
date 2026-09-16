@@ -214,102 +214,108 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
-        {/* Chariow Mobile Money Payment Box */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs text-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-            <div>
-              <h3 className="font-serif text-base font-bold text-stone-900">
-                Règlement sécurisé par Mobile Money (Chariow)
-              </h3>
-              <p className="text-[11px] text-stone-500">
-                Airtel Money &bull; Moov Money &bull; Wave &bull; Orange Money &bull; Carte
-                Visa/Mastercard
-              </p>
-            </div>
-            <span className="text-2xl">🔒</span>
+        {/* Chariow Mobile Money Payment Box — Pastor only, mirrors the 403 in api/subscription/checkout */}
+        {!church?.isPastor ? (
+          <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs text-xs text-stone-500">
+            Seul le pasteur peut souscrire ou modifier l’abonnement de l’église.
           </div>
-
-          {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-red-700 border border-red-200">
-              {error}
+        ) : (
+          <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs text-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="font-serif text-base font-bold text-stone-900">
+                  Règlement sécurisé par Mobile Money (Chariow)
+                </h3>
+                <p className="text-[11px] text-stone-500">
+                  Airtel Money &bull; Moov Money &bull; Wave &bull; Orange Money &bull; Carte
+                  Visa/Mastercard
+                </p>
+              </div>
+              <span className="text-2xl">🔒</span>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-stone-700 mb-1">Prénom du payeur</label>
-              <input
-                type="text"
-                placeholder="Ex: Éric"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 focus:outline-hidden"
-              />
+            {error && (
+              <div className="rounded-lg bg-red-50 p-3 text-red-700 border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Prénom du payeur</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Éric"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Nom de famille</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Ndong"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 focus:outline-hidden"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block font-bold text-stone-700 mb-1">Nom de famille</label>
-              <input
-                type="text"
-                placeholder="Ex: Ndong"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 focus:outline-hidden"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Pays</label>
+                <Select
+                  aria-label="Pays"
+                  value={phoneCountry}
+                  onChange={setPhoneCountry}
+                  options={[
+                    { value: 'GA', label: '🇬🇦 Gabon (+241)' },
+                    { value: 'SN', label: '🇸🇳 Sénégal (+221)' },
+                    { value: 'CI', label: '🇨🇮 Côte d’Ivoire (+225)' },
+                    { value: 'CM', label: '🇨🇲 Cameroun (+237)' },
+                    { value: 'FR', label: '🇫🇷 France (+33)' },
+                  ]}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-stone-700 mb-1">
+                  Numéro Mobile Money (Airtel / Moov) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="Ex: 074123456 ou 74123456"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 font-semibold focus:outline-hidden"
+                />
+                <span className="text-[10px] text-stone-400 mt-0.5 block">
+                  Le numéro sera normalisé automatiquement au format de l’opérateur par Goshen.
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-stone-600">
+                Montant à régler :{' '}
+                <strong className="font-serif text-lg text-emerald-950">
+                  {selectedPlan === 'PREMIUM' ? '15 000' : '3 500'} FCFA
+                </strong>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCheckout}
+                disabled={loading}
+                className="w-full sm:w-auto rounded-lg bg-emerald-800 px-7 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? 'Génération du paiement…' : 'Procéder au paiement Mobile Money &rarr;'}
+              </button>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold text-stone-700 mb-1">Pays</label>
-              <Select
-                aria-label="Pays"
-                value={phoneCountry}
-                onChange={setPhoneCountry}
-                options={[
-                  { value: 'GA', label: '🇬🇦 Gabon (+241)' },
-                  { value: 'SN', label: '🇸🇳 Sénégal (+221)' },
-                  { value: 'CI', label: '🇨🇮 Côte d’Ivoire (+225)' },
-                  { value: 'CM', label: '🇨🇲 Cameroun (+237)' },
-                  { value: 'FR', label: '🇫🇷 France (+33)' },
-                ]}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block font-bold text-stone-700 mb-1">
-                Numéro Mobile Money (Airtel / Moov) *
-              </label>
-              <input
-                type="tel"
-                required
-                placeholder="Ex: 074123456 ou 74123456"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 p-2.5 text-stone-900 font-semibold focus:outline-hidden"
-              />
-              <span className="text-[10px] text-stone-400 mt-0.5 block">
-                Le numéro sera normalisé automatiquement au format de l’opérateur par Goshen.
-              </span>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-stone-600">
-              Montant à régler :{' '}
-              <strong className="font-serif text-lg text-emerald-950">
-                {selectedPlan === 'PREMIUM' ? '15 000' : '3 500'} FCFA
-              </strong>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCheckout}
-              disabled={loading}
-              className="w-full sm:w-auto rounded-lg bg-emerald-800 px-7 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Génération du paiement…' : 'Procéder au paiement Mobile Money &rarr;'}
-            </button>
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );
