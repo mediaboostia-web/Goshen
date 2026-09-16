@@ -239,8 +239,8 @@ export default function MembersPage() {
         {loading ? (
           <p className="py-12 text-center text-xs text-stone-500">Chargement des membres…</p>
         ) : (
-          <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-xs">
-            <table className="w-full text-left text-xs">
+          <div className="rounded-2xl border border-stone-200 bg-white overflow-x-auto shadow-xs">
+            <table className="w-full min-w-[560px] text-left text-xs">
               <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-medium">
                 <tr>
                   <th className="py-3 px-4">Membre</th>
