@@ -92,8 +92,11 @@ export async function POST(
         churchDenomination: access.church.denomination,
         churchAddress: transaction.branch.name,
       });
+      // No .pdf suffix on the public_id: Cloudinary appends the detected
+      // format extension to the delivery URL itself — adding one here
+      // produced a literal "....pdf.pdf" filename.
       uploaded = await uploadBuffer(
-        `invoices/${access.church.id}/${transaction.id}.pdf`,
+        `invoices/${access.church.id}/${transaction.id}`,
         pdfBuffer,
         'application/pdf',
       );

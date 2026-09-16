@@ -277,8 +277,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         currency: access.church.currency,
       });
 
+      // No .pdf suffix on the public_id — Cloudinary appends the detected
+      // format extension to the delivery URL itself (see the invoice route's
+      // uploadBuffer call for the same fix and why).
       const uploaded = await uploadBuffer(
-        `reports/${access.church.id}/${report.id}.pdf`,
+        `reports/${access.church.id}/${report.id}`,
         pdfBuffer,
         'application/pdf',
       );
