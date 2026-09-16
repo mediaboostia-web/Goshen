@@ -132,3 +132,40 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/*
+ * Print isolation. `print:hidden` scattered on individual elements (nav,
+ * headers, filter bars) is not enough on its own — the sticky AppHeader and
+ * AppNav carry no print:hidden at all, and a printable block sitting inside
+ * a fixed-position modal still prints in normal document flow alongside the
+ * page behind it. Without this rule, printing "one A4 invoice" printed the
+ * whole underlying page too, overflowing onto a 2nd sheet. Any printable
+ * block adds the `print-area` class; this hides everything else and lays
+ * the marked block out fresh at the page origin.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  .print-area {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+}

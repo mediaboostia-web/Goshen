@@ -56,6 +56,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
   const { toast } = useToast();
   const [archiving, setArchiving] = useState(false);
   const [archived, setArchived] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     setArchived(false);
@@ -67,16 +68,14 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
     window.print();
   };
 
-  const handleDownload = () => {
-    // Déclenche l'impression système avec option Enregistrer au format PDF
-    window.print();
-  };
-
-  const handleArchive = async () => {
-    if (!data.transactionId) return;
-    setArchiving(true);
-    try {
-      await api(`/api/transactions/${data.transactionId}/invoice`, {
+  // Real single-transaction invoices are rendered server-side (pdfkit),
+  // guaranteed one page, and persisted to Cloudinary — reuse that instead of
+  // the browser's print-to-PDF, which used to overflow to a 2nd sheet.
+  async function archiveInvoice(): Promise<string | null> {
+    if (!data?.transactionId) return null;
+    const res = await api<{ transaction: { receiptUrl: string | null } }>(
+      `/api/transactions/${data.transactionId}/invoice`,
+      {
         method: 'POST',
         body: {
           invoiceNumber: data.invoiceNumber,
@@ -97,8 +96,41 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
           phone: data.phone,
           email: data.email,
         },
-      });
-      setArchived(true);
+      },
+    );
+    setArchived(true);
+    return res.transaction?.receiptUrl || null;
+  }
+
+  const handleDownload = async () => {
+    if (!data?.transactionId) {
+      // No backing transaction (aggregate/period invoice) — no server PDF
+      // route for this shape, fall back to the browser's print-to-PDF.
+      window.print();
+      return;
+    }
+    setDownloading(true);
+    try {
+      const url = await archiveInvoice();
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        toast('Le PDF n’a pas pu être généré pour le moment.', 'error');
+      }
+    } catch (err) {
+      toast(
+        err instanceof ApiError ? err.message : 'Téléchargement impossible pour le moment.',
+        'error',
+      );
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    setArchiving(true);
+    try {
+      await archiveInvoice();
       toast('Facture archivée avec succès.', 'success');
     } catch (err) {
       toast(
@@ -134,8 +166,9 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             {/* Download PDF Button */}
             <button
               type="button"
-              onClick={handleDownload}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 transition-all shadow-xs cursor-pointer"
+              onClick={() => void handleDownload()}
+              disabled={downloading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 disabled:opacity-60 transition-all shadow-xs cursor-pointer"
               title="Télécharger la facture en PDF"
             >
               <svg
@@ -149,7 +182,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span>Télécharger PDF</span>
+              <span>{downloading ? 'Génération…' : 'Télécharger PDF'}</span>
             </button>
 
             {/* Print Button */}
@@ -213,11 +246,11 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
           <div
             ref={printRef}
             id="printable-invoice"
-            className="w-full max-w-[780px] bg-white text-stone-900 shadow-lg p-8 sm:p-12 print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none font-sans"
+            className="print-area w-full max-w-[780px] bg-white text-stone-900 shadow-lg p-8 sm:p-12 print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none font-sans"
             style={{ minHeight: '1020px' }}
           >
             {/* 1. TOP HEADER: LOGO/BRAND (LEFT) & INVOICE TITLE (RIGHT) */}
-            <div className="flex justify-between items-start pb-8 border-b border-stone-200">
+            <div className="flex justify-between items-start pb-8 print:pb-4 border-b border-stone-200">
               {/* Left: Brand / Church Logo & Coordinates */}
               <div className="flex items-start gap-3.5">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e11d48] text-white font-bold text-2xl shadow-xs">
@@ -248,7 +281,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             </div>
 
             {/* 2. RECIPIENT & DATE BOX (SPLIT WITH DISTINCTIVE SIDEBAR ACCENT) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 print:py-4 items-center">
               {/* Left: Invoice To */}
               <div>
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-500">
@@ -334,7 +367,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             </div>
 
             {/* 4. FOOTER SUMMARY & LEGAL TERMS (EXACT IMAGE REPRODUCTION) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8 mt-4 border-t border-stone-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8 print:pt-4 mt-4 print:mt-2 border-t border-stone-200">
               {/* Left Column: Payment Method, Terms & Condition, Signature */}
               <div className="space-y-4 text-xs">
                 <div>
@@ -360,7 +393,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 </div>
 
                 {/* Hand-drawn style Signature */}
-                <div className="pt-4">
+                <div className="pt-4 print:pt-2">
                   <div className="inline-block text-center">
                     <svg
                       viewBox="0 0 160 50"
@@ -416,7 +449,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 </div>
 
                 {/* Bottom Thank You & Contacts */}
-                <div className="pt-8 text-center sm:text-right">
+                <div className="pt-8 print:pt-4 text-center sm:text-right">
                   <p className="font-bold text-sm text-[#e11d48]">Merci pour votre confiance.</p>
                   <div className="flex items-center justify-center sm:justify-end gap-4 text-[11px] text-stone-500 mt-1">
                     <span>📞 {data.phone || '+241 07 45 67 89'}</span>
