@@ -286,8 +286,8 @@ export default function HomePage() {
             Des formules adaptées à la taille de chaque communauté
           </h2>
           <p className="mt-4 text-stone-600 text-base">
-            Payable simplement par <strong>Airtel Money</strong> et <strong>Moov Money</strong> via
-            Chariow. Sans engagement.
+            Payable simplement par <strong>Airtel Money</strong> et <strong>Moov Money</strong>.
+            Sans engagement.
           </p>
         </div>
 

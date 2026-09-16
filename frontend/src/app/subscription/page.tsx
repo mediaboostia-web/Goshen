@@ -45,7 +45,7 @@ export default function SubscriptionPage() {
       );
 
       if (res.checkoutUrl) {
-        toast('Redirection vers le paiement Mobile Money sécurisé Chariow…', 'info');
+        toast('Redirection vers le paiement Mobile Money sécurisé…', 'info');
         window.location.href = res.checkoutUrl;
       }
     } catch (err) {
@@ -71,8 +71,7 @@ export default function SubscriptionPage() {
             Abonnement & Facturation Goshen
           </h1>
           <p className="text-xs text-stone-500 mt-1">
-            Réglez simplement par Mobile Money (Airtel Money, Moov Money) ou carte bancaire via
-            Chariow.
+            Réglez simplement par Mobile Money (Airtel Money, Moov Money) ou carte bancaire.
           </p>
         </div>
 
@@ -224,7 +223,7 @@ export default function SubscriptionPage() {
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
                 <h3 className="font-serif text-base font-bold text-stone-900">
-                  Règlement sécurisé par Mobile Money (Chariow)
+                  Règlement sécurisé par Mobile Money
                 </h3>
                 <p className="text-[11px] text-stone-500">
                   Airtel Money &bull; Moov Money &bull; Wave &bull; Orange Money &bull; Carte
