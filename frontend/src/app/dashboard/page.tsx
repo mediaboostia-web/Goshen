@@ -537,7 +537,7 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6 sm:space-y-8">
         {/* ── 1. GABONESE SANCTUARY HERO ACCOUNT CARD (Rich Gradient, Pro Effects, Branch Switcher) ── */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 border border-emerald-800/80">
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 border border-emerald-800/80">
           {/* Top Bar inside Card */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-emerald-800/80 pb-5">
             <div className="flex items-start sm:items-center gap-3.5">
@@ -711,7 +711,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="mt-2 flex items-baseline gap-3 flex-wrap">
-                <span className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+                <span className="font-mono tabular-nums text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white">
                   {activeBalance.toLocaleString('fr-FR')}
                 </span>
                 <span className="text-xl sm:text-2xl font-bold text-amber-300 font-serif">
@@ -728,7 +728,7 @@ export default function DashboardPage() {
                 <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-950/70 px-2.5 py-1 text-stone-200 border border-emerald-700/60 shadow-xs">
                   <ShieldCheckIcon className="h-3.5 w-3.5 text-amber-300" />
                   <span>Seuil de réserve :</span>
-                  <span className="font-bold text-white">
+                  <span className="font-mono tabular-nums font-bold text-white">
                     {activeThreshold.toLocaleString('fr-FR')} FCFA
                   </span>
                 </div>
@@ -742,7 +742,7 @@ export default function DashboardPage() {
                   <TrendingUpIcon className="h-3.5 w-3.5 text-emerald-400" />
                   <span>Entrées du mois</span>
                 </div>
-                <p className="mt-1 text-base sm:text-lg font-bold text-emerald-300">
+                <p className="mt-1 text-base sm:text-lg font-mono tabular-nums font-bold text-emerald-300">
                   +{activeIncomes.toLocaleString('fr-FR')}{' '}
                   <span className="text-xs font-normal">F</span>
                 </p>
@@ -752,7 +752,7 @@ export default function DashboardPage() {
                   <TrendingDownIcon className="h-3.5 w-3.5 text-amber-400" />
                   <span>Dépenses du mois</span>
                 </div>
-                <p className="mt-1 text-base sm:text-lg font-bold text-stone-200">
+                <p className="mt-1 text-base sm:text-lg font-mono tabular-nums font-bold text-stone-200">
                   -{activeExpenses.toLocaleString('fr-FR')}{' '}
                   <span className="text-xs font-normal">F</span>
                 </p>
@@ -860,7 +860,7 @@ export default function DashboardPage() {
             <div className="mt-4">
               <div className="flex items-baseline justify-between">
                 <p className="text-xs text-stone-500">Marge au-dessus du seuil</p>
-                <span className="font-serif text-lg font-bold text-emerald-950">
+                <span className="font-mono tabular-nums text-lg font-bold text-emerald-950">
                   {reserveDiff > 0
                     ? `+${reserveDiff.toLocaleString('fr-FR')} FCFA`
                     : `${reserveDiff.toLocaleString('fr-FR')} FCFA`}
@@ -879,8 +879,10 @@ export default function DashboardPage() {
 
               <div className="mt-2 flex justify-between text-[11px] text-stone-400">
                 <span>0 F</span>
-                <span>Seuil : {activeThreshold.toLocaleString('fr-FR')} F</span>
-                <span className="font-semibold text-emerald-800">
+                <span className="font-mono tabular-nums">
+                  Seuil : {activeThreshold.toLocaleString('fr-FR')} F
+                </span>
+                <span className="font-mono tabular-nums font-semibold text-emerald-800">
                   {(activeThreshold * 2).toLocaleString('fr-FR')} F
                 </span>
               </div>
@@ -908,7 +910,7 @@ export default function DashboardPage() {
 
             <div className="mt-4">
               <p className="text-xs text-stone-500">Solde estimé au 30 du mois</p>
-              <p className="mt-1 font-serif text-3xl font-bold text-stone-900">
+              <p className="mt-1 font-mono tabular-nums text-3xl font-bold text-stone-900">
                 {netProjected.toLocaleString('fr-FR')}{' '}
                 <span className="text-sm font-sans font-normal text-stone-500">FCFA</span>
               </p>
@@ -916,19 +918,21 @@ export default function DashboardPage() {
               <div className="mt-3 space-y-1.5 text-xs text-stone-600 border-t border-stone-100 pt-3">
                 <div className="flex justify-between">
                   <span>Solde en caisse :</span>
-                  <span className="font-semibold text-stone-800">
+                  <span className="font-mono tabular-nums font-semibold text-stone-800">
                     {activeBalance.toLocaleString('fr-FR')} F
                   </span>
                 </div>
                 <div className="flex justify-between text-amber-800">
                   <span>Charges récurrentes prévues :</span>
-                  <span className="font-semibold">
+                  <span className="font-mono tabular-nums font-semibold">
                     -{pendingTotalAmount.toLocaleString('fr-FR')} F
                   </span>
                 </div>
                 <div className="flex justify-between font-bold text-emerald-900 pt-1 border-t border-dashed border-stone-200">
                   <span>Marge nette prévisionnelle :</span>
-                  <span>{netProjected.toLocaleString('fr-FR')} F</span>
+                  <span className="font-mono tabular-nums">
+                    {netProjected.toLocaleString('fr-FR')} F
+                  </span>
                 </div>
               </div>
             </div>
@@ -972,7 +976,7 @@ export default function DashboardPage() {
                     <ChurchIcon className="h-4 w-4 text-emerald-800" />
                     <span>Vue Consolidée (Toutes Paroisses)</span>
                   </span>
-                  <span className="text-[11px] font-semibold text-emerald-800">
+                  <span className="text-[11px] font-mono tabular-nums font-semibold text-emerald-800">
                     {useMockData
                       ? `${GOSHEN_MOCK_DATA.summary.totalBalance.toLocaleString('fr-FR')} F`
                       : `${branches.reduce((acc, b) => acc + b.currentBalance, 0).toLocaleString('fr-FR')} F`}
@@ -993,7 +997,7 @@ export default function DashboardPage() {
                       <BuildingBranchIcon className="h-3.5 w-3.5 text-stone-400" />
                       <span>{b.name}</span>
                     </span>
-                    <span className="font-semibold text-stone-900">
+                    <span className="font-mono tabular-nums font-semibold text-stone-900">
                       {b.currentBalance.toLocaleString('fr-FR')} F
                     </span>
                   </button>
@@ -1026,7 +1030,7 @@ export default function DashboardPage() {
                   Ventilation canonique des dîmes, offrandes et souscriptions spéciales
                 </p>
               </div>
-              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200 self-start">
+              <span className="text-xs font-mono tabular-nums font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200 self-start">
                 Total : {activeIncomes.toLocaleString('fr-FR')} FCFA
               </span>
             </div>
@@ -1073,7 +1077,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold text-emerald-950 font-serif">
+                      <p className="text-xs font-mono tabular-nums font-bold text-emerald-950">
                         {item.amount.toLocaleString('fr-FR')} F
                       </p>
                       <div
@@ -1137,7 +1141,7 @@ export default function DashboardPage() {
                           {rec.branchName} &bull; {rec.category}
                         </p>
                       </div>
-                      <span className="font-serif text-sm font-bold text-emerald-950 whitespace-nowrap">
+                      <span className="font-mono tabular-nums text-sm font-bold text-emerald-950 whitespace-nowrap">
                         {rec.amount.toLocaleString('fr-FR')} F
                       </span>
                     </div>
@@ -1298,7 +1302,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between sm:justify-end gap-4 self-end sm:self-center pl-14 sm:pl-0">
                     <div className="text-right">
                       <p
-                        className={`font-serif text-base sm:text-lg font-bold ${
+                        className={`font-mono tabular-nums text-base sm:text-lg font-bold ${
                           tx.type === 'INCOME' ? 'text-emerald-800' : 'text-stone-900'
                         }`}
                       >

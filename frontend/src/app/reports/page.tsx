@@ -376,13 +376,13 @@ export default function ReportsPage() {
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center border-y border-stone-200 py-4 bg-stone-50">
               <div>
                 <span className="text-[11px] text-stone-500 font-medium">Solde d’ouverture</span>
-                <p className="font-serif text-lg sm:text-xl font-bold text-stone-900 mt-1">
+                <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-stone-900 mt-1">
                   {preview.openingBalance.toLocaleString('fr-FR')} FCFA
                 </p>
               </div>
               <div>
                 <span className="text-[11px] text-emerald-700 font-medium">+ Total Entrées</span>
-                <p className="font-serif text-lg sm:text-xl font-bold text-emerald-800 mt-1">
+                <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-emerald-800 mt-1">
                   +{preview.totalIncome.toLocaleString('fr-FR')} FCFA
                 </p>
               </div>
@@ -390,13 +390,13 @@ export default function ReportsPage() {
                 <span className="text-[11px] text-stone-600 font-medium">
                   - Total Décaissements
                 </span>
-                <p className="font-serif text-lg sm:text-xl font-bold text-stone-800 mt-1">
+                <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-stone-800 mt-1">
                   -{preview.totalExpense.toLocaleString('fr-FR')} FCFA
                 </p>
               </div>
               <div>
                 <span className="text-[11px] text-emerald-950 font-bold">= Solde de clôture</span>
-                <p className="font-serif text-lg sm:text-xl font-bold text-emerald-950 mt-1">
+                <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-emerald-950 mt-1">
                   {preview.closingBalance.toLocaleString('fr-FR')} FCFA
                 </p>
               </div>
@@ -408,7 +408,7 @@ export default function ReportsPage() {
               <div>
                 <h3 className="font-serif text-sm font-bold text-emerald-950 pb-2 border-b border-emerald-200 uppercase tracking-wider flex justify-between">
                   <span>Détail des Entrées</span>
-                  <span className="text-emerald-800">
+                  <span className="font-mono tabular-nums text-emerald-800">
                     +{preview.totalIncome.toLocaleString('fr-FR')} FCFA
                   </span>
                 </h3>
@@ -422,7 +422,7 @@ export default function ReportsPage() {
                         className="flex justify-between py-1 border-b border-stone-100"
                       >
                         <span className="text-stone-700 font-medium">{catName}</span>
-                        <span className="font-bold text-stone-900">
+                        <span className="font-mono tabular-nums font-bold text-stone-900">
                           {sum.toLocaleString('fr-FR')} FCFA
                         </span>
                       </div>
@@ -435,7 +435,7 @@ export default function ReportsPage() {
               <div>
                 <h3 className="font-serif text-sm font-bold text-stone-900 pb-2 border-b border-stone-200 uppercase tracking-wider flex justify-between">
                   <span>Détail des Décaissements</span>
-                  <span className="text-stone-800">
+                  <span className="font-mono tabular-nums text-stone-800">
                     -{preview.totalExpense.toLocaleString('fr-FR')} FCFA
                   </span>
                 </h3>
@@ -449,7 +449,7 @@ export default function ReportsPage() {
                         className="flex justify-between py-1 border-b border-stone-100"
                       >
                         <span className="text-stone-700 font-medium">{catName}</span>
-                        <span className="font-bold text-stone-900">
+                        <span className="font-mono tabular-nums font-bold text-stone-900">
                           {sum.toLocaleString('fr-FR')} FCFA
                         </span>
                       </div>
@@ -498,7 +498,7 @@ export default function ReportsPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-emerald-800">
+                    <span className="font-mono tabular-nums font-bold text-emerald-800">
                       Solde : {rep.closingBalance.toLocaleString('fr-FR')} FCFA
                     </span>
                     {rep.pdfUrl ? (

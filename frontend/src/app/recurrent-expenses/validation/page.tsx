@@ -240,7 +240,7 @@ export default function RecurrentValidationPage() {
                   </div>
 
                   <div className="flex flex-col sm:items-end gap-3">
-                    <div className="font-serif text-3xl font-bold text-emerald-950">
+                    <div className="font-mono tabular-nums text-3xl font-bold text-emerald-950">
                       {exec.amount.toLocaleString('fr-FR')}{' '}
                       <span className="text-sm font-sans font-normal text-stone-600">FCFA</span>
                     </div>

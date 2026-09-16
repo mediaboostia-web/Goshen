@@ -196,7 +196,7 @@ export default function RecurrentExpensesPage() {
                     placeholder="50000"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 font-bold shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 font-mono text-stone-900 font-bold shadow-2xs focus:border-emerald-700 focus:outline-hidden"
                   />
                 </div>
                 <div>
@@ -339,7 +339,7 @@ export default function RecurrentExpensesPage() {
                     </span>
                   </div>
                   <h3 className="mt-3 font-serif text-lg font-bold text-stone-900">{m.name}</h3>
-                  <p className="font-serif text-2xl font-bold text-emerald-950 mt-1">
+                  <p className="font-mono tabular-nums text-2xl font-bold text-emerald-950 mt-1">
                     {m.amount.toLocaleString('fr-FR')}{' '}
                     <span className="text-xs font-sans font-normal text-stone-500">FCFA</span>
                   </p>

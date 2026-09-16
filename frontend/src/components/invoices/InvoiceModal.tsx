@@ -409,7 +409,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                     <span className="font-bold text-xs uppercase tracking-wider">
                       Total général :
                     </span>
-                    <span className="font-serif font-black text-lg tracking-tight">
+                    <span className="font-mono tabular-nums font-black text-lg tracking-tight">
                       {data.grandTotal.toLocaleString('fr-FR')} FCFA
                     </span>
                   </div>

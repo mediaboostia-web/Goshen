@@ -3,6 +3,15 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import {
+  CoinsHandIcon,
+  TrendingUpIcon,
+  CameraIcon,
+  ShieldCheckIcon,
+  CalendarClockIcon,
+  CheckCircleIcon,
+  ArrowRightIcon,
+} from '@/components/icons/ChurchIcons';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -139,7 +148,11 @@ export default function HomePage() {
 
         <div className="mt-14 grid md:grid-cols-3 gap-8">
           <div className="rounded-2xl border border-stone-200 bg-white p-7 shadow-xs">
-            <div className="text-3xl mb-4">📖 &rarr; 📱</div>
+            <div className="flex items-center gap-2 mb-4 text-emerald-700">
+              <CoinsHandIcon className="h-7 w-7" />
+              <ArrowRightIcon className="h-4 w-4 text-stone-400" />
+              <TrendingUpIcon className="h-7 w-7" />
+            </div>
             <h3 className="font-serif text-xl font-bold text-emerald-950">
               Saisie numérique post-culte
             </h3>
@@ -150,7 +163,11 @@ export default function HomePage() {
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-white p-7 shadow-xs">
-            <div className="text-3xl mb-4">🧾 &rarr; ☁️</div>
+            <div className="flex items-center gap-2 mb-4 text-emerald-700">
+              <CameraIcon className="h-7 w-7" />
+              <ArrowRightIcon className="h-4 w-4 text-stone-400" />
+              <ShieldCheckIcon className="h-7 w-7" />
+            </div>
             <h3 className="font-serif text-xl font-bold text-emerald-950">
               Reçus photos & Traçabilité
             </h3>
@@ -161,7 +178,11 @@ export default function HomePage() {
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-white p-7 shadow-xs">
-            <div className="text-3xl mb-4">⏰ &rarr; ✅</div>
+            <div className="flex items-center gap-2 mb-4 text-emerald-700">
+              <CalendarClockIcon className="h-7 w-7" />
+              <ArrowRightIcon className="h-4 w-4 text-stone-400" />
+              <CheckCircleIcon className="h-7 w-7" />
+            </div>
             <h3 className="font-serif text-xl font-bold text-emerald-950">
               Validation récurrente en 1 clic
             </h3>

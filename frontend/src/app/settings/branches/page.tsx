@@ -116,7 +116,7 @@ export default function BranchesPage() {
                   step="5000"
                   value={threshold}
                   onChange={(e) => setThreshold(Number(e.target.value))}
-                  className="w-full rounded-lg border border-stone-300 p-2 text-stone-900 focus:outline-hidden"
+                  className="w-full rounded-lg border border-stone-300 p-2 font-mono text-stone-900 focus:outline-hidden"
                 />
                 <span className="text-[11px] text-stone-400 mt-1 block">
                   Une alerte sera émise dès que la caisse descendra sous ce montant.
@@ -190,7 +190,7 @@ export default function BranchesPage() {
 
                 <div className="mt-4 rounded-xl bg-stone-50 p-3 border border-stone-200">
                   <span className="text-[11px] text-stone-500">Solde actuel de caisse</span>
-                  <p className="font-serif text-2xl font-bold text-emerald-950 mt-0.5">
+                  <p className="font-mono tabular-nums text-2xl font-bold text-emerald-950 mt-0.5">
                     {b.currentBalance.toLocaleString('fr-FR')}{' '}
                     <span className="text-xs font-sans font-normal text-stone-600">FCFA</span>
                   </p>
@@ -198,7 +198,7 @@ export default function BranchesPage() {
 
                 <p className="mt-3 text-[11px] text-stone-500">
                   Seuil d’alerte :{' '}
-                  <strong className="text-stone-700">
+                  <strong className="font-mono tabular-nums text-stone-700">
                     {b.lowBalanceThreshold.toLocaleString('fr-FR')} FCFA
                   </strong>
                 </p>

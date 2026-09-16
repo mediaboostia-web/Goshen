@@ -375,7 +375,7 @@ export default function ExpensesPage() {
                         placeholder="Ex: 35000"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-bold text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
+                        className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-mono font-bold text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
                       />
                       <span className="absolute inset-y-0 right-3 flex items-center font-bold text-stone-400">
                         FCFA
@@ -494,7 +494,7 @@ export default function ExpensesPage() {
                 </h2>
                 <p className="text-xs text-stone-500">
                   Total décaissé affiché :{' '}
-                  <span className="font-bold text-stone-900">
+                  <span className="font-mono tabular-nums font-bold text-stone-900">
                     -{totalExpense.toLocaleString('fr-FR')} FCFA
                   </span>
                 </p>
@@ -544,7 +544,7 @@ export default function ExpensesPage() {
                           )}
                         </td>
                         <td className="py-3 text-stone-600 font-medium">{exp.branch.name}</td>
-                        <td className="py-3 text-right font-bold text-stone-900">
+                        <td className="py-3 text-right font-mono tabular-nums font-bold text-stone-900">
                           -{exp.amount.toLocaleString('fr-FR')} FCFA
                         </td>
                         <td className="py-3 text-center">

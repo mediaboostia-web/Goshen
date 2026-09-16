@@ -801,7 +801,7 @@ function SettingsContent() {
                 </div>
 
                 {/* Subscription Card */}
-                <div className="rounded-xl border border-stone-200 bg-[#064e3b] p-6 text-white shadow-xs">
+                <div className="rounded-xl border border-stone-200 bg-stone-900 p-6 text-white shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <p className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">
@@ -857,7 +857,9 @@ function SettingsContent() {
                             Abonnement Goshen Premium (30 jours)
                           </td>
                           <td className="py-3 text-stone-600">Airtel Money Gabon</td>
-                          <td className="py-3 text-right font-bold text-stone-900">15 000 FCFA</td>
+                          <td className="py-3 text-right font-mono tabular-nums font-bold text-stone-900">
+                            15 000 FCFA
+                          </td>
                           <td className="py-3 text-center">
                             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                               RÉGLÉ
@@ -870,7 +872,9 @@ function SettingsContent() {
                             Abonnement Goshen Premium (30 jours)
                           </td>
                           <td className="py-3 text-stone-600">Moov Money Gabon</td>
-                          <td className="py-3 text-right font-bold text-stone-900">15 000 FCFA</td>
+                          <td className="py-3 text-right font-mono tabular-nums font-bold text-stone-900">
+                            15 000 FCFA
+                          </td>
                           <td className="py-3 text-center">
                             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                               RÉGLÉ
