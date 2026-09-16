@@ -51,7 +51,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       prisma.recurringExpenseExecution.findMany({
         where: {
           status: 'PENDING',
-          recurringExpense: { organizationId: access.church.id },
+          recurringExpense: {
+            organizationId: access.church.id,
+            ...(branchId && branchId !== 'CONSOLIDATED' ? { branchId } : {}),
+          },
         },
         include: {
           recurringExpense: {
