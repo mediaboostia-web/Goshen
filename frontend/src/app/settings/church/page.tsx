@@ -131,8 +131,8 @@ export default function ChurchSettingsPage() {
             </div>
           )}
 
-          {/* Add Category Form — Pastor only, mirrors the backend gate */}
-          {church?.isPastor && (
+          {/* Add Category Form — Pastor & Treasurer, mirrors the backend gate */}
+          {(church?.isPastor || church?.isTreasurer) && (
             <form
               onSubmit={handleAddCategory}
               className="flex flex-wrap items-center gap-3 text-xs"

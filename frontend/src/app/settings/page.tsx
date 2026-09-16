@@ -18,6 +18,7 @@ import {
   CheckCircleIcon,
   UsersGroupIcon,
   PlusIcon,
+  ReceiptTextIcon,
 } from '@/components/icons/ChurchIcons';
 
 type TabKey = 'compte' | 'securite' | 'membres' | 'eglise' | 'facturation';
@@ -748,14 +749,23 @@ function SettingsContent() {
                     </p>
                   </div>
 
-                  <div className="pt-2 flex justify-between items-center border-t border-stone-100 mt-6">
-                    <Link
-                      href="/settings/branches"
-                      className="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1"
-                    >
-                      <BuildingBranchIcon className="h-4 w-4" />
-                      <span>Gérer les annexes et paroisses &rarr;</span>
-                    </Link>
+                  <div className="pt-2 flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-stone-100 mt-6 gap-3">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <Link
+                        href="/settings/branches"
+                        className="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1"
+                      >
+                        <BuildingBranchIcon className="h-4 w-4" />
+                        <span>Gérer les annexes et paroisses &rarr;</span>
+                      </Link>
+                      <Link
+                        href="/settings/church"
+                        className="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1"
+                      >
+                        <ReceiptTextIcon className="h-4 w-4" />
+                        <span>Gérer les catégories financières &rarr;</span>
+                      </Link>
+                    </div>
 
                     <button
                       type="submit"
@@ -775,7 +785,7 @@ function SettingsContent() {
                 <div className="border-b border-stone-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h2 className="font-serif text-xl font-bold text-stone-900">
-                      Abonnement & Règlement Chariow
+                      Abonnement & Règlement
                     </h2>
                     <p className="text-xs text-stone-500 mt-0.5">
                       Paiements mensuels via Airtel Money & Moov Money Gabon
@@ -799,8 +809,8 @@ function SettingsContent() {
                         Abonnement Actif &bull; {church?.plan || 'PREMIUM'}
                       </p>
                       <p className="text-xs text-emerald-100/80 mt-1">
-                        Accès complet multi-paroisses, pièces justificatives Cloudinary illimitées
-                        et reçus dominicaux.
+                        Accès complet multi-paroisses, pièces justificatives illimitées et reçus
+                        dominicaux.
                       </p>
                     </div>
 
@@ -814,7 +824,7 @@ function SettingsContent() {
 
                   <div className="mt-6 pt-4 border-t border-emerald-800 flex items-center justify-between text-xs text-emerald-200/90">
                     <span>
-                      Opérateur partenaire : <strong>Chariow Mobile Money Gabon</strong>
+                      Moyen de paiement : <strong>Mobile Money Gabon</strong>
                     </span>
                     <span>
                       Prochaine échéance : <strong>14 Octobre 2026</strong>

@@ -76,10 +76,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
-    // PRD F12/F15: category CRUD is reserved to the Pastor role.
-    if (!access.isPastor) {
+    // PRD F12/F15: category CRUD is reserved to whoever actually enters
+    // money day-to-day — same gate as transactions/recurring expenses.
+    if (!access.isPastor && !access.isTreasurer) {
       return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Seul le pasteur peut gérer les catégories.' },
+        {
+          error: 'FORBIDDEN',
+          message: 'Seuls le pasteur et le trésorier peuvent gérer les catégories.',
+        },
         { status: 403 },
       );
     }
