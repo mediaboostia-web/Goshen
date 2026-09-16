@@ -19,7 +19,15 @@ const CreateTransactionBody = z.object({
   date: z.string().optional(),
   beneficiary: z.string().optional(),
   notes: z.string().optional(),
-  receiptUrl: z.string().url().optional(),
+  // Reject non-https schemes (e.g. javascript:) — this value is rendered
+  // back verbatim as an <a href>/<img src> to every member who views the
+  // transaction, so a permissive z.string().url() would let a Treasurer/
+  // Pastor plant a stored-XSS payload for their own org's other members.
+  receiptUrl: z
+    .string()
+    .url()
+    .refine((u) => u.startsWith('https://'), 'receiptUrl doit être une URL https')
+    .optional(),
   receiptPublicId: z.string().optional(),
 });
 
