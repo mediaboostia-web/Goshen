@@ -103,9 +103,15 @@ export async function POST(
           { status: 503 },
         );
       }
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : String(err);
       log.warn('invoice PDF generation/upload failed', {
         transactionId: transaction.id,
-        error: err instanceof Error ? err.message : String(err),
+        error: message,
       });
       return NextResponse.json({ error: 'INVOICE_ARCHIVE_FAILED' }, { status: 502 });
     }

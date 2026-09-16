@@ -87,7 +87,14 @@ function configureOnce(): void {
 export async function uploadBuffer(
   publicId: string,
   body: Buffer,
-  contentType: string,
+  // Accepted for API compat with every caller (upload/reports/invoice
+  // routes) but not forwarded to Cloudinary — its `metadata` option is for
+  // structured metadata fields that must be predefined in the account's
+  // console (Settings > Metadata), not an arbitrary key=value string; a
+  // never-defined field name ("mime") made every upload fail with
+  // "Metadata External IDs do not exist". Cloudinary already infers content
+  // type from the uploaded bytes via `resource_type: 'auto'` below.
+  _contentType: string,
 ): Promise<UploadResult> {
   configureOnce();
 
@@ -99,8 +106,6 @@ export async function uploadBuffer(
     resource_type: 'auto',
   };
   if (_preset) options.upload_preset = _preset;
-  // Surface the validated MIME so transformations/CDN behave sensibly.
-  if (contentType) options.metadata = `mime=${contentType}`;
 
   const res = await new Promise<UploadApiResponse>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(options, (err, response) => {
