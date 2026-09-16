@@ -70,6 +70,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState<boolean>(false);
+  const [modalInvoiceData, setModalInvoiceData] = useState<InvoiceData | null>(null);
+  const [downloadingTxId, setDownloadingTxId] = useState<string | null>(null);
 
   const printableRef = useRef<HTMLDivElement>(null);
 
@@ -229,6 +231,87 @@ export default function ReportsPage() {
     signatoryRole: 'Trésorier Général',
   };
 
+  function buildTransactionInvoiceData(tx: ReportPreview['transactions'][number]): InvoiceData {
+    const isIncome = tx.type === 'INCOME';
+    return {
+      transactionId: tx.id,
+      invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
+      date: new Date(tx.date).toLocaleDateString('fr-FR'),
+      churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+      churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      churchAddress: `${tx.branch.name}, Libreville, Gabon`,
+      recipientName: isIncome
+        ? 'Culte Dominical & Assemblée Locale'
+        : `Bénéficiaire — ${tx.category.name}`,
+      recipientAddress: 'Libreville, République Gabonaise',
+      recipientContact: 'finance@eglise.ga',
+      items: [
+        {
+          no: '01',
+          description: tx.category.name,
+          subDescription: tx.notes || `Écriture enregistrée le ${tx.branch.name}`,
+          price: tx.amount,
+          qty: '1',
+          total: tx.amount,
+        },
+      ],
+      subTotal: tx.amount,
+      tax: 0,
+      discount: 0,
+      grandTotal: tx.amount,
+      paymentMethod: 'Caisse Locale Espèces / Airtel Money',
+      terms: 'Récépissé officiel certifié conforme aux registres paroissiaux de l’église.',
+      signatoryName: isIncome ? 'Diacre Trésorier de Caisse' : 'Le Trésorier',
+      signatoryRole: isIncome ? 'Comptabilité Paroissiale' : 'Trésorier de l’Église',
+    };
+  }
+
+  function openTransactionPreview(tx: ReportPreview['transactions'][number]) {
+    setModalInvoiceData(buildTransactionInvoiceData(tx));
+    setIsInvoiceModalOpen(true);
+  }
+
+  async function downloadTransactionInvoice(tx: ReportPreview['transactions'][number]) {
+    setDownloadingTxId(tx.id);
+    try {
+      const built = buildTransactionInvoiceData(tx);
+      const res = await api<{ transaction: { receiptUrl: string | null } }>(
+        `/api/transactions/${tx.id}/invoice`,
+        {
+          method: 'POST',
+          body: {
+            invoiceNumber: built.invoiceNumber,
+            date: built.date,
+            recipientName: built.recipientName,
+            recipientAddress: built.recipientAddress,
+            recipientContact: built.recipientContact,
+            items: built.items,
+            subTotal: built.subTotal,
+            tax: built.tax,
+            discount: built.discount,
+            grandTotal: built.grandTotal,
+            paymentMethod: built.paymentMethod,
+            terms: built.terms,
+            signatoryName: built.signatoryName,
+            signatoryRole: built.signatoryRole,
+          },
+        },
+      );
+      if (res.transaction?.receiptUrl) {
+        window.open(res.transaction.receiptUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        toast('Le PDF n’a pas pu être généré pour le moment.', 'error');
+      }
+    } catch (err) {
+      toast(
+        err instanceof ApiError ? err.message : 'Téléchargement impossible pour le moment.',
+        'error',
+      );
+    } finally {
+      setDownloadingTxId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] text-stone-900 pb-24 md:pb-12 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       <AppHeader />
@@ -250,7 +333,10 @@ export default function ReportsPage() {
             {/* New Preview Invoice Button */}
             <button
               type="button"
-              onClick={() => setIsInvoiceModalOpen(true)}
+              onClick={() => {
+                setModalInvoiceData(invoiceData);
+                setIsInvoiceModalOpen(true);
+              }}
               className="rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] transition-all flex items-center gap-2 cursor-pointer"
             >
               <DocumentReportIcon className="h-4 w-4" />
@@ -337,7 +423,7 @@ export default function ReportsPage() {
         {preview && (
           <div
             ref={printableRef}
-            className="rounded-2xl border border-stone-300 bg-white p-8 sm:p-12 shadow-md max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0"
+            className="print-area rounded-2xl border border-stone-300 bg-white p-8 sm:p-12 shadow-md max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0"
           >
             {/* Header with church info */}
             <div className="border-b-2 border-emerald-900 pb-6 flex justify-between items-start">
@@ -481,6 +567,70 @@ export default function ReportsPage() {
           </div>
         )}
 
+        {/* Individual invoices for the period (Hidden on print) */}
+        {preview && preview.transactions.length > 0 && (
+          <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
+            <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 border-b border-stone-100 mb-4">
+              Factures & Reçus de la période ({preview.transactions.length})
+            </h2>
+            <div className="divide-y divide-stone-100 text-xs">
+              {preview.transactions.map((tx) => (
+                <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="font-bold text-stone-900 truncate block">
+                      {tx.category.name}
+                    </span>
+                    <p className="text-[11px] text-stone-500">
+                      {new Date(tx.date).toLocaleDateString('fr-FR')} &bull; {tx.branch.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`font-mono tabular-nums font-bold ${
+                        tx.type === 'INCOME' ? 'text-emerald-800' : 'text-stone-800'
+                      }`}
+                    >
+                      {tx.type === 'INCOME' ? '+' : '-'}
+                      {tx.amount.toLocaleString('fr-FR')} FCFA
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => openTransactionPreview(tx)}
+                      className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1 cursor-pointer"
+                      title="Prévisualiser la facture"
+                    >
+                      <DocumentReportIcon className="h-3.5 w-3.5" />
+                      <span className="text-[11px]">Aperçu</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void downloadTransactionInvoice(tx)}
+                      disabled={downloadingTxId === tx.id}
+                      className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 hover:bg-emerald-100 disabled:opacity-60 font-bold text-emerald-800 flex items-center gap-1 cursor-pointer"
+                      title="Télécharger la facture PDF"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span className="text-[11px]">
+                        {downloadingTxId === tx.id ? '…' : 'Télécharger'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Archived reports list (Hidden on print) */}
         {archived.length > 0 && (
           <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
@@ -522,7 +672,10 @@ export default function ReportsPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() => setIsInvoiceModalOpen(true)}
+                      onClick={() => {
+                        setModalInvoiceData(invoiceData);
+                        setIsInvoiceModalOpen(true);
+                      }}
                       className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1 cursor-pointer"
                       title="Voir la facture officielle"
                     >
@@ -541,7 +694,7 @@ export default function ReportsPage() {
       <InvoiceModal
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}
-        data={invoiceData}
+        data={modalInvoiceData}
       />
     </div>
   );
