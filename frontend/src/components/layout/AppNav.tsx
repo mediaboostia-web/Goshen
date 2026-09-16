@@ -95,12 +95,8 @@ export function AppNav() {
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation Bar - Smart scroll reveal */}
-      <nav
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-stone-200 bg-white transition-transform duration-300 md:hidden ${
-          isVisible ? 'translate-y-0' : 'translate-y-full'
-        }`}
-      >
+      {/* Mobile Bottom Navigation Bar - always fixed, never hides on scroll */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-stone-200 bg-white md:hidden">
         <div className="grid grid-cols-5 py-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
