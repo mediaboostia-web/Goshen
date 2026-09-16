@@ -72,6 +72,8 @@ export default function ReportsPage() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState<boolean>(false);
   const [modalInvoiceData, setModalInvoiceData] = useState<InvoiceData | null>(null);
   const [downloadingTxId, setDownloadingTxId] = useState<string | null>(null);
+  const [showBilanPreview, setShowBilanPreview] = useState<boolean>(false);
+  const [printRequested, setPrintRequested] = useState<boolean>(false);
 
   const printableRef = useRef<HTMLDivElement>(null);
 
@@ -163,8 +165,19 @@ export default function ReportsPage() {
   }
 
   function handlePrint() {
-    window.print();
+    if (!preview) return;
+    setShowBilanPreview(true);
+    setPrintRequested(true);
   }
+
+  // The bilan card is unmounted when hidden, so window.print() needs to wait
+  // for it to actually be in the DOM after handlePrint reveals it.
+  useEffect(() => {
+    if (printRequested && showBilanPreview) {
+      window.print();
+      setPrintRequested(false);
+    }
+  }, [printRequested, showBilanPreview]);
 
   const selectedBranchObj = branches.find((b) => b.id === branchScope);
 
@@ -345,6 +358,14 @@ export default function ReportsPage() {
 
             <button
               type="button"
+              onClick={() => setShowBilanPreview((v) => !v)}
+              disabled={!preview}
+              className="rounded-xl border border-emerald-700 bg-white px-4 py-2.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-50 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>{showBilanPreview ? 'Masquer l’aperçu' : 'Aperçu du Bilan'}</span>
+            </button>
+            <button
+              type="button"
               onClick={handlePrint}
               disabled={!preview}
               className="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -419,12 +440,90 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Printable Official A4 Report Section */}
-        {preview && (
+        {/* Individual invoices for the period (Hidden on print) — primary
+            content: the page lands here instead of an unrequested bilan
+            preview, which only appears via "Aperçu du Bilan" below. */}
+        {preview && preview.transactions.length > 0 && (
+          <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
+            <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 border-b border-stone-100 mb-4">
+              Factures & Reçus de la période ({preview.transactions.length})
+            </h2>
+            <div className="divide-y divide-stone-100 text-xs">
+              {preview.transactions.map((tx) => (
+                <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="font-bold text-stone-900 truncate block">
+                      {tx.category.name}
+                    </span>
+                    <p className="text-[11px] text-stone-500">
+                      {new Date(tx.date).toLocaleDateString('fr-FR')} &bull; {tx.branch.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`font-mono tabular-nums font-bold ${
+                        tx.type === 'INCOME' ? 'text-emerald-800' : 'text-stone-800'
+                      }`}
+                    >
+                      {tx.type === 'INCOME' ? '+' : '-'}
+                      {tx.amount.toLocaleString('fr-FR')} FCFA
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => openTransactionPreview(tx)}
+                      className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1 cursor-pointer"
+                      title="Prévisualiser la facture"
+                    >
+                      <DocumentReportIcon className="h-3.5 w-3.5" />
+                      <span className="text-[11px]">Aperçu</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void downloadTransactionInvoice(tx)}
+                      disabled={downloadingTxId === tx.id}
+                      className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 hover:bg-emerald-100 disabled:opacity-60 font-bold text-emerald-800 flex items-center gap-1 cursor-pointer"
+                      title="Télécharger la facture PDF"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span className="text-[11px]">
+                        {downloadingTxId === tx.id ? '…' : 'Télécharger'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Printable Official A4 Report Section — hidden until the user asks
+            to see it via "Aperçu du Bilan" (or "Imprimer Bilan A4", which
+            reveals it then prints). */}
+        {preview && showBilanPreview && (
           <div
             ref={printableRef}
             className="print-area rounded-2xl border border-stone-300 bg-white p-8 sm:p-12 shadow-md max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0"
           >
+            <div className="print:hidden flex justify-end -mt-4 -mr-4 mb-2 sm:-mt-8 sm:-mr-8">
+              <button
+                type="button"
+                onClick={() => setShowBilanPreview(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 font-bold transition-colors cursor-pointer"
+                title="Masquer l’aperçu"
+              >
+                &times;
+              </button>
+            </div>
             {/* Header with church info */}
             <div className="border-b-2 border-emerald-900 pb-6 flex justify-between items-start">
               <div>
@@ -563,70 +662,6 @@ export default function ReportsPage() {
             <div className="mt-10 pt-4 border-t border-stone-100 text-center text-[10px] text-stone-400 italic">
               « Que tout se fasse avec bienséance et avec ordre. » &mdash; 1 Corinthiens 14:40
               &bull; Document généré via Goshen Finance.
-            </div>
-          </div>
-        )}
-
-        {/* Individual invoices for the period (Hidden on print) */}
-        {preview && preview.transactions.length > 0 && (
-          <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
-            <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 border-b border-stone-100 mb-4">
-              Factures & Reçus de la période ({preview.transactions.length})
-            </h2>
-            <div className="divide-y divide-stone-100 text-xs">
-              {preview.transactions.map((tx) => (
-                <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="font-bold text-stone-900 truncate block">
-                      {tx.category.name}
-                    </span>
-                    <p className="text-[11px] text-stone-500">
-                      {new Date(tx.date).toLocaleDateString('fr-FR')} &bull; {tx.branch.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`font-mono tabular-nums font-bold ${
-                        tx.type === 'INCOME' ? 'text-emerald-800' : 'text-stone-800'
-                      }`}
-                    >
-                      {tx.type === 'INCOME' ? '+' : '-'}
-                      {tx.amount.toLocaleString('fr-FR')} FCFA
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => openTransactionPreview(tx)}
-                      className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1 cursor-pointer"
-                      title="Prévisualiser la facture"
-                    >
-                      <DocumentReportIcon className="h-3.5 w-3.5" />
-                      <span className="text-[11px]">Aperçu</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void downloadTransactionInvoice(tx)}
-                      disabled={downloadingTxId === tx.id}
-                      className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 hover:bg-emerald-100 disabled:opacity-60 font-bold text-emerald-800 flex items-center gap-1 cursor-pointer"
-                      title="Télécharger la facture PDF"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      <span className="text-[11px]">
-                        {downloadingTxId === tx.id ? '…' : 'Télécharger'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}

@@ -222,9 +222,10 @@ describe('POST /api/reports', () => {
     const body = await res.json();
     expect(reportCreate).toHaveBeenCalledTimes(1);
     expect(cl.uploadBuffer).toHaveBeenCalledTimes(1);
-    // publicId is scoped by org + report id, and ends in .pdf.
+    // publicId is scoped by org + report id; no .pdf suffix — Cloudinary
+    // appends the detected format extension to the delivery URL itself.
     const uploadArgs = vi.mocked(cl.uploadBuffer).mock.calls[0];
-    expect(uploadArgs?.[0]).toBe('reports/org-1/report-1.pdf');
+    expect(uploadArgs?.[0]).toBe('reports/org-1/report-1');
     expect(reportUpdate).toHaveBeenCalledWith({
       where: { id: 'report-1' },
       data: { pdfUrl: expect.stringContaining('https://res.cloudinary.com/') },
