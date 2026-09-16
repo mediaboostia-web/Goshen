@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent, useEffect, Suspense } from 'react';
+import { useState, type FormEvent, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
@@ -50,40 +50,8 @@ function SettingsContent() {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // Tab: Membres & Rôles
-  const [members, setMembers] = useState<MemberItem[]>([
-    {
-      id: 'm-1',
-      name: 'Pasteur Jean-Marc',
-      email: user?.email || 'admin@example.com',
-      role: 'PASTOR',
-      branchName: 'Toutes les paroisses',
-      status: 'ACTIVE',
-    },
-    {
-      id: 'm-2',
-      name: 'Frère André Mba',
-      email: 'user@example.com',
-      role: 'TREASURER',
-      branchName: 'Paroisse Centrale (Mont-Bouët)',
-      status: 'ACTIVE',
-    },
-    {
-      id: 'm-3',
-      name: 'Diacre Samuel',
-      email: 'samuel@eglise.ga',
-      role: 'TREASURER',
-      branchName: 'Annexe Akanda (Cap Estérias)',
-      status: 'ACTIVE',
-    },
-    {
-      id: 'm-4',
-      name: 'Sœur Christine',
-      email: 'auditeur@eglise.ga',
-      role: 'AUDITOR',
-      branchName: 'Toutes les paroisses (Audit)',
-      status: 'ACTIVE',
-    },
-  ]);
+  const [members, setMembers] = useState<MemberItem[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<
@@ -105,6 +73,41 @@ function SettingsContent() {
       setCurrency(church.currency || 'FCFA');
     }
   }, [church]);
+
+  interface ApiMember {
+    id: string;
+    role: 'PASTOR' | 'TREASURER' | 'SECRETARY' | 'AUDITOR';
+    user: { name: string | null; email: string };
+    branchAccess: { branch: { name: string } }[];
+  }
+
+  const loadMembers = useCallback(async () => {
+    setLoadingMembers(true);
+    try {
+      const res = await api<{ members: ApiMember[] }>('/api/church/members');
+      setMembers(
+        (res.members || []).map((m) => ({
+          id: m.id,
+          name: m.user.name || m.user.email,
+          email: m.user.email,
+          role: m.role,
+          branchName:
+            m.branchAccess.length > 0
+              ? m.branchAccess.map((ba) => ba.branch.name).join(', ')
+              : 'Toutes les paroisses',
+          status: 'ACTIVE',
+        })),
+      );
+    } catch {
+      // Handled — the list stays empty, the section below shows nothing rather than stale data.
+    } finally {
+      setLoadingMembers(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadMembers();
+  }, [loadMembers]);
 
   // Handle password submission
   async function onSubmitPassword(e: FormEvent) {
@@ -149,38 +152,24 @@ function SettingsContent() {
 
     setInvitingMember(true);
     try {
-      const selectedBranchName =
-        newMemberBranch === 'ALL'
-          ? 'Toutes les paroisses'
-          : branches.find((b) => b.id === newMemberBranch)?.name || 'Paroisse locale';
+      const memberName = newMemberName.trim() || newMemberEmail.split('@')[0] || newMemberEmail;
 
-      const createdMember: MemberItem = {
-        id: `m-${Date.now()}`,
-        name: newMemberName.trim() || newMemberEmail.split('@')[0] || newMemberEmail,
-        email: newMemberEmail.trim(),
-        role: newMemberRole,
-        branchName: selectedBranchName,
-        status: 'ACTIVE',
-      };
+      await api('/api/church/members', {
+        method: 'POST',
+        body: {
+          name: memberName,
+          email: newMemberEmail.trim(),
+          role: newMemberRole,
+          branchIds: newMemberBranch === 'ALL' ? [] : [newMemberBranch],
+        },
+      });
 
-      try {
-        await api('/api/church/members', {
-          method: 'POST',
-          body: {
-            name: createdMember.name,
-            email: createdMember.email,
-            role: createdMember.role,
-            branchIds: newMemberBranch === 'ALL' ? [] : [newMemberBranch],
-          },
-        });
-      } catch {
-        // Optimistic preview support
-      }
-
-      setMembers((prev) => [createdMember, ...prev]);
+      await loadMembers();
       setNewMemberName('');
       setNewMemberEmail('');
-      toast(`Rôle ${newMemberRole} attribué à ${createdMember.name}.`, 'success');
+      toast(`Rôle ${newMemberRole} attribué à ${memberName}.`, 'success');
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Erreur lors de l’ajout du membre.', 'error');
     } finally {
       setInvitingMember(false);
     }
@@ -191,11 +180,14 @@ function SettingsContent() {
     e.preventDefault();
     setSavingChurch(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
+      await api('/api/church', {
+        method: 'PATCH',
+        body: { name: churchName.trim(), denomination: denomination.trim() || undefined, currency },
+      });
       toast('Informations de la communauté enregistrées.', 'success');
       await refreshBranches();
-    } catch {
-      toast('Erreur lors de la sauvegarde.', 'error');
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Erreur lors de la sauvegarde.', 'error');
     } finally {
       setSavingChurch(false);
     }
@@ -632,53 +624,63 @@ function SettingsContent() {
                   </div>
 
                   <div className="divide-y divide-stone-100">
-                    {members.map((m) => (
-                      <div
-                        key={m.id}
-                        className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-sm">
-                            {m.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs font-bold text-stone-900">{m.name}</p>
-                              <span
-                                className={`rounded px-1.5 py-0.2 text-[10px] font-bold ${
-                                  m.role === 'PASTOR'
-                                    ? 'bg-purple-50 text-purple-800 border border-purple-200'
-                                    : m.role === 'TREASURER'
-                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                      : m.role === 'AUDITOR'
-                                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                        : 'bg-stone-100 text-stone-800'
-                                }`}
-                              >
-                                {m.role === 'PASTOR'
-                                  ? 'PASTEUR'
-                                  : m.role === 'TREASURER'
-                                    ? 'TRÉSORIER'
-                                    : m.role === 'AUDITOR'
-                                      ? 'COMMISSAIRE'
-                                      : 'SECRÉTAIRE'}
-                              </span>
+                    {loadingMembers ? (
+                      <p className="py-6 text-center text-xs text-stone-500">
+                        Chargement des membres…
+                      </p>
+                    ) : members.length === 0 ? (
+                      <p className="py-6 text-center text-xs text-stone-500">
+                        Aucun membre pour l’instant.
+                      </p>
+                    ) : (
+                      members.map((m) => (
+                        <div
+                          key={m.id}
+                          className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-sm">
+                              {m.name.charAt(0).toUpperCase()}
                             </div>
-                            <p className="text-[11px] text-stone-500 mt-0.5">{m.email}</p>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-bold text-stone-900">{m.name}</p>
+                                <span
+                                  className={`rounded px-1.5 py-0.2 text-[10px] font-bold ${
+                                    m.role === 'PASTOR'
+                                      ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                                      : m.role === 'TREASURER'
+                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                        : m.role === 'AUDITOR'
+                                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                          : 'bg-stone-100 text-stone-800'
+                                  }`}
+                                >
+                                  {m.role === 'PASTOR'
+                                    ? 'PASTEUR'
+                                    : m.role === 'TREASURER'
+                                      ? 'TRÉSORIER'
+                                      : m.role === 'AUDITOR'
+                                        ? 'COMMISSAIRE'
+                                        : 'SECRÉTAIRE'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-stone-500 mt-0.5">{m.email}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 self-end sm:self-center">
+                            <span className="text-[11px] text-stone-600 font-medium bg-stone-50 border border-stone-200 px-2 py-0.5 rounded">
+                              {m.branchName}
+                            </span>
+                            <span
+                              className="rounded-full bg-emerald-100 h-2 w-2"
+                              title="Compte actif"
+                            />
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3 self-end sm:self-center">
-                          <span className="text-[11px] text-stone-600 font-medium bg-stone-50 border border-stone-200 px-2 py-0.5 rounded">
-                            {m.branchName}
-                          </span>
-                          <span
-                            className="rounded-full bg-emerald-100 h-2 w-2"
-                            title="Compte actif"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -726,38 +728,24 @@ function SettingsContent() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-stone-700 mb-1">
-                        Devise monétaire paritaire
-                      </label>
-                      <Select
-                        aria-label="Devise monétaire paritaire"
-                        value={currency}
-                        onChange={setCurrency}
-                        options={[
-                          { value: 'FCFA', label: 'FCFA (Franc CFA — CEMAC / UEMOA)' },
-                          { value: 'EUR', label: 'EUR (€ Euro)' },
-                          { value: 'USD', label: 'USD ($ Dollar américain)' },
-                        ]}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-stone-700 mb-1">
-                        Seuil d'alerte de trésorerie par défaut
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          defaultValue={500000}
-                          className="w-full rounded-lg border border-stone-300 p-2.5 pr-14 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                        />
-                        <span className="absolute right-3 top-2.5 text-stone-400 font-bold text-[11px]">
-                          FCFA
-                        </span>
-                      </div>
-                    </div>
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Devise monétaire paritaire
+                    </label>
+                    <Select
+                      aria-label="Devise monétaire paritaire"
+                      value={currency}
+                      onChange={setCurrency}
+                      options={[
+                        { value: 'FCFA', label: 'FCFA (Franc CFA — CEMAC / UEMOA)' },
+                        { value: 'EUR', label: 'EUR (€ Euro)' },
+                        { value: 'USD', label: 'USD ($ Dollar américain)' },
+                      ]}
+                    />
+                    <p className="mt-1 text-[11px] text-stone-400">
+                      Le seuil d’alerte de trésorerie se règle par annexe dans « Gérer les annexes
+                      ».
+                    </p>
                   </div>
 
                   <div className="pt-2 flex justify-between items-center border-t border-stone-100 mt-6">
