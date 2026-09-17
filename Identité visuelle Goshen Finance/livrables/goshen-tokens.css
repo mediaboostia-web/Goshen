@@ -1,0 +1,232 @@
+/* Goshen — jetons de marque v1.0
+   Charte graphique Goshen, pilier II. Ne pas ajouter de couleur hors de cette liste. */
+:root {
+  /* Encre */
+  --goshen-ink-100: #e8ebf0;
+  --goshen-ink-200: #c7ceda;
+  --goshen-ink-400: #8b96ab;
+  --goshen-ink-600: #4a5670;
+  --goshen-ink-800: #0f172a;
+  --goshen-ink-900: #070b14;
+  --goshen-ink: var(--goshen-ink-800);
+
+  /* Fonds */
+  --goshen-cream: #f4f4f0;
+  --goshen-paper: #f8fafc;
+  --goshen-line: #d6d6cb;
+  --goshen-rule: #c9c9c0;
+
+  /* Émeraude — validation, entrées, action principale */
+  --goshen-emerald-100: #e0f2f0;
+  --goshen-emerald-200: #b6e0db;
+  --goshen-emerald-400: #5ec0b6;
+  --goshen-emerald-500: #0d9488;
+  --goshen-emerald-700: #0a6f66;
+  --goshen-emerald-900: #064a44;
+  --goshen-emerald: var(--goshen-emerald-500);
+
+  /* Or mat — mentions officielles uniquement, jamais de texte courant */
+  --goshen-gold-100: #f6f0e4;
+  --goshen-gold-200: #eadfc4;
+  --goshen-gold-300: #dcc694;
+  --goshen-gold-500: #c5a059;
+  --goshen-gold-700: #9a7b3e;
+  --goshen-gold-900: #6b5427;
+  --goshen-gold: var(--goshen-gold-500);
+
+  /* Typographie */
+  --goshen-font-title: 'Archivo', Helvetica, Arial, sans-serif;
+  --goshen-font-body: 'Archivo', Helvetica, Arial, sans-serif;
+  --goshen-font-mono: 'Space Mono', ui-monospace, monospace;
+
+  /* Structure */
+  --goshen-radius: 0;
+  --goshen-rule-strong: 2px;
+  --goshen-rule-thin: 1px;
+  --goshen-tap: 44px;
+}
+
+/* Base */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--goshen-cream);
+  color: var(--goshen-ink);
+  font-family: var(--goshen-font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--goshen-font-title);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0 0 0.5em;
+  text-align: left;
+}
+h1 {
+  font-size: 2rem;
+}
+h2 {
+  font-size: 1.375rem;
+}
+h3 {
+  font-size: 1.125rem;
+}
+a {
+  color: var(--goshen-emerald-700);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--goshen-emerald-900);
+  text-decoration: underline;
+}
+:focus-visible {
+  outline: 2px solid var(--goshen-emerald);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--goshen-emerald-100);
+}
+hr,
+.goshen-rule {
+  border: 0;
+  border-top: var(--goshen-rule-strong) solid var(--goshen-ink);
+  margin: 2rem 0;
+}
+
+/* Libellé de section */
+.goshen-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Montants : toujours en chasse fixe, alignés à droite */
+.goshen-amount {
+  font-family: var(--goshen-font-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Bouton d'action — un seul émeraude par écran */
+.goshen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  min-height: var(--goshen-tap);
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: var(--goshen-radius);
+  background: var(--goshen-emerald);
+  color: var(--goshen-paper);
+  font-family: var(--goshen-font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.goshen-btn:hover {
+  background: var(--goshen-emerald-700);
+}
+.goshen-btn:active {
+  background: var(--goshen-emerald-900);
+}
+.goshen-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.goshen-btn--secondary {
+  background: transparent;
+  color: var(--goshen-ink);
+  box-shadow: inset 0 0 0 1px var(--goshen-ink);
+}
+.goshen-btn--secondary:hover {
+  background: var(--goshen-ink-100);
+}
+.goshen-btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/* Champ de saisie */
+.goshen-field {
+  display: block;
+  margin-bottom: 1rem;
+}
+.goshen-field > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--goshen-ink-600);
+}
+.goshen-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--goshen-tap);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--goshen-ink-400);
+  border-radius: var(--goshen-radius);
+  background: var(--goshen-paper);
+  color: var(--goshen-ink);
+  font-family: var(--goshen-font-mono);
+  font-size: 1.125rem;
+}
+.goshen-input:focus-visible {
+  border-color: var(--goshen-emerald);
+}
+
+/* Tableau de données */
+.goshen-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.goshen-table th {
+  text-align: left;
+  padding: 0.6rem 0;
+  border-bottom: var(--goshen-rule-strong) solid var(--goshen-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.goshen-table td {
+  padding: 0.6rem 0;
+  border-bottom: var(--goshen-rule-thin) solid var(--goshen-rule);
+}
+.goshen-table td.num {
+  font-family: var(--goshen-font-mono);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cartouche officiel — après validation pastorale uniquement */
+.goshen-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--goshen-gold);
+  color: var(--goshen-gold-700);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Photographies : noir et blanc, sans exception */
+.goshen-photo img {
+  filter: grayscale(1);
+  display: block;
+  width: 100%;
+}
