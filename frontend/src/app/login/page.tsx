@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChurchIcon, GoogleIcon, ShieldCheckIcon } from '@/components/icons/ChurchIcons';
-import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,18 +52,13 @@ export default function LoginPage() {
 
           {/* Top Brand Header */}
           <div className="relative z-10">
-            <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="flex h-11 w-11 items-center justify-center bg-white text-emerald-700 shadow-md group-hover:scale-105 transition-transform">
-                <GoshenLogo className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="block font-serif text-xl font-bold tracking-tight text-white">
-                  Goshen
-                </span>
-                <span className="block text-[11px] font-medium text-emerald-200/90">
-                  Trésorerie Ecclésiastique
-                </span>
-              </div>
+            <Link href="/">
+              <GoshenWordmark
+                variant="creme"
+                tagline="GESTION FINANCIÈRE ECCLÉSIALE"
+                markClassName="h-8 w-8"
+                wordmarkClassName="text-2xl"
+              />
             </Link>
           </div>
 
@@ -71,7 +66,7 @@ export default function LoginPage() {
           <div className="relative z-10 my-8 space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-950/60 px-3 py-1 text-[11px] font-semibold text-emerald-300 border border-emerald-700/60">
               <ChurchIcon className="h-3.5 w-3.5" />
-              <span>Gabon • CEMAC • Diaspora</span>
+              <span>Adhésion libre et gratuite</span>
             </div>
 
             <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white leading-tight">

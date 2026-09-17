@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { ChurchIcon, GoogleIcon, ShieldCheckIcon } from '@/components/icons/ChurchIcons';
-import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 import { ChurchIdentityFields } from '@/components/onboarding/ChurchIdentityFields';
 
 export default function SignupPage() {
   const router = useRouter();
   const [churchName, setChurchName] = useState('');
   const [denomination, setDenomination] = useState('');
-  const [country, setCountry] = useState('GA');
+  const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,26 +83,31 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-800/10 via-stone-50 to-stone-950/15 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       {/* ── SPLIT-CARD BIFOLD CONTAINER ── */}
-      <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row min-h-[580px]">
-        {/* ── LEFT VOLET: GOSHEN IDENTITY & MISSION ── */}
-        <div className="relative flex flex-col justify-between bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 p-8 sm:p-10 text-white md:w-5/12">
+      <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row md:min-h-[580px]">
+        {/* Compact mobile-only header — the full brand panel below is desktop-only so the form stays the only thing on screen on a phone (no scroll) */}
+        <div className="flex md:hidden items-center justify-between px-5 py-4 border-b border-stone-100">
+          <Link href="/">
+            <GoshenWordmark markClassName="h-6 w-6" wordmarkClassName="text-lg" />
+          </Link>
+          <Link href="/login" className="text-xs font-bold text-emerald-800">
+            Se connecter
+          </Link>
+        </div>
+
+        {/* ── LEFT VOLET: GOSHEN IDENTITY & MISSION (desktop only) ── */}
+        <div className="hidden md:flex relative flex-col justify-between overflow-hidden bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 p-8 sm:p-10 text-white md:w-5/12">
           <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full border border-emerald-500/10 pointer-events-none" />
           <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full border border-emerald-500/10 pointer-events-none" />
 
           {/* Top Brand Header */}
           <div className="relative z-10">
-            <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="flex h-11 w-11 items-center justify-center bg-white text-emerald-700 shadow-md group-hover:scale-105 transition-transform">
-                <GoshenLogo className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="block font-serif text-xl font-bold tracking-tight text-white">
-                  Goshen
-                </span>
-                <span className="block text-[11px] font-medium text-emerald-200/90">
-                  Trésorerie Ecclésiastique
-                </span>
-              </div>
+            <Link href="/">
+              <GoshenWordmark
+                variant="creme"
+                tagline="GESTION FINANCIÈRE ECCLÉSIALE"
+                markClassName="h-8 w-8"
+                wordmarkClassName="text-2xl"
+              />
             </Link>
           </div>
 
@@ -179,7 +184,7 @@ export default function SignupPage() {
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="pasteur@eglise.ga"
+                  placeholder="pasteur@exemple.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
@@ -239,7 +244,7 @@ export default function SignupPage() {
               </div>
               <div className="relative flex justify-center text-center">
                 <span className="bg-white px-3 text-[11px] font-medium text-stone-400 uppercase tracking-wider">
-                  Le seul moyen rapide
+                  Ou
                 </span>
               </div>
             </div>
@@ -260,7 +265,7 @@ export default function SignupPage() {
           <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-500">
             <span className="flex items-center gap-1">
               <ShieldCheckIcon className="h-3.5 w-3.5 text-emerald-700" />
-              Registre protégé et conforme CEMAC
+              Données protégées et confidentielles
             </span>
             <span className="font-semibold text-emerald-800">Sans carte bancaire requise</span>
           </div>

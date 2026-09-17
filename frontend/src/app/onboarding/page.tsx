@@ -12,7 +12,7 @@ import {
   ChurchIcon,
   BuildingBranchIcon,
 } from '@/components/icons/ChurchIcons';
-import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 import { ChurchIdentityFields, COUNTRIES } from '@/components/onboarding/ChurchIdentityFields';
 
 // A church signing up here is, by default, a single autonomous parish —
@@ -39,7 +39,7 @@ function OnboardingContent() {
 
   const [churchName, setChurchName] = useState(searchParams.get('churchName') || '');
   const [denomination, setDenomination] = useState(searchParams.get('denomination') || '');
-  const [country, setCountry] = useState(searchParams.get('country') || 'GA');
+  const [country, setCountry] = useState(searchParams.get('country') || '');
   const [city, setCity] = useState(searchParams.get('city') || '');
   const [isMainBranch, setIsMainBranch] = useState(true);
 
@@ -81,26 +81,24 @@ function OnboardingContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-800/10 via-stone-50 to-stone-950/15 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       {/* ── SPLIT-CARD ONBOARDING CONTAINER — single screen, no wizard ── */}
-      <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row min-h-[560px]">
-        {/* ── LEFT VOLET: GOSHEN BRAND & LIVE PREVIEW ── */}
-        <div className="relative flex flex-col justify-between bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 p-8 sm:p-10 text-white md:w-5/12">
+      <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-stone-200 flex flex-col md:flex-row md:min-h-[560px]">
+        {/* Compact mobile-only header — the full brand/preview panel below is desktop-only so the form stays the only thing on screen on a phone (no scroll) */}
+        <div className="flex md:hidden items-center gap-3 px-5 py-4 border-b border-stone-100">
+          <GoshenWordmark markClassName="h-6 w-6" wordmarkClassName="text-lg" />
+        </div>
+
+        {/* ── LEFT VOLET: GOSHEN BRAND & LIVE PREVIEW (desktop only) ── */}
+        <div className="hidden md:flex relative flex-col justify-between overflow-hidden bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 p-8 sm:p-10 text-white md:w-5/12">
           <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full border border-emerald-500/10 pointer-events-none" />
           <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full border border-emerald-500/10 pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center bg-white text-emerald-700 shadow-md">
-                <GoshenLogo className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="block font-serif text-xl font-bold tracking-tight text-white">
-                  Goshen
-                </span>
-                <span className="block text-[11px] font-medium text-emerald-200/90">
-                  Déploiement Paroissial
-                </span>
-              </div>
-            </div>
+            <GoshenWordmark
+              variant="creme"
+              tagline="GESTION FINANCIÈRE ECCLÉSIALE"
+              markClassName="h-8 w-8"
+              wordmarkClassName="text-2xl"
+            />
           </div>
 
           {/* Fast & autonomous reassurances — replaces the old 4-step
@@ -261,7 +259,7 @@ function OnboardingContent() {
           <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-500">
             <span className="flex items-center gap-1">
               <ShieldCheckIcon className="h-3.5 w-3.5 text-emerald-700" />
-              Conforme OHADA & Églises CEMAC
+              Données protégées et confidentielles
             </span>
             <span className="font-medium text-stone-600">
               Assistance technique pasteurs disponible

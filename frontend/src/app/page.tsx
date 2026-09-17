@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 import {
   CoinsHandIcon,
   TrendingUpIcon,
@@ -21,19 +21,11 @@ export default function HomePage() {
       {/* Header / Navbar */}
       <header className="border-b border-stone-200 bg-white sticky top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center bg-stone-800 text-emerald-500">
-              <GoshenLogo className="h-6 w-6" />
-            </div>
-            <div>
-              <span className="font-serif text-2xl font-bold tracking-tight text-emerald-950 block">
-                Goshen
-              </span>
-              <span className="text-xs text-stone-500 font-medium tracking-wide">
-                Finances des Églises &bull; Gabon & CEMAC
-              </span>
-            </div>
-          </div>
+          <GoshenWordmark
+            tagline="GESTION FINANCIÈRE ECCLÉSIALE"
+            markClassName="h-7 w-7"
+            wordmarkClassName="text-2xl"
+          />
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
             <a href="#fonctionnalites" className="hover:text-emerald-900 transition-colors">
@@ -82,9 +74,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white py-20 px-6 sm:py-28">
         <div className="mx-auto max-w-5xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-900/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-emerald-200 mb-6">
-            <span>
-              Conçu pour les Assemblées de Dieu et communautés chrétiennes d'Afrique Centrale
-            </span>
+            <span>Conçu pour les églises et communautés chrétiennes</span>
           </div>
 
           <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
@@ -116,7 +106,7 @@ export default function HomePage() {
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 pt-10 border-t border-emerald-800/50 text-left">
             <div>
               <p className="text-3xl font-serif font-bold text-amber-400">100%</p>
-              <p className="text-xs text-emerald-200 mt-1">Conforme au contexte CEMAC & Gabon</p>
+              <p className="text-xs text-emerald-200 mt-1">Pensé pour les trésoriers d’église</p>
             </div>
             <div>
               <p className="text-3xl font-serif font-bold text-amber-400">1 tap</p>
@@ -424,15 +414,10 @@ export default function HomePage() {
       <footer className="border-t border-stone-200 bg-stone-900 text-stone-400 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center bg-stone-800 text-emerald-500">
-              <GoshenLogo className="h-5 w-5" />
-            </div>
-            <span className="font-serif text-lg font-bold text-white">Goshen Finance</span>
+            <GoshenWordmark variant="creme" markClassName="h-5 w-5" wordmarkClassName="text-lg" />
             <span className="text-stone-500">&mdash; La saine gestion au service de la foi.</span>
           </div>
-          <p>
-            &copy; {new Date().getFullYear()} Goshen. Développé pour les églises d’Afrique centrale.
-          </p>
+          <p>&copy; {new Date().getFullYear()} Goshen. Développé pour les églises.</p>
         </div>
       </footer>
     </div>

@@ -10,6 +10,9 @@ import { SearchIcon, BellIcon } from '@/components/icons/ChurchIcons';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
 import { Select } from '@/components/ui/Select';
 
+const INK = '#0F172A';
+const LINE = '#D6D6CB';
+
 const NOTIFICATION_POLL_MS = 60_000;
 
 export function AppHeader() {
@@ -45,12 +48,14 @@ export function AppHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Brand & Church Name */}
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-stone-800 text-emerald-500">
-              <GoshenLogo className="h-6 w-6" />
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <GoshenLogo className="h-7 w-7 shrink-0" style={{ color: INK }} />
+            <span className="self-stretch w-px" style={{ backgroundColor: LINE }} />
             <div className="flex h-10 flex-col justify-center">
-              <span className="block font-serif text-lg font-bold tracking-tight text-emerald-950">
+              <span
+                className="block font-serif text-lg font-extrabold tracking-tight"
+                style={{ color: INK }}
+              >
                 Goshen
               </span>
               <span className="hidden text-xs font-medium text-emerald-700 sm:inline-block">
