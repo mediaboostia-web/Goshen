@@ -167,6 +167,49 @@ describe('POST /api/auth/verify-email', () => {
     expect(body.error).toBe('TOO_MANY_VERIFY_ATTEMPTS');
   });
 
+  it('returns SERVICE_UNAVAILABLE (503) when the user lookup throws (DB unreachable)', async () => {
+    prismaMock.user.findUnique.mockRejectedValue(new Error('Connection refused'));
+
+    const res = await POST(makeReq({ email: 'unreachable-1@example.com', code: VALID_CODE }));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe('SERVICE_UNAVAILABLE');
+    expect(__cookieStore.size()).toBe(0);
+  });
+
+  it('returns SERVICE_UNAVAILABLE (503) when the code lookup throws (DB unreachable)', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'unreachable-2@example.com',
+      tokenVersion: 0,
+    } as never);
+    prismaMock.verificationCode.findFirst.mockRejectedValue(new Error('Connection refused'));
+
+    const res = await POST(makeReq({ email: 'unreachable-2@example.com', code: VALID_CODE }));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe('SERVICE_UNAVAILABLE');
+  });
+
+  it('returns SERVICE_UNAVAILABLE (503) when the commit transaction throws for a non-race reason', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'unreachable-3@example.com',
+      tokenVersion: 0,
+    } as never);
+    prismaMock.verificationCode.findFirst.mockResolvedValue({
+      id: 'vc1',
+      code: VALID_CODE,
+      expiresAt: new Date(Date.now() + 60_000),
+    } as never);
+    prismaMock.verificationCode.updateMany.mockRejectedValue(new Error('Connection refused'));
+
+    const res = await POST(makeReq({ email: 'unreachable-3@example.com', code: VALID_CODE }));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe('SERVICE_UNAVAILABLE');
+  });
+
   it("source contains runtime='nodejs' and withRequestContext", () => {
     const src = fs.readFileSync(path.join(__dirname, 'route.ts'), 'utf8');
     expect(src).toMatch(/export\s+const\s+runtime\s*=\s*['"]nodejs['"]/);

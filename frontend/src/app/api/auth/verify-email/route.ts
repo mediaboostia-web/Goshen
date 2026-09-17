@@ -63,10 +63,25 @@ export async function POST(req: NextRequest): Promise<Response> {
     const rateFail = await limiter.check(req, email);
     if (rateFail) return rateFail;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, tokenVersion: true },
-    });
+    // A database error must propagate as a normal 5xx, never as "no user"
+    // (which would surface as VERIFICATION_CODE_INVALID and mislead the
+    // user into thinking their code was wrong). See D-25 in the audit —
+    // same pattern already applied to login/signup.
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, tokenVersion: true },
+      });
+    } catch (dbErr) {
+      log.warn('verify-email: database unreachable', { email, error: String(dbErr) });
+      const res = NextResponse.json(
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+        { status: 503 },
+      );
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
+    }
     // Enumeration resistance: don't distinguish user-not-found from
     // code-not-found.
     if (!user) {
@@ -81,15 +96,26 @@ export async function POST(req: NextRequest): Promise<Response> {
       return res;
     }
 
-    const codeRow = await prisma.verificationCode.findFirst({
-      where: {
-        userId: user.id,
-        code,
-        type: 'EMAIL_VERIFY',
-        usedAt: null,
-      },
-      select: { id: true, code: true, expiresAt: true },
-    });
+    let codeRow;
+    try {
+      codeRow = await prisma.verificationCode.findFirst({
+        where: {
+          userId: user.id,
+          code,
+          type: 'EMAIL_VERIFY',
+          usedAt: null,
+        },
+        select: { id: true, code: true, expiresAt: true },
+      });
+    } catch (dbErr) {
+      log.warn('verify-email: database unreachable', { email, error: String(dbErr) });
+      const res = NextResponse.json(
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+        { status: 503 },
+      );
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
+    }
     if (!codeRow) {
       const res = NextResponse.json(
         {
@@ -159,7 +185,19 @@ export async function POST(req: NextRequest): Promise<Response> {
         res.headers.set('x-request-id', ctx.requestId);
         return res;
       }
-      throw err;
+      // Any other failure here is a DB/transaction-layer problem, not a
+      // business-logic outcome — surface it as SERVICE_UNAVAILABLE (D-25)
+      // instead of letting it propagate as a raw, non-JSON 500.
+      log.warn('verify-email: database unreachable during commit', {
+        email,
+        error: String(err),
+      });
+      const res = NextResponse.json(
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+        { status: 503 },
+      );
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
     }
 
     const access = await createAccessToken({

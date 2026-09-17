@@ -110,7 +110,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     } catch (dbErr) {
       log.warn('login: database unreachable', { email, error: String(dbErr) });
       return NextResponse.json(
-        { error: 'SERVICE_UNAVAILABLE', message: 'Please try again shortly.' },
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
         { status: 503, headers: { 'x-request-id': ctx.requestId } },
       );
     }

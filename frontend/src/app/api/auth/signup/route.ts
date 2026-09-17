@@ -111,10 +111,21 @@ export async function POST(req: NextRequest): Promise<Response> {
     //    The synthetic id didn't even match the real `User.id` created
     //    below, so the resulting session was permanently orphaned. Removed;
     //    a database failure now surfaces as a normal error response.
-    const existing = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+    let existing;
+    try {
+      existing = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+    } catch (dbErr) {
+      log.warn('signup: database unreachable', { error: String(dbErr) });
+      const res = NextResponse.json(
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+        { status: 503 },
+      );
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
+    }
     if (existing) {
       await dummyBcryptCompare(password);
       log.info('signup duplicate (enumeration-resist)');
@@ -128,31 +139,41 @@ export async function POST(req: NextRequest): Promise<Response> {
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
-    await prisma.$transaction(
-      async (tx) => {
-        const user = await tx.user.create({
-          data: { email, passwordHash },
-          select: { id: true },
-        });
-        await tx.verificationCode.create({
-          data: {
-            userId: user.id,
-            code,
-            type: 'EMAIL_VERIFY',
-            expiresAt,
-          },
-        });
-        await enqueueOutbox(tx, {
-          kind: 'email.verification_code',
-          payload: {
-            to: email,
-            code,
-            expiresAt: expiresAt.toISOString(),
-          },
-        });
-      },
-      { timeout: 15000 },
-    );
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          const user = await tx.user.create({
+            data: { email, passwordHash },
+            select: { id: true },
+          });
+          await tx.verificationCode.create({
+            data: {
+              userId: user.id,
+              code,
+              type: 'EMAIL_VERIFY',
+              expiresAt,
+            },
+          });
+          await enqueueOutbox(tx, {
+            kind: 'email.verification_code',
+            payload: {
+              to: email,
+              code,
+              expiresAt: expiresAt.toISOString(),
+            },
+          });
+        },
+        { timeout: 15000 },
+      );
+    } catch (dbErr) {
+      log.warn('signup: database unreachable during creation', { error: String(dbErr) });
+      const res = NextResponse.json(
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+        { status: 503 },
+      );
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
+    }
 
     log.info('signup successful');
     const res = NextResponse.json({ ok: true }, { status: 201 });

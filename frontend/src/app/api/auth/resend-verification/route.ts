@@ -80,36 +80,62 @@ export async function POST(req: NextRequest): Promise<Response> {
     const rateFail = await limiter.check(req, email);
     if (rateFail) return rateFail;
 
-    // Enumeration-resistant: from here on, every branch returns 200 ok.
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, emailVerifiedAt: true },
-    });
+    // Enumeration-resistant: from here on, every branch returns 200 ok. A
+    // database error must still surface as a normal 5xx (D-25) rather than
+    // being swallowed into the same 200 the enumeration-resist branches use
+    // — otherwise a transient DB outage looks identical to "email sent".
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, emailVerifiedAt: true },
+      });
+    } catch (dbErr) {
+      log.warn('resend-verification: database unreachable', { error: String(dbErr) });
+      const res = NextResponse.json(
+        { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+        { status: 503 },
+      );
+      res.headers.set('x-request-id', ctx.requestId);
+      return res;
+    }
 
     if (user && !user.emailVerifiedAt) {
       const code = generateVerificationCode();
       const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
-      await prisma.$transaction(
-        async (tx) => {
-          await tx.verificationCode.create({
-            data: {
-              userId: user.id,
-              code,
-              type: 'EMAIL_VERIFY',
-              expiresAt,
-            },
-          });
-          await enqueueOutbox(tx, {
-            kind: 'email.verification_code',
-            payload: {
-              to: user.email,
-              code,
-              expiresAt: expiresAt.toISOString(),
-            },
-          });
-        },
-        { timeout: 15000 },
-      );
+      try {
+        await prisma.$transaction(
+          async (tx) => {
+            await tx.verificationCode.create({
+              data: {
+                userId: user.id,
+                code,
+                type: 'EMAIL_VERIFY',
+                expiresAt,
+              },
+            });
+            await enqueueOutbox(tx, {
+              kind: 'email.verification_code',
+              payload: {
+                to: user.email,
+                code,
+                expiresAt: expiresAt.toISOString(),
+              },
+            });
+          },
+          { timeout: 15000 },
+        );
+      } catch (dbErr) {
+        log.warn('resend-verification: database unreachable during creation', {
+          error: String(dbErr),
+        });
+        const res = NextResponse.json(
+          { error: 'SERVICE_UNAVAILABLE', message: 'Veuillez réessayer dans un instant.' },
+          { status: 503 },
+        );
+        res.headers.set('x-request-id', ctx.requestId);
+        return res;
+      }
       log.info('resend-verification: code re-issued', { userId: user.id });
     } else {
       // No user, OR already verified — log without leaking which case it is.
