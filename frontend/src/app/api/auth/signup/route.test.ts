@@ -12,12 +12,23 @@ import { NextRequest } from 'next/server';
 vi.mock('@/lib/server/outbox', () => ({
   enqueueOutbox: vi.fn().mockResolvedValue({ id: 'outbox-1' }),
 }));
+vi.mock('@/lib/server/outbox/dispatch-now', () => ({
+  tryDispatchNow: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('@/lib/server/auth/dummy-bcrypt', () => ({
   dummyBcryptCompare: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('@/lib/server/auth/hibp', () => ({
   isPwned: vi.fn().mockResolvedValue(false),
 }));
+// after() requires Next's request-scope AsyncLocalStorage context, which
+// isn't present when a route handler is invoked directly in a test — stub
+// it to a no-op (the route only uses it to schedule tryDispatchNow, which
+// is itself mocked above).
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>();
+  return { ...actual, after: vi.fn() };
+});
 
 import { POST } from './route';
 import { dummyBcryptCompare } from '@/lib/server/auth/dummy-bcrypt';

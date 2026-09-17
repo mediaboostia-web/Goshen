@@ -11,7 +11,7 @@
 // set on session establishment (verify-email / login / refresh).
 export const runtime = 'nodejs';
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, after, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { zEmail } from '@/lib/server/zod-helpers';
 import { prisma } from '@/lib/server/prisma';
@@ -24,6 +24,7 @@ import { isBanned } from '@/lib/server/auth/banned-passwords';
 import { isPwned } from '@/lib/server/auth/hibp';
 import { dummyBcryptCompare } from '@/lib/server/auth/dummy-bcrypt';
 import { enqueueOutbox } from '@/lib/server/outbox';
+import { tryDispatchNow } from '@/lib/server/outbox/dispatch-now';
 
 const PASSWORD_MIN = Number(process.env.AUTH_PASSWORD_MIN_LENGTH ?? 10);
 const VERIFICATION_TTL_MS = Number(process.env.AUTH_VERIFICATION_TTL_MIN ?? 15) * 60 * 1000;
@@ -138,6 +139,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const passwordHash = await hashPassword(password);
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
+    let outboxId = '';
 
     try {
       await prisma.$transaction(
@@ -154,7 +156,7 @@ export async function POST(req: NextRequest): Promise<Response> {
               expiresAt,
             },
           });
-          await enqueueOutbox(tx, {
+          const outboxRow = await enqueueOutbox(tx, {
             kind: 'email.verification_code',
             payload: {
               to: email,
@@ -162,6 +164,7 @@ export async function POST(req: NextRequest): Promise<Response> {
               expiresAt: expiresAt.toISOString(),
             },
           });
+          outboxId = outboxRow.id;
         },
         { timeout: 15000 },
       );
@@ -174,6 +177,16 @@ export async function POST(req: NextRequest): Promise<Response> {
       res.headers.set('x-request-id', ctx.requestId);
       return res;
     }
+
+    // Best-effort immediate send, after the response is on the wire — the
+    // outbox row above is the guaranteed-delivery fallback if this fails or
+    // the function is frozen before it completes (see dispatch-now.ts).
+    after(() =>
+      tryDispatchNow(prisma, outboxId, {
+        kind: 'email.verification_code',
+        payload: { to: email, code, expiresAt: expiresAt.toISOString() },
+      }),
+    );
 
     log.info('signup successful');
     const res = NextResponse.json({ ok: true }, { status: 201 });

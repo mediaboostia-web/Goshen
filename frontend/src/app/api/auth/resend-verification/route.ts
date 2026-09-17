@@ -16,7 +16,7 @@
 //     natural cap, hence the stricter posture.
 export const runtime = 'nodejs';
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, after, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { zEmail } from '@/lib/server/zod-helpers';
 import { prisma } from '@/lib/server/prisma';
@@ -26,6 +26,7 @@ import { makeRequestContext, withRequestContext } from '@/lib/server/observabili
 import { log } from '@/lib/server/observability/log';
 import { generateVerificationCode } from '@/lib/server/auth';
 import { enqueueOutbox } from '@/lib/server/outbox';
+import { tryDispatchNow } from '@/lib/server/outbox/dispatch-now';
 
 const VERIFICATION_TTL_MS = Number(process.env.AUTH_VERIFICATION_TTL_MIN ?? 15) * 60 * 1000;
 
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (user && !user.emailVerifiedAt) {
       const code = generateVerificationCode();
       const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
+      let outboxId = '';
       try {
         await prisma.$transaction(
           async (tx) => {
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest): Promise<Response> {
                 expiresAt,
               },
             });
-            await enqueueOutbox(tx, {
+            const outboxRow = await enqueueOutbox(tx, {
               kind: 'email.verification_code',
               payload: {
                 to: user.email,
@@ -122,6 +124,7 @@ export async function POST(req: NextRequest): Promise<Response> {
                 expiresAt: expiresAt.toISOString(),
               },
             });
+            outboxId = outboxRow.id;
           },
           { timeout: 15000 },
         );
@@ -136,6 +139,16 @@ export async function POST(req: NextRequest): Promise<Response> {
         res.headers.set('x-request-id', ctx.requestId);
         return res;
       }
+
+      // Best-effort immediate send, after the response is on the wire — the
+      // outbox row above is the guaranteed-delivery fallback (dispatch-now.ts).
+      after(() =>
+        tryDispatchNow(prisma, outboxId, {
+          kind: 'email.verification_code',
+          payload: { to: user.email, code, expiresAt: expiresAt.toISOString() },
+        }),
+      );
+
       log.info('resend-verification: code re-issued', { userId: user.id });
     } else {
       // No user, OR already verified — log without leaking which case it is.
