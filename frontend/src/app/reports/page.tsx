@@ -61,9 +61,7 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState<string>(
     () => new Date().toISOString().split('T')[0] ?? '',
   );
-  const [branchScope, setBranchScope] = useState<string>(
-    () => currentBranch?.id || 'br_main_libreville',
-  );
+  const [branchScope, setBranchScope] = useState<string>(() => currentBranch?.id || '');
 
   const [preview, setPreview] = useState<ReportPreview | null>(null);
   const [archived, setArchived] = useState<ArchivedReport[]>([]);
@@ -185,14 +183,14 @@ export default function ReportsPage() {
     invoiceNumber: `INV-${new Date().getFullYear()}-${periodType.slice(0, 3)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
     date: new Date(startDate).toLocaleDateString('fr-FR'),
     dueDate: new Date(endDate).toLocaleDateString('fr-FR'),
-    churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+    churchName: church?.name || 'Votre Église',
     churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-    churchAddress: `${selectedBranchObj?.name || 'Paroisse Centrale'}, Libreville, Gabon`,
+    churchAddress: selectedBranchObj?.name || '',
     recipientName: selectedBranchObj?.name
       ? `Conseil Paroissial - ${selectedBranchObj.name}`
       : 'Bureau National de Coordination des Finances',
-    recipientAddress: 'BP 1024, Libreville\nRépublique Gabonaise',
-    recipientContact: 'finance@eglise.ga',
+    recipientAddress: '',
+    recipientContact: '',
     items:
       preview?.transactions && preview.transactions.length > 0
         ? preview.transactions.slice(0, 6).map((tx, idx) => ({
@@ -207,37 +205,12 @@ export default function ReportsPage() {
             qty: '1',
             total: tx.amount,
           }))
-        : [
-            {
-              no: '01',
-              description: 'Dîmes & Offrandes ordinaires dominicales',
-              subDescription: 'Collecte des fidèles et libéralités de culte',
-              price: preview?.totalIncome || 3450000,
-              qty: '1',
-              total: preview?.totalIncome || 3450000,
-            },
-            {
-              no: '02',
-              description: 'Quêtes de soutien & Projets communautaires',
-              subDescription: 'Fonds d’aménagement et réhabilitation sanctuaire',
-              price: 980000,
-              qty: '1',
-              total: 980000,
-            },
-            {
-              no: '03',
-              description: 'Décaissements autorisés & Charges de culte',
-              subDescription: 'Factures SEEG, entretien matériel et fournitures',
-              price: preview?.totalExpense || 520000,
-              qty: '1',
-              total: preview?.totalExpense || 520000,
-            },
-          ],
-    subTotal: preview?.totalIncome || 4430000,
+        : [],
+    subTotal: preview?.totalIncome || 0,
     tax: 0,
     discount: 0,
-    grandTotal: preview?.totalIncome || 4430000,
-    paymentMethod: 'Virement UGB / Airtel Money / Caisse Locale',
+    grandTotal: preview?.totalIncome || 0,
+    paymentMethod: 'Virement bancaire / Mobile Money / Caisse',
     terms:
       'Cette facture et récépissé comptable atteste la régularité des écritures inscrites dans les registres de l’église conformément aux normes comptables en vigueur.',
     signatoryName: 'Le Trésorier',
@@ -250,14 +223,14 @@ export default function ReportsPage() {
       transactionId: tx.id,
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+      churchName: church?.name || 'Votre Église',
       churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-      churchAddress: `${tx.branch.name}, Libreville, Gabon`,
+      churchAddress: tx.branch.name,
       recipientName: isIncome
         ? 'Culte Dominical & Assemblée Locale'
         : `Bénéficiaire — ${tx.category.name}`,
-      recipientAddress: 'Libreville, République Gabonaise',
-      recipientContact: 'finance@eglise.ga',
+      recipientAddress: '',
+      recipientContact: '',
       items: [
         {
           no: '01',
@@ -350,7 +323,8 @@ export default function ReportsPage() {
                 setModalInvoiceData(invoiceData);
                 setIsInvoiceModalOpen(true);
               }}
-              className="rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] transition-all flex items-center gap-2 cursor-pointer"
+              disabled={!preview}
+              className="rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
             >
               <DocumentReportIcon className="h-4 w-4" />
               <span>Facture / Reçu A4</span>

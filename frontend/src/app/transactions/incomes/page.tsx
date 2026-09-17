@@ -168,12 +168,12 @@ export default function IncomesPage() {
       transactionId: tx.id,
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+      churchName: church?.name || 'Votre Église',
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-      churchAddress: `${tx.branchName}, Libreville, Gabon`,
+      churchAddress: tx.branchName,
       recipientName: 'Culte Dominical & Assemblée Locale',
-      recipientAddress: 'Libreville, République Gabonaise',
-      recipientContact: 'finance@eglise.ga',
+      recipientAddress: '',
+      recipientContact: '',
       items: [
         {
           no: '01',

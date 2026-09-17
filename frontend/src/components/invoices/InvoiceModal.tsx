@@ -258,14 +258,14 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold tracking-tight text-stone-900 uppercase">
-                    {data.churchName || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE'}
+                    {data.churchName || 'Votre Église'}
                   </h1>
                   <p className="text-[11px] font-bold text-stone-500 tracking-wider uppercase">
                     {data.churchDenomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE'}
                   </p>
-                  <p className="text-xs text-stone-500 mt-1">
-                    {data.churchAddress || 'Libreville, Gabon • République Gabonaise'}
-                  </p>
+                  {data.churchAddress && (
+                    <p className="text-xs text-stone-500 mt-1">{data.churchAddress}</p>
+                  )}
                 </div>
               </div>
 
@@ -290,9 +290,11 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 <h3 className="text-sm font-bold text-stone-900 mt-1">
                   {data.recipientName || 'Paroisse Locale / Bénéficiaire'}
                 </h3>
-                <p className="text-xs text-stone-600 mt-0.5 whitespace-pre-line leading-relaxed">
-                  {data.recipientAddress || 'Quartier Centre-ville, Libreville\nGabon'}
-                </p>
+                {data.recipientAddress && (
+                  <p className="text-xs text-stone-600 mt-0.5 whitespace-pre-line leading-relaxed">
+                    {data.recipientAddress}
+                  </p>
+                )}
                 {data.recipientContact && (
                   <p className="text-xs text-stone-500 mt-1 font-mono">{data.recipientContact}</p>
                 )}

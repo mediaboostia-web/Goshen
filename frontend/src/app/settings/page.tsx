@@ -738,7 +738,7 @@ function SettingsContent() {
                       value={currency}
                       onChange={setCurrency}
                       options={[
-                        { value: 'FCFA', label: 'FCFA (Franc CFA — CEMAC / UEMOA)' },
+                        { value: 'FCFA', label: 'FCFA (Franc CFA)' },
                         { value: 'EUR', label: 'EUR (€ Euro)' },
                         { value: 'USD', label: 'USD ($ Dollar américain)' },
                       ]}
@@ -788,7 +788,7 @@ function SettingsContent() {
                       Abonnement & Règlement
                     </h2>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      Paiements mensuels via Airtel Money & Moov Money Gabon
+                      Paiements mensuels via Mobile Money (Airtel & Moov)
                     </p>
                   </div>
                   <span className="self-start sm:self-auto rounded-md bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
@@ -821,15 +821,6 @@ function SettingsContent() {
                       Renouveler ou Modifier &rarr;
                     </Link>
                   </div>
-
-                  <div className="mt-6 pt-4 border-t border-emerald-800 flex items-center justify-between text-xs text-emerald-200/90">
-                    <span>
-                      Moyen de paiement : <strong>Mobile Money Gabon</strong>
-                    </span>
-                    <span>
-                      Prochaine échéance : <strong>14 Octobre 2026</strong>
-                    </span>
-                  </div>
                 </div>
 
                 {/* Invoices History Table */}
@@ -837,50 +828,8 @@ function SettingsContent() {
                   <h3 className="font-serif text-base font-bold text-stone-900 mb-3">
                     Historique des Règlements
                   </h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-stone-200 text-stone-500 font-medium">
-                          <th className="pb-2">Date</th>
-                          <th className="pb-2">Désignation</th>
-                          <th className="pb-2">Moyen</th>
-                          <th className="pb-2 text-right">Montant</th>
-                          <th className="pb-2 text-center">Statut</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100">
-                        <tr className="hover:bg-stone-50 transition-colors">
-                          <td className="py-3 text-stone-600">14 Sept. 2026</td>
-                          <td className="py-3 font-semibold text-stone-900">
-                            Abonnement Goshen Premium (30 jours)
-                          </td>
-                          <td className="py-3 text-stone-600">Airtel Money Gabon</td>
-                          <td className="py-3 text-right font-mono tabular-nums font-bold text-stone-900">
-                            15 000 FCFA
-                          </td>
-                          <td className="py-3 text-center">
-                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                              RÉGLÉ
-                            </span>
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-stone-50 transition-colors">
-                          <td className="py-3 text-stone-600">14 Août 2026</td>
-                          <td className="py-3 font-semibold text-stone-900">
-                            Abonnement Goshen Premium (30 jours)
-                          </td>
-                          <td className="py-3 text-stone-600">Moov Money Gabon</td>
-                          <td className="py-3 text-right font-mono tabular-nums font-bold text-stone-900">
-                            15 000 FCFA
-                          </td>
-                          <td className="py-3 text-center">
-                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                              RÉGLÉ
-                            </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div className="rounded-xl border border-stone-200 bg-stone-50 py-8 text-center text-xs text-stone-500">
+                    Aucun règlement enregistré pour l’instant.
                   </div>
                 </div>
               </div>

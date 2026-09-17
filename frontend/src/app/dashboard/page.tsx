@@ -8,7 +8,6 @@ import { useBranch } from '@/contexts/BranchContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
-import { GOSHEN_MOCK_DATA } from '@/lib/mock-church-data';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import {
   ChurchIcon,
@@ -44,9 +43,8 @@ interface TransactionItem {
   author: { name: string | null; email: string };
 }
 
-// Shape shared by both the mock dataset (GOSHEN_MOCK_DATA.transactions) and
-// the real API data mapped in `displayTransactions` below — just enough for
-// handleOpenTransactionInvoice to build an invoice from either source.
+// Shape the real API data is mapped into in `displayTransactions` below —
+// just enough for handleOpenTransactionInvoice to build an invoice from it.
 interface DisplayTransaction {
   id?: string;
   date?: string;
@@ -84,17 +82,13 @@ export default function DashboardPage() {
     loading: branchLoading,
   } = useBranch();
 
-  // Mode démo toggle
-  const [useMockData, setUseMockData] = useState<boolean>(false);
-  const [isSeedingDb, setIsSeedingDb] = useState<boolean>(false);
-  const [seedSuccessMessage, setSeedSuccessMessage] = useState<string | null>(null);
-
   // Real data states
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [pendingRecurrents, setPendingRecurrents] = useState<PendingExecution[]>([]);
   const [totalIncome, setTotalIncome] = useState<number>(0);
   const [totalExpense, setTotalExpense] = useState<number>(0);
   const [, setDataLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // UI interaction states
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
@@ -105,10 +99,6 @@ export default function DashboardPage() {
   // Branch switcher & Modal states
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState<boolean>(false);
   const [isAddBranchModalOpen, setIsAddBranchModalOpen] = useState<boolean>(false);
-  const [mockBranches, setMockBranches] = useState(GOSHEN_MOCK_DATA.branches);
-  const [selectedMockBranchId, setSelectedMockBranchId] = useState<string | 'CONSOLIDATED'>(
-    'CONSOLIDATED',
-  );
 
   // Add branch form state
   const [newBranchName, setNewBranchName] = useState<string>('');
@@ -121,6 +111,7 @@ export default function DashboardPage() {
   const fetchDashboardData = useCallback(async () => {
     if (!church) return;
     setDataLoading(true);
+    setLoadError(null);
     try {
       const branchParam = isConsolidated ? 'CONSOLIDATED' : currentBranch?.id;
       const [txRes, recRes] = await Promise.all([
@@ -137,15 +128,12 @@ export default function DashboardPage() {
       setTotalIncome(txRes.summary?.totalIncome || 0);
       setTotalExpense(txRes.summary?.totalExpense || 0);
       setPendingRecurrents(recRes.pendingExecutions || []);
-
-      if (
-        (!txRes.transactions || txRes.transactions.length === 0) &&
-        txRes.summary?.totalIncome === 0
-      ) {
-        setUseMockData(true);
-      }
-    } catch {
-      setUseMockData(true);
+    } catch (err) {
+      setLoadError(
+        err instanceof ApiError
+          ? err.message || 'Impossible de charger vos données.'
+          : 'Erreur réseau. Veuillez réessayer.',
+      );
     } finally {
       setDataLoading(false);
     }
@@ -153,8 +141,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      setUseMockData(true);
-      setDataLoading(false);
+      router.replace('/login');
       return;
     }
     if (!authLoading && !branchLoading && user && !church) {
@@ -166,31 +153,9 @@ export default function DashboardPage() {
     }
   }, [authLoading, branchLoading, user, church, router, fetchDashboardData]);
 
-  const handleSeedDatabase = async () => {
-    setIsSeedingDb(true);
-    setSeedSuccessMessage(null);
-    try {
-      const res = await api<{ success: boolean; message: string }>('/api/church/demo-seed', {
-        method: 'POST',
-      });
-      setSeedSuccessMessage(res.message || 'Données de démonstration injectées en base.');
-      setUseMockData(false);
-      await refreshBranches();
-      await fetchDashboardData();
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Erreur lors de l’injection des données.');
-    } finally {
-      setIsSeedingDb(false);
-    }
-  };
-
   // Branch switcher handler
   const handleSwitchBranch = (id: string | 'CONSOLIDATED') => {
-    if (useMockData) {
-      setSelectedMockBranchId(id);
-    } else {
-      selectBranch(id);
-    }
+    selectBranch(id);
     setIsBranchDropdownOpen(false);
   };
 
@@ -201,31 +166,17 @@ export default function DashboardPage() {
 
     setIsCreatingBranch(true);
     try {
-      if (useMockData) {
-        const newMock = {
-          id: `branch-custom-${Date.now()}`,
+      await api('/api/church/branches', {
+        method: 'POST',
+        body: {
           name: newBranchName.trim(),
-          location: newBranchCity.trim() || 'Gabon',
-          isMain: false,
-          currentBalance: Number(newBranchBalance) || 0,
+          city: newBranchCity.trim() || null,
           lowBalanceThreshold: Number(newBranchThreshold) || 200000,
-        };
-        setMockBranches((prev) => [...prev, newMock]);
-        setSelectedMockBranchId(newMock.id);
-        setBranchActionMessage(`Nouvelle annexe "${newMock.name}" créée et activée.`);
-      } else {
-        await api('/api/church/branches', {
-          method: 'POST',
-          body: {
-            name: newBranchName.trim(),
-            city: newBranchCity.trim() || null,
-            lowBalanceThreshold: Number(newBranchThreshold) || 200000,
-            initialBalance: Number(newBranchBalance) || 0,
-          },
-        });
-        await refreshBranches();
-        setBranchActionMessage(`Nouvelle annexe "${newBranchName.trim()}" enregistrée.`);
-      }
+          initialBalance: Number(newBranchBalance) || 0,
+        },
+      });
+      await refreshBranches();
+      setBranchActionMessage(`Nouvelle annexe "${newBranchName.trim()}" enregistrée.`);
 
       setNewBranchName('');
       setNewBranchCity('');
@@ -242,78 +193,37 @@ export default function DashboardPage() {
 
   // Available branches list unified
   const availableBranches = useMemo(() => {
-    if (useMockData) {
-      return mockBranches.map((b) => ({
-        id: b.id,
-        name: b.name,
-        city: b.location,
-        balance: b.currentBalance,
-        threshold: b.lowBalanceThreshold,
-        isMain: b.isMain,
-      }));
-    }
     return branches.map((b) => ({
       id: b.id,
       name: b.name,
-      city: b.city || 'Gabon',
+      city: b.city || '',
       balance: b.currentBalance,
       threshold: b.lowBalanceThreshold,
       isMain: b.isMain,
     }));
-  }, [useMockData, mockBranches, branches]);
+  }, [branches]);
 
   const activeBranchLabel = useMemo(() => {
-    if (useMockData) {
-      if (selectedMockBranchId === 'CONSOLIDATED') {
-        return 'Vue Consolidée (Toutes les Paroisses)';
-      }
-      const b = mockBranches.find((item) => item.id === selectedMockBranchId);
-      return b ? b.name : 'Paroisse Inconnue';
-    }
     if (isConsolidated) return 'Vue Consolidée (Toutes les Paroisses)';
     return currentBranch?.name || 'Paroisse Principale';
-  }, [useMockData, selectedMockBranchId, mockBranches, isConsolidated, currentBranch]);
+  }, [isConsolidated, currentBranch]);
 
   const activeBalance = useMemo(() => {
-    if (useMockData) {
-      if (selectedMockBranchId === 'CONSOLIDATED') {
-        return mockBranches.reduce((acc, b) => acc + b.currentBalance, 0);
-      }
-      const b = mockBranches.find((item) => item.id === selectedMockBranchId);
-      return b ? b.currentBalance : 0;
-    }
     return isConsolidated
       ? branches.reduce((acc, b) => acc + b.currentBalance, 0)
       : currentBranch?.currentBalance || 0;
-  }, [useMockData, selectedMockBranchId, mockBranches, isConsolidated, currentBranch, branches]);
+  }, [isConsolidated, currentBranch, branches]);
 
   const activeThreshold = useMemo(() => {
-    if (useMockData) {
-      if (selectedMockBranchId === 'CONSOLIDATED') {
-        return mockBranches.reduce((acc, b) => acc + b.lowBalanceThreshold, 0);
-      }
-      const b = mockBranches.find((item) => item.id === selectedMockBranchId);
-      return b ? b.lowBalanceThreshold : 100000;
-    }
     return isConsolidated
       ? branches.reduce((acc, b) => acc + b.lowBalanceThreshold, 0)
       : currentBranch?.lowBalanceThreshold || 100000;
-  }, [useMockData, selectedMockBranchId, mockBranches, isConsolidated, currentBranch, branches]);
+  }, [isConsolidated, currentBranch, branches]);
 
-  const activeIncomes = useMemo(() => {
-    if (useMockData) return GOSHEN_MOCK_DATA.summary.monthlyIncome;
-    return totalIncome;
-  }, [useMockData, totalIncome]);
-
-  const activeExpenses = useMemo(() => {
-    if (useMockData) return GOSHEN_MOCK_DATA.summary.monthlyExpense;
-    return totalExpense;
-  }, [useMockData, totalExpense]);
+  const activeIncomes = totalIncome;
+  const activeExpenses = totalExpense;
 
   const activePendingRecurrents = useMemo(() => {
-    if (useMockData) {
-      return GOSHEN_MOCK_DATA.pendingRecurrents;
-    }
     return pendingRecurrents.map((r) => ({
       id: r.id,
       name: r.recurringExpense.name,
@@ -323,7 +233,39 @@ export default function DashboardPage() {
       dueDate: r.dueDate,
       urgent: new Date(r.dueDate).getTime() - Date.now() < 3 * 24 * 3600 * 1000,
     }));
-  }, [useMockData, pendingRecurrents]);
+  }, [pendingRecurrents]);
+
+  // Real per-category breakdown of the income transactions currently
+  // loaded (most recent, see fetchDashboardData) — replaces the old
+  // hardcoded demo chart. Percentages are relative to this loaded set, not
+  // a separate monthly total, so the segmented bar and its legend always
+  // add up to 100% of what's actually shown.
+  const BREAKDOWN_COLORS = [
+    '#0a6f66',
+    '#0d9488',
+    '#c5a059',
+    '#4a5670',
+    '#b45309',
+    '#0369a1',
+    '#7c3aed',
+  ];
+  const incomeBreakdown = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const tx of transactions) {
+      if (tx.type !== 'INCOME') continue;
+      const key = tx.category?.name || 'Autre';
+      totals.set(key, (totals.get(key) || 0) + tx.amount);
+    }
+    const sum = Array.from(totals.values()).reduce((acc, v) => acc + v, 0);
+    return Array.from(totals.entries())
+      .map(([category, amount], idx) => ({
+        category,
+        amount,
+        percentage: sum > 0 ? Math.round((amount / sum) * 1000) / 10 : 0,
+        color: BREAKDOWN_COLORS[idx % BREAKDOWN_COLORS.length] as string,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [transactions]);
 
   // Open invoice for a specific transaction (durant un enregistrement précis)
   const handleOpenTransactionInvoice = (tx: DisplayTransaction) => {
@@ -331,16 +273,16 @@ export default function DashboardPage() {
       ...(tx.id ? { transactionId: tx.id } : {}),
       invoiceNumber: `INV-${tx.id ? String(tx.id).slice(0, 8).toUpperCase() : '2026-0841'}`,
       date: tx.date || new Date().toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+      churchName: church?.name || 'Votre Église',
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-      churchAddress: `${tx.branchName || 'Paroisse Centrale'}, Libreville, Gabon`,
+      churchAddress: tx.branchName || 'Paroisse',
       recipientName:
         tx.beneficiary ||
         (tx.type === 'INCOME'
           ? 'Culte Dominical & Assemblée'
           : 'Prestataire / Fournisseur Paroissial'),
-      recipientAddress: 'Libreville, Gabon',
-      recipientContact: 'finance@eglise.ga',
+      recipientAddress: '',
+      recipientContact: '',
       items: [
         {
           no: '01',
@@ -374,12 +316,12 @@ export default function DashboardPage() {
     setActiveInvoiceData({
       invoiceNumber: `PER-${new Date().getFullYear()}-${periodFilter}`,
       date: new Date().toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+      churchName: church?.name || 'Votre Église',
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-      churchAddress: `${activeBranchLabel}, Gabon`,
+      churchAddress: activeBranchLabel,
       recipientName: `Conseil Paroissial & Commission des Finances`,
-      recipientAddress: 'Libreville, République Gabonaise',
-      recipientContact: 'contact@eglise.ga',
+      recipientAddress: '',
+      recipientContact: '',
       items: [
         {
           no: '01',
@@ -402,7 +344,7 @@ export default function DashboardPage() {
       tax: 0,
       discount: 0,
       grandTotal: activeIncomes,
-      paymentMethod: 'Virement UGB / Airtel Money / Caisse Locale',
+      paymentMethod: 'Virement bancaire / Mobile Money / Caisse',
       terms:
         'Synthèse officielle des opérations financières de la période certifiée par la trésorerie.',
       signatoryName: 'Le Trésorier',
@@ -411,13 +353,6 @@ export default function DashboardPage() {
   };
 
   const displayTransactions = useMemo(() => {
-    if (useMockData) {
-      return GOSHEN_MOCK_DATA.transactions.filter((tx) => {
-        if (txFilter === 'INCOME') return tx.type === 'INCOME';
-        if (txFilter === 'EXPENSE') return tx.type === 'EXPENSE';
-        return true;
-      });
-    }
     return transactions
       .filter((tx) => {
         if (txFilter === 'INCOME') return tx.type === 'INCOME';
@@ -438,7 +373,7 @@ export default function DashboardPage() {
         receiptUrl: tx.receiptUrl,
         authorName: tx.author?.name || tx.author?.email?.split('@')[0] || 'Trésorier',
       }));
-  }, [useMockData, transactions, txFilter]);
+  }, [transactions, txFilter]);
 
   const reserveDiff = activeBalance - activeThreshold;
   const isLowBalance = reserveDiff < 0;
@@ -455,62 +390,13 @@ export default function DashboardPage() {
       <AppHeader />
       <AppNav />
 
-      {/* Top Banner: Mode Démo Controls - Clean Solid Box, No Blur, No Sparkles */}
-      <div className="border-b border-stone-200 bg-white px-4 py-2.5">
-        <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-600" />
-            <span className="font-semibold text-stone-700">Données affichées :</span>
-            {useMockData ? (
-              <span className="rounded-md bg-amber-100 px-2 py-0.5 font-bold text-amber-900 border border-amber-200 flex items-center gap-1">
-                <span>●</span> Mode Simulation Actif
-              </span>
-            ) : (
-              <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-bold text-emerald-900 border border-emerald-200 flex items-center gap-1">
-                <span>●</span> Données Réelles de l'Église
-              </span>
-            )}
-            <span className="hidden sm:inline text-stone-300">|</span>
-            <span className="hidden md:inline text-stone-500">
-              {useMockData
-                ? 'Simulation interactive (Libreville, Akanda, Owendo)'
-                : `${branches.length} paroisse(s) configurée(s)`}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setUseMockData(!useMockData)}
-              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100 hover:text-stone-900 transition-colors"
-            >
-              {useMockData ? 'Basculer vers données réelles' : 'Charger la simulation'}
-            </button>
-
-            {user && (
-              <button
-                onClick={handleSeedDatabase}
-                disabled={isSeedingDb}
-                className="rounded-lg bg-emerald-900 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 disabled:opacity-50 transition-colors flex items-center gap-1.5"
-                title="Enregistrer ces paroisses et écritures dans votre base de données"
-              >
-                <ChurchIcon className="h-3.5 w-3.5 text-emerald-200" />
-                <span>{isSeedingDb ? 'Injection…' : 'Injecter en base réelle'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {seedSuccessMessage && (
+      {loadError && (
         <div className="mx-auto max-w-7xl px-4 pt-3">
-          <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-semibold text-emerald-900 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-2">
-              <CheckCircleIcon className="h-4 w-4 text-emerald-700" />
-              <span>{seedSuccessMessage}</span>
-            </div>
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 flex items-center justify-between shadow-xs">
+            <span>{loadError}</span>
             <button
-              onClick={() => setSeedSuccessMessage(null)}
-              className="text-emerald-700 hover:text-emerald-950 font-bold ml-4"
+              onClick={() => setLoadError(null)}
+              className="text-red-700 hover:text-red-950 font-bold ml-4"
             >
               &times;
             </button>
@@ -547,12 +433,10 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-sm font-bold tracking-wider text-emerald-100 uppercase">
-                    {useMockData
-                      ? GOSHEN_MOCK_DATA.church.name
-                      : church?.name || 'Communauté Chrétienne'}
+                    {church?.name || 'Communauté Chrétienne'}
                   </h2>
                   <span className="rounded-md bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 border border-amber-400/40">
-                    {useMockData ? 'CEMAC • GABON' : church?.plan || 'ESSENTIEL'}
+                    {church?.plan || 'ESSENTIEL'}
                   </span>
                 </div>
 
@@ -587,8 +471,7 @@ export default function DashboardPage() {
                               type="button"
                               onClick={() => handleSwitchBranch('CONSOLIDATED')}
                               className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors text-left ${
-                                (useMockData && selectedMockBranchId === 'CONSOLIDATED') ||
-                                (!useMockData && isConsolidated)
+                                isConsolidated
                                   ? 'bg-emerald-800 text-white border border-emerald-600'
                                   : 'hover:bg-emerald-900/80 text-emerald-200'
                               }`}
@@ -599,9 +482,7 @@ export default function DashboardPage() {
                               </div>
                               <span className="text-[11px] text-amber-300 font-mono font-bold">
                                 {(
-                                  (useMockData
-                                    ? mockBranches.reduce((s, b) => s + b.currentBalance, 0)
-                                    : branches.reduce((s, b) => s + b.currentBalance, 0)) / 1000
+                                  branches.reduce((s, b) => s + b.currentBalance, 0) / 1000
                                 ).toFixed(0)}
                                 k F
                               </span>
@@ -609,9 +490,7 @@ export default function DashboardPage() {
 
                             {/* List of individual branches */}
                             {availableBranches.map((b) => {
-                              const isSelected =
-                                (useMockData && selectedMockBranchId === b.id) ||
-                                (!useMockData && !isConsolidated && currentBranch?.id === b.id);
+                              const isSelected = !isConsolidated && currentBranch?.id === b.id;
                               return (
                                 <button
                                   key={b.id}
@@ -963,7 +842,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-semibold text-stone-700">
-                  {branches.length || 3} Lieux
+                  {branches.length} Lieux
                 </span>
               </div>
 
@@ -981,13 +860,12 @@ export default function DashboardPage() {
                     <span>Vue Consolidée (Toutes Paroisses)</span>
                   </span>
                   <span className="text-[11px] font-mono tabular-nums font-semibold text-emerald-800">
-                    {useMockData
-                      ? `${GOSHEN_MOCK_DATA.summary.totalBalance.toLocaleString('fr-FR')} F`
-                      : `${branches.reduce((acc, b) => acc + b.currentBalance, 0).toLocaleString('fr-FR')} F`}
+                    {branches.reduce((acc, b) => acc + b.currentBalance, 0).toLocaleString('fr-FR')}{' '}
+                    F
                   </span>
                 </button>
 
-                {(useMockData ? GOSHEN_MOCK_DATA.branches : branches).map((b) => (
+                {branches.map((b) => (
                   <button
                     key={b.id}
                     onClick={() => selectBranch(b.id)}
@@ -1039,60 +917,71 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            {/* Visual Multi-Segment Bar */}
-            <div className="mt-6">
-              <div className="h-3 w-full rounded-full overflow-hidden flex bg-stone-100 border border-stone-200">
-                {GOSHEN_MOCK_DATA.offeringsBreakdown.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
-                    title={`${item.category}: ${item.amount.toLocaleString('fr-FR')} FCFA (${item.percentage}%)`}
-                    className="h-full transition-all duration-500"
-                  />
-                ))}
+            {incomeBreakdown.length === 0 ? (
+              <div className="mt-6 py-8 text-center text-xs text-stone-400">
+                <CoinsHandIcon className="h-7 w-7 mx-auto text-stone-300 mb-2" />
+                <p className="font-semibold text-stone-600">
+                  Aucune entrée enregistrée pour l’instant.
+                </p>
               </div>
-            </div>
-
-            {/* Breakdown Legend Grid with Vector SVG Icons */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {GOSHEN_MOCK_DATA.offeringsBreakdown.map((item, idx) => {
-                const IconComponent =
-                  idx === 0
-                    ? TrendingUpIcon
-                    : idx === 1
-                      ? CoinsHandIcon
-                      : idx === 2
-                        ? GiftIcon
-                        : HeartHandIcon;
-                return (
-                  <div
-                    key={idx}
-                    className="rounded-xl border border-stone-200 bg-stone-50 p-3.5 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-700 shadow-2xs">
-                        <IconComponent className="h-4 w-4" style={{ color: item.color }} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-stone-900">{item.category}</p>
-                        <p className="text-[11px] text-stone-500">
-                          {item.percentage}% de la collecte
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-mono tabular-nums font-bold text-emerald-950">
-                        {item.amount.toLocaleString('fr-FR')} F
-                      </p>
+            ) : (
+              <>
+                {/* Visual Multi-Segment Bar */}
+                <div className="mt-6">
+                  <div className="h-3 w-full rounded-full overflow-hidden flex bg-stone-100 border border-stone-200">
+                    {incomeBreakdown.map((item, idx) => (
                       <div
-                        className="h-1.5 w-7 rounded-full ml-auto mt-1"
-                        style={{ backgroundColor: item.color }}
+                        key={idx}
+                        style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
+                        title={`${item.category}: ${item.amount.toLocaleString('fr-FR')} FCFA (${item.percentage}%)`}
+                        className="h-full transition-all duration-500"
                       />
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+
+                {/* Breakdown Legend Grid with Vector SVG Icons */}
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {incomeBreakdown.map((item, idx) => {
+                    const IconComponent =
+                      idx === 0
+                        ? TrendingUpIcon
+                        : idx === 1
+                          ? CoinsHandIcon
+                          : idx === 2
+                            ? GiftIcon
+                            : HeartHandIcon;
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-stone-200 bg-stone-50 p-3.5 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-700 shadow-2xs">
+                            <IconComponent className="h-4 w-4" style={{ color: item.color }} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-stone-900">{item.category}</p>
+                            <p className="text-[11px] text-stone-500">
+                              {item.percentage}% de la collecte
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-mono tabular-nums font-bold text-emerald-950">
+                            {item.amount.toLocaleString('fr-FR')} F
+                          </p>
+                          <div
+                            className="h-1.5 w-7 rounded-full ml-auto mt-1"
+                            style={{ backgroundColor: item.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             <div className="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-3 text-xs text-amber-950">
               <ShieldCheckIcon className="h-5 w-5 text-amber-800 shrink-0 mt-0.5" />
@@ -1236,12 +1125,12 @@ export default function DashboardPage() {
                 <p className="font-semibold text-stone-600">
                   Aucune écriture comptable enregistrée.
                 </p>
-                <button
-                  onClick={() => setUseMockData(true)}
-                  className="mt-3 text-emerald-800 font-bold underline"
+                <Link
+                  href="/transactions/incomes"
+                  className="mt-3 inline-block text-emerald-800 font-bold underline"
                 >
-                  Charger les écritures de démonstration
-                </button>
+                  Enregistrer votre première entrée
+                </Link>
               </div>
             ) : (
               displayTransactions.map((tx) => (

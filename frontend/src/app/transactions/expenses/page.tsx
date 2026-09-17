@@ -225,12 +225,12 @@ export default function ExpensesPage() {
       transactionId: tx.id,
       invoiceNumber: `DEP-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'COMMUNAUTÉ ÉVANGÉLIQUE DE LA GRÂCE',
+      churchName: church?.name || 'Votre Église',
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-      churchAddress: `${tx.branchName}, Libreville, Gabon`,
+      churchAddress: tx.branchName,
       recipientName: tx.beneficiary || 'Prestataire / Fournisseur de Services',
-      recipientAddress: 'Libreville, République Gabonaise',
-      recipientContact: 'comptabilite@eglise.ga',
+      recipientAddress: '',
+      recipientContact: '',
       items: [
         {
           no: '01',
