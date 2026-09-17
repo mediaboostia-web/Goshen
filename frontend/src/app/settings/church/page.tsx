@@ -107,7 +107,9 @@ export default function ChurchSettingsPage() {
             </div>
             <div>
               <span className="text-stone-400 block">Devise par défaut</span>
-              <span className="font-bold text-emerald-800 text-sm">FCFA (CEMAC - XAF)</span>
+              <span className="font-bold text-emerald-800 text-sm">
+                {church?.currency || 'FCFA'}
+              </span>
             </div>
           </div>
         </div>

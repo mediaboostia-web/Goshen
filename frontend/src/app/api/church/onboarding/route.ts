@@ -18,7 +18,7 @@ const DEFAULT_INCOMES = [
 ];
 
 const DEFAULT_EXPENSES = [
-  'Cotisation Caisse Nationale ADD',
+  'Cotisation dénominationnelle / réseau',
   'Loyer lieu de culte',
   'Salaire & Gratifications',
   'Électricité & Eau',
@@ -29,9 +29,9 @@ const DEFAULT_EXPENSES = [
 
 const OnboardingBody = z.object({
   churchName: z.string().min(3, 'Le nom de l’église est requis'),
-  denomination: z.string().optional().default('Assemblées de Dieu du Gabon'),
+  denomination: z.string().optional(),
   mainBranchName: z.string().optional().default('Église Mère - Siège'),
-  mainBranchCity: z.string().optional().default('Libreville'),
+  mainBranchCity: z.string().optional(),
   // Whether the branch created here is the church's own central/head site
   // (isMain=true, the common case for a standalone parish signing up) or
   // an annexe of a network that already exists elsewhere in Goshen.
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           data: {
             name: churchName,
             slug: finalSlug,
-            denomination,
+            denomination: denomination ?? null,
             ownerId: auth.user.sub,
             currency: 'XAF',
             plan: 'FREE',
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           data: {
             organizationId: org.id,
             name: mainBranchName,
-            city: mainBranchCity,
+            city: mainBranchCity ?? null,
             isMain: isMainBranch,
             currentBalance: initialBalance,
             lowBalanceThreshold: 25000,
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               data: {
                 organizationId: org.id,
                 name: annexe.name.trim(),
-                city: annexe.city?.trim() || mainBranchCity,
+                city: annexe.city?.trim() || mainBranchCity || null,
                 isMain: false,
                 currentBalance: 0,
                 lowBalanceThreshold: 15000,

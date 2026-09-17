@@ -27,6 +27,13 @@ interface SelectProps {
   // overflowing past the viewport edge for triggers near the right side
   // of the screen (e.g. the header).
   align?: 'left' | 'right';
+  // Adds a filter input at the top of the open list — for long option
+  // lists (e.g. the ~190-country picker) where scrolling to find one by
+  // mouse isn't practical. Filters by substring match anywhere in the
+  // label, so it still finds "Gabon" when the label starts with a flag
+  // emoji (unlike a native <select>'s prefix-only type-ahead).
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 // Hand-built dropdown matching the app's own look (rounded-xl, stone/emerald
@@ -43,9 +50,15 @@ export function Select({
   'aria-label': ariaLabel,
   variant = 'default',
   align = 'left',
+  searchable = false,
+  searchPlaceholder = 'Rechercher…',
 }: SelectProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const selected = options.find((o) => o.value === value);
+  const visibleOptions = searchable
+    ? options.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : options;
 
   useEffect(() => {
     if (!open) return;
@@ -54,6 +67,10 @@ export function Select({
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setQuery('');
   }, [open]);
 
   const triggerClass =
@@ -87,10 +104,22 @@ export function Select({
               variant === 'ghost' ? 'w-max' : 'w-full'
             } ${align === 'right' ? 'right-0' : 'left-0'}`}
           >
-            {options.length === 0 && (
+            {searchable && (
+              <div className="sticky top-0 bg-white p-1.5 border-b border-stone-100">
+                <input
+                  type="text"
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs text-stone-900 focus:border-emerald-700 focus:outline-hidden"
+                />
+              </div>
+            )}
+            {visibleOptions.length === 0 && (
               <p className="px-3 py-2 text-xs text-stone-400">Aucune option disponible</p>
             )}
-            {options.map((opt) => (
+            {visibleOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"

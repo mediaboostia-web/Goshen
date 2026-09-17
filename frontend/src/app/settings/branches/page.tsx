@@ -183,7 +183,7 @@ export default function BranchesPage() {
                   >
                     {b.isMain ? '⭐ ÉGLISE MÈRE' : '📍 ANNEXE'}
                   </span>
-                  <span className="text-[11px] text-stone-400">{b.city || 'Gabon'}</span>
+                  {b.city && <span className="text-[11px] text-stone-400">{b.city}</span>}
                 </div>
 
                 <h3 className="font-serif text-lg font-bold text-stone-900 mt-3">{b.name}</h3>

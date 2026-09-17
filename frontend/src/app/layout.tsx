@@ -26,7 +26,7 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: 'Goshen — Gestion financière des églises',
   description:
-    'La plateforme de gestion financière transparente, multi-annexes et responsable pour les églises d’Afrique centrale.',
+    'La plateforme de gestion financière transparente, multi-annexes et responsable pour les églises.',
 };
 
 export default function RootLayout({
