@@ -42,6 +42,8 @@ pnpm workspace — run from repo root unless noted. The root `package.json` is a
 
 Integration tests are deferred (no formal harness in v1) — `pnpm smoke:auth` provides a manual UAT script for the auth happy path against a running `pnpm dev`. See README.
 
+**Local email delivery under `pnpm dev`:** the outbox-drain and email-queue-drain crons only run under Vercel's actual Cron infrastructure — nothing triggers them automatically in local dev, so a signup/verification/resend email sits queued until someone POSTs both endpoints (with `Authorization: Bearer ${CRON_SECRET}`). Run `pnpm dev:drain` in a second terminal alongside `pnpm dev` to poll both every 10s (dev-only convenience script, `frontend/scripts/dev-drain.ts` — never runs in production).
+
 **Before committing:** `pnpm format && pnpm lint && pnpm typecheck && pnpm test` — must all pass.
 
 ## High-level architecture
