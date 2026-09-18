@@ -77,18 +77,13 @@
   --font-serif: var(--font-sans);
   --font-serif-display: var(--font-serif, Georgia, serif);
 
-  /* Rayon de courbure zéro partout (p.08) — boutons, cartes, champs,
-     encadrés, vignettes, sans exception. `rounded-full` (avatars, status
-     dots) is intentionally left alone: it isn't backed by a `--radius-*`
-     variable in Tailwind v4 and a fully round dot/avatar isn't a "corner". */
-  --radius-xs: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
-  --radius-4xl: 0px;
+  /* Rayon de courbure zéro partout (p.08) was v1.0's print-only rule.
+     Product decision (see goshen-tokens.css v2.0 / lisez-moi.md): the app
+     diverges from the print charter and keeps Tailwind's normal rounded-*
+     scale — every card/button/badge across the app and this landing page
+     was already written assuming standard rounding, so a zero-radius
+     override here was silently flattening all of it to square corners.
+     Only the print deliverable (charte-goshen.html) keeps zero radius. */
 }
 
 :root {
@@ -98,6 +93,10 @@
   --text-secondary: #4a5670;
   --text-muted: #8b96ab;
   --border-light: #c7ceda;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {

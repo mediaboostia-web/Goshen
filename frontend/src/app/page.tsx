@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
@@ -86,14 +86,39 @@ function TrustCard({
   );
 }
 
+// Top navbar capped at 5 links (down from 7) — "Comment ça marche" and
+// "Communauté" keep their sections and anchors further down the page (and
+// their footer links) but no longer compete for space in the header itself.
+const NAV_LINKS = [
+  { href: '#fonctionnalites', label: 'Fonctionnalités' },
+  { href: '#multi-annexes', label: 'Multi-Annexes' },
+  { href: '#securite', label: 'Sécurité' },
+  { href: '#tarifs', label: 'Tarifs FCFA' },
+  { href: '#faq', label: 'FAQ' },
+];
+
 export default function HomePage() {
   const { user } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fafaf7] text-stone-900 font-sans selection:bg-emerald-100 selection:text-emerald-950">
       {/* Header / Navbar */}
-      <header className="border-b border-stone-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-50 transition-all">
+      <header
+        className={`border-b bg-white/95 backdrop-blur-md sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'border-stone-200 shadow-[0_1px_20px_-4px_rgba(15,23,42,0.12)]'
+            : 'border-stone-200/80'
+        }`}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <GoshenWordmark
             tagline="GESTION FINANCIÈRE ECCLÉSIALE"
@@ -102,27 +127,15 @@ export default function HomePage() {
           />
 
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-stone-600">
-            <a href="#fonctionnalites" className="hover:text-emerald-900 transition-colors">
-              Fonctionnalités
-            </a>
-            <a href="#comment-ca-marche" className="hover:text-emerald-900 transition-colors">
-              Comment ça marche
-            </a>
-            <a href="#multi-annexes" className="hover:text-emerald-900 transition-colors">
-              Multi-Annexes
-            </a>
-            <a href="#securite" className="hover:text-emerald-900 transition-colors">
-              Sécurité
-            </a>
-            <a href="#tarifs" className="hover:text-emerald-900 transition-colors">
-              Tarifs FCFA
-            </a>
-            <a href="#communaute" className="hover:text-emerald-900 transition-colors">
-              Communauté
-            </a>
-            <a href="#faq" className="hover:text-emerald-900 transition-colors">
-              FAQ
-            </a>
+            {NAV_LINKS.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="hover:text-emerald-900 transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
@@ -170,15 +183,7 @@ export default function HomePage() {
 
         {mobileNavOpen && (
           <div className="md:hidden border-t border-stone-200 bg-white px-6 py-4 space-y-1 shadow-lg">
-            {[
-              { href: '#fonctionnalites', label: 'Fonctionnalités' },
-              { href: '#comment-ca-marche', label: 'Comment ça marche' },
-              { href: '#multi-annexes', label: 'Multi-Annexes' },
-              { href: '#securite', label: 'Sécurité' },
-              { href: '#tarifs', label: 'Tarifs FCFA' },
-              { href: '#communaute', label: 'Communauté' },
-              { href: '#faq', label: 'FAQ' },
-            ].map((item) => (
+            {NAV_LINKS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
@@ -233,54 +238,128 @@ export default function HomePage() {
           className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl"
         />
 
-        <div className="relative mx-auto max-w-5xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-900/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-emerald-200 mb-6 backdrop-blur-sm">
-            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-            <span>Conçu pour les églises et communautés chrétiennes</span>
-          </div>
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            {/* Left: headline, pitch, CTAs */}
+            <div className="lg:col-span-7 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-900/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-emerald-200 mb-6 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Conçu pour les églises et communautés chrétiennes</span>
+              </div>
 
-          <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
-            La gestion financière transparente et responsable de votre église
-          </h1>
+              <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
+                La gestion financière transparente et responsable de votre église
+              </h1>
 
-          <p className="mt-6 text-lg sm:text-xl text-emerald-100/90 max-w-3xl mx-auto font-light leading-relaxed">
-            Remplacez définitivement le cahier papier par une plateforme rigoureuse, multi-annexes
-            et collaborative. Dîmes, offrandes, dépenses avec reçus et bilans dominicaux générés en
-            1 clic.
-          </p>
+              <p className="mt-6 text-lg sm:text-xl text-emerald-100/90 max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
+                Remplacez définitivement le cahier papier par une plateforme rigoureuse,
+                multi-annexes et collaborative. Dîmes, offrandes, dépenses avec reçus et bilans
+                dominicaux générés en 1 clic.
+              </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/signup"
-              className="w-full sm:w-auto rounded-xl bg-amber-500 px-8 py-4 text-base font-bold text-emerald-950 shadow-lg hover:bg-amber-400 transition-all transform hover:-translate-y-0.5"
-            >
-              Commencer gratuitement &rarr;
-            </Link>
-            <a
-              href="#comment-ca-marche"
-              className="w-full sm:w-auto rounded-xl border border-emerald-400/30 bg-emerald-900/80 px-8 py-4 text-base font-semibold text-white hover:bg-emerald-800 transition-colors"
-            >
-              Découvrir comment ça marche
-            </a>
-          </div>
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <Link
+                  href="/signup"
+                  className="w-full sm:w-auto rounded-xl bg-amber-500 px-8 py-4 text-base font-bold text-emerald-950 shadow-lg hover:bg-amber-400 transition-all transform hover:-translate-y-0.5"
+                >
+                  Commencer gratuitement &rarr;
+                </Link>
+                <a
+                  href="#comment-ca-marche"
+                  className="w-full sm:w-auto rounded-xl border border-emerald-400/30 bg-emerald-900/80 px-8 py-4 text-base font-semibold text-white hover:bg-emerald-800 transition-colors"
+                >
+                  Découvrir comment ça marche
+                </a>
+              </div>
 
-          {/* Social proof highlights */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 pt-10 border-t border-emerald-800/50 text-left">
-            <div>
-              <p className="text-3xl font-serif font-bold text-amber-400">100%</p>
-              <p className="text-xs text-emerald-200 mt-1">Pensé pour les trésoriers d’église</p>
+              <p className="mt-4 flex items-center justify-center lg:justify-start gap-1.5 text-xs text-emerald-200/70">
+                <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-400" />
+                Aucune carte bancaire requise &bull; Prêt en moins de 2 minutes
+              </p>
+
+              {/* Social proof highlights */}
+              <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 border-t border-emerald-800/50 text-left">
+                <div>
+                  <p className="text-2xl sm:text-3xl font-serif font-bold text-amber-400">100%</p>
+                  <p className="text-xs text-emerald-200 mt-1">
+                    Pensé pour les trésoriers d’église
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-serif font-bold text-amber-400">1 tap</p>
+                  <p className="text-xs text-emerald-200 mt-1">Bascule instantanée entre annexes</p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-serif font-bold text-amber-400">1 clic</p>
+                  <p className="text-xs text-emerald-200 mt-1">Rapports PDF officiels de culte</p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-serif font-bold text-amber-400">0 trou</p>
+                  <p className="text-xs text-emerald-200 mt-1">
+                    Fin des recomptages et reçus perdus
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-3xl font-serif font-bold text-amber-400">1 tap</p>
-              <p className="text-xs text-emerald-200 mt-1">Bascule instantanée entre annexes</p>
-            </div>
-            <div>
-              <p className="text-3xl font-serif font-bold text-amber-400">1 clic</p>
-              <p className="text-xs text-emerald-200 mt-1">Rapports PDF officiels de culte</p>
-            </div>
-            <div>
-              <p className="text-3xl font-serif font-bold text-amber-400">0 trou</p>
-              <p className="text-xs text-emerald-200 mt-1">Fin des recomptages et reçus perdus</p>
+
+            {/* Right: floating live-app preview — makes the pitch concrete
+                instead of text-only, reusing the same "Vue consolidée" card
+                pattern as the Multi-Annexes section further down. */}
+            <div className="lg:col-span-5 relative hidden sm:block">
+              <div
+                aria-hidden
+                className="absolute -inset-8 rounded-full bg-gradient-to-br from-emerald-400/20 via-emerald-500/10 to-transparent blur-2xl"
+              />
+              <div className="relative rounded-3xl bg-white p-5 shadow-2xl border border-white/10 rotate-2 hover:rotate-0 transition-transform duration-500 mx-auto max-w-sm">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold text-stone-800">
+                      Église de la Grâce &bull; Culte du dimanche
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <span className="text-xs text-stone-500 font-medium">Solde disponible</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-3xl font-serif font-bold text-emerald-950">
+                      1 845 000 <span className="text-sm font-sans text-stone-500">FCFA</span>
+                    </p>
+                    <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-100">
+                      <TrendingUpIcon className="h-3 w-3" /> +23,5%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-emerald-50/70 px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CoinsHandIcon className="h-4 w-4 text-emerald-700 shrink-0" />
+                      <span className="text-xs font-medium text-stone-800 truncate">
+                        Dîmes & offrandes
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700 shrink-0">+45 000</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-stone-50 px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CameraIcon className="h-4 w-4 text-stone-500 shrink-0" />
+                      <span className="text-xs font-medium text-stone-800 truncate">
+                        Sonorisation &mdash; reçu joint
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-stone-600 shrink-0">&minus;12 000</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-950 px-3 py-2.5 text-white">
+                  <DocumentReportIcon className="h-4 w-4 text-emerald-300 shrink-0" />
+                  <span className="text-[11px] font-semibold">
+                    Bilan du culte généré &bull; PDF prêt
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
