@@ -1,2 +1,9 @@
 packages:
   - 'frontend'
+
+overrides:
+  brace-expansion: ^5.0.12
+  fast-uri: ^4.2.1
+  nanoid: ^3.3.19
+  postcss: ^8.5.28
+  browserslist: ^4.29.0
