@@ -16,12 +16,55 @@ interface Category {
   type: string;
 }
 
+type RecurringFrequency = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+const FREQUENCY_LABELS: Record<RecurringFrequency, string> = {
+  WEEKLY: 'Hebdomadaire',
+  MONTHLY: 'Mensuelle',
+  QUARTERLY: 'Trimestrielle',
+  YEARLY: 'Annuelle',
+};
+
+const MONTH_LABELS = [
+  'Janvier',
+  'Février',
+  'Mars',
+  'Avril',
+  'Mai',
+  'Juin',
+  'Juillet',
+  'Août',
+  'Septembre',
+  'Octobre',
+  'Novembre',
+  'Décembre',
+];
+
+const WEEKDAY_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+function formatSchedule(m: {
+  frequency: RecurringFrequency;
+  dueDay: number;
+  dueMonth: number | null;
+}): string {
+  const freqLabel = FREQUENCY_LABELS[m.frequency].toUpperCase();
+  if (m.frequency === 'WEEKLY') {
+    return `${freqLabel} • ${WEEKDAY_LABELS[m.dueDay] ?? m.dueDay}`;
+  }
+  if (m.frequency === 'YEARLY') {
+    const month = m.dueMonth ? MONTH_LABELS[m.dueMonth - 1] : '';
+    return `${freqLabel} • ${m.dueDay} ${month}`;
+  }
+  return `${freqLabel} • Jour ${m.dueDay}`;
+}
+
 interface RecurrentModel {
   id: string;
   name: string;
   amount: number;
-  frequency: 'WEEKLY' | 'MONTHLY';
+  frequency: RecurringFrequency;
   dueDay: number;
+  dueMonth: number | null;
   status: 'ACTIVE' | 'PAUSED';
   category: { name: string };
   branch: { name: string };
@@ -42,8 +85,9 @@ export default function RecurrentExpensesPage() {
   // Form states
   const [name, setName] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
-  const [frequency, setFrequency] = useState<'MONTHLY' | 'WEEKLY'>('MONTHLY');
+  const [frequency, setFrequency] = useState<RecurringFrequency>('MONTHLY');
   const [dueDay, setDueDay] = useState<number>(28);
+  const [dueMonth, setDueMonth] = useState<number>(new Date().getMonth() + 1);
   const [categoryId, setCategoryId] = useState<string>('');
   const [branchId, setBranchId] = useState<string>('');
 
@@ -114,6 +158,7 @@ export default function RecurrentExpensesPage() {
           amount: parsedAmount,
           frequency,
           dueDay: Number(dueDay),
+          ...(frequency === 'YEARLY' ? { dueMonth: Number(dueMonth) } : {}),
           branchId,
           categoryId,
         },
@@ -143,7 +188,7 @@ export default function RecurrentExpensesPage() {
       {/* Modal to add a new model */}
       {showAddModal && canManage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-w-lg w-full bg-white rounded-2xl p-6 shadow-xl border border-stone-200">
+          <div className="max-w-lg w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-6 shadow-xl border border-stone-200">
             <div className="flex justify-between items-center pb-3 border-b border-stone-100 gap-3">
               <div className="min-w-0">
                 <h3 className="font-serif text-lg font-bold text-stone-900">
@@ -204,11 +249,13 @@ export default function RecurrentExpensesPage() {
                   <Select
                     aria-label="Périodicité"
                     options={[
-                      { value: 'MONTHLY', label: 'Mensuelle' },
-                      { value: 'WEEKLY', label: 'Hebdomadaire' },
+                      { value: 'WEEKLY', label: FREQUENCY_LABELS.WEEKLY },
+                      { value: 'MONTHLY', label: FREQUENCY_LABELS.MONTHLY },
+                      { value: 'QUARTERLY', label: FREQUENCY_LABELS.QUARTERLY },
+                      { value: 'YEARLY', label: FREQUENCY_LABELS.YEARLY },
                     ]}
                     value={frequency}
-                    onChange={(v) => setFrequency(v as 'MONTHLY' | 'WEEKLY')}
+                    onChange={(v) => setFrequency(v as RecurringFrequency)}
                   />
                 </div>
               </div>
@@ -216,26 +263,53 @@ export default function RecurrentExpensesPage() {
               {/* No annexe/branch field here on purpose — the model is
                   created for whichever annexe is active in the header
                   switcher. */}
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">
-                  {frequency === 'MONTHLY'
-                    ? 'Jour du mois (ex: 28)'
-                    : 'Jour de semaine (0=Dimanche)'}
-                </label>
-                <input
-                  type="number"
-                  min={frequency === 'MONTHLY' ? 1 : 0}
-                  max={frequency === 'MONTHLY' ? 31 : 6}
-                  value={dueDay}
-                  onChange={(e) => setDueDay(Number(e.target.value))}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                />
+              <div className={frequency === 'YEARLY' ? 'grid grid-cols-2 gap-3' : ''}>
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">
+                    {frequency === 'WEEKLY'
+                      ? 'Jour de semaine (0=Dimanche)'
+                      : 'Jour du mois (ex: 28)'}
+                  </label>
+                  <input
+                    type="number"
+                    min={frequency === 'WEEKLY' ? 0 : 1}
+                    max={frequency === 'WEEKLY' ? 6 : 31}
+                    value={dueDay}
+                    onChange={(e) => setDueDay(Number(e.target.value))}
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                  />
+                </div>
+                {frequency === 'YEARLY' && (
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Mois</label>
+                    <Select
+                      aria-label="Mois"
+                      options={MONTH_LABELS.map((label, idx) => ({
+                        value: String(idx + 1),
+                        label,
+                      }))}
+                      value={String(dueMonth)}
+                      onChange={(v) => setDueMonth(Number(v))}
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Catégorie comptable *</label>
+                <label className="block font-bold text-stone-700 mb-1">
+                  Catégorie de dépense *
+                </label>
+                {categories.length === 0 && !loading && (
+                  <p className="mb-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-800">
+                    Aucune catégorie de dépense n’existe encore.{' '}
+                    <Link href="/settings/church" className="font-bold underline">
+                      Créez-en une dans Paramètres
+                    </Link>
+                    .
+                  </p>
+                )}
                 <Select
-                  aria-label="Catégorie comptable"
+                  aria-label="Catégorie de dépense"
                   options={categories.map((c) => ({ value: c.id, label: c.name }))}
                   value={categoryId}
                   onChange={setCategoryId}
@@ -253,7 +327,7 @@ export default function RecurrentExpensesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || categories.length === 0}
                   className="rounded-xl bg-emerald-800 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {submitting ? 'Création…' : 'Enregistrer le modèle'}
@@ -331,8 +405,7 @@ export default function RecurrentExpensesPage() {
                 <div>
                   <div className="flex justify-between items-start">
                     <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-stone-600">
-                      {m.frequency === 'MONTHLY' ? 'MENSUEL' : 'HEBDOMADAIRE'} &bull; Jour{' '}
-                      {m.dueDay}
+                      {formatSchedule(m)}
                     </span>
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                       {m.status === 'ACTIVE' ? 'Actif' : 'Suspendu'}

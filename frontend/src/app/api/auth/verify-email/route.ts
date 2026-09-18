@@ -38,7 +38,7 @@ const limiter = createEmailLimiter(redis ? { redis } : {}, {
   windowMs: 15 * 60 * 1000, // 15 min (D-08)
   max: Number(process.env.AUTH_VERIFY_RATE_LIMIT_MAX ?? 5),
   code: 'TOO_MANY_VERIFY_ATTEMPTS',
-  message: 'Too many verification attempts. Try again later.',
+  message: 'Trop de tentatives de vérification. Réessayez plus tard.',
 });
 
 function formatIssues(err: z.ZodError) {
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'VERIFICATION_CODE_INVALID',
-          message: 'Verification code is invalid.',
+          message: 'Le code de vérification est invalide.',
         },
         { status: 400 },
       );
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'VERIFICATION_CODE_INVALID',
-          message: 'Verification code is invalid.',
+          message: 'Le code de vérification est invalide.',
         },
         { status: 400 },
       );
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'VERIFICATION_CODE_EXPIRED',
-          message: 'Verification code has expired.',
+          message: 'Le code de vérification a expiré.',
         },
         { status: 400 },
       );
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'VERIFICATION_CODE_INVALID',
-          message: 'Verification code is invalid.',
+          message: 'Le code de vérification est invalide.',
         },
         { status: 400 },
       );
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         const res = NextResponse.json(
           {
             error: 'VERIFICATION_CODE_INVALID',
-            message: 'Verification code is invalid.',
+            message: 'Le code de vérification est invalide.',
           },
           { status: 400 },
         );

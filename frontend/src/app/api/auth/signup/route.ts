@@ -39,7 +39,7 @@ const limiter = createEmailLimiter(redis ? { redis } : {}, {
   windowMs: 60 * 60 * 1000, // 1 hour (D-08)
   max: Number(process.env.AUTH_SIGNUP_RATE_LIMIT_MAX ?? 5),
   code: 'TOO_MANY_SIGNUP_ATTEMPTS',
-  message: 'Too many signup attempts. Try again later.',
+  message: 'Trop de tentatives d’inscription. Réessayez plus tard.',
 });
 
 function formatIssues(err: z.ZodError) {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     //    surfaces the more specific PASSWORD_BANNED code rather than TOO_SHORT.
     if (isBanned(password)) {
       const res = NextResponse.json(
-        { error: 'PASSWORD_BANNED', message: 'This password is too common.' },
+        { error: 'PASSWORD_BANNED', message: 'Ce mot de passe est trop courant.' },
         { status: 400 },
       );
       res.headers.set('x-request-id', ctx.requestId);
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'PASSWORD_TOO_SHORT',
-          message: `Password must be at least ${PASSWORD_MIN} characters`,
+          message: `Le mot de passe doit contenir au moins ${PASSWORD_MIN} caractères.`,
         },
         { status: 400 },
       );
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'PASSWORD_PWNED',
-          message: 'This password appeared in a known data breach.',
+          message: 'Ce mot de passe est apparu dans une fuite de données connue.',
         },
         { status: 400 },
       );

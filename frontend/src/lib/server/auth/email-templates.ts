@@ -79,12 +79,64 @@ function ttlWording(expiresAtIso: string | undefined): string {
   return `in ${hours} hour${hours === 1 ? '' : 's'}`;
 }
 
+/**
+ * Shared code-email shell — a self-contained (no external images/fonts, no
+ * `<style>` block) HTML document so it renders consistently across Gmail /
+ * Outlook / Apple Mail. The code sits alone on its own line in a bordered,
+ * monospace, letter-spaced box: triple-click or double-click-drag selects
+ * exactly the code and nothing else (the earlier `<strong>code</strong>`
+ * inline in a sentence made a clean selection nearly impossible — Gmail's
+ * "Hi, Your verification code is FEBFKBMD. It expires…" ran the code into
+ * the surrounding punctuation).
+ */
+function codeEmailHtml(args: { heading: string; lead: string; code: string; ttl: string }): string {
+  const { heading, lead, code, ttl } = args;
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>${heading}</title>
+  </head>
+  <body style="margin:0;padding:24px 12px;background-color:#f5f5f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;">
+      <tr>
+        <td style="padding-bottom:20px;text-align:center;">
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">Goshen</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color:#ffffff;border:1px solid #e7e5e4;border-radius:16px;padding:32px 28px;">
+          <p style="margin:0 0 4px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#047857;">${heading}</p>
+          <p style="margin:12px 0 20px;font-size:14px;line-height:1.6;color:#44403c;">${lead}</p>
+          <div style="margin:0 0 20px;padding:16px;background-color:#f5f5f4;border:1px solid #e7e5e4;border-radius:12px;text-align:center;">
+            <span style="display:inline-block;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:28px;font-weight:700;letter-spacing:0.28em;color:#0f172a;">${code}</span>
+          </div>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#78716c;">This code expires ${ttl}. If you did not request this, you can safely ignore this email.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-top:20px;text-align:center;">
+          <p style="margin:0;font-size:11px;line-height:1.6;color:#a8a29e;">Sent by Goshen &mdash; église, gestion financière.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 export function verificationEmail(args: VerificationEmailArgs): EmailTemplate {
   const code = htmlEscape(args.code);
   const ttl = ttlWording(args.expiresAt);
   return {
     subject: 'Verify your email',
-    html: `<p>Hi,</p><p>Your verification code is <strong>${code}</strong>.</p><p>It expires ${ttl}. If you did not request this, ignore this email.</p>`,
+    html: codeEmailHtml({
+      heading: 'Confirm your email address',
+      lead: 'Enter this code to finish creating your account:',
+      code,
+      ttl,
+    }),
     text: `Your verification code is ${args.code}. It expires ${ttl}. If you did not request this, ignore this email.`,
   };
 }
@@ -94,7 +146,12 @@ export function resetPasswordEmail(args: ResetPasswordEmailArgs): EmailTemplate 
   const ttl = ttlWording(args.expiresAt);
   return {
     subject: 'Reset your password',
-    html: `<p>Hi,</p><p>Your password reset code is <strong>${code}</strong>.</p><p>It expires ${ttl}. If you did not request this, ignore this email.</p>`,
+    html: codeEmailHtml({
+      heading: 'Reset your password',
+      lead: 'Enter this code to choose a new password:',
+      code,
+      ttl,
+    }),
     text: `Your password reset code is ${args.code}. It expires ${ttl}. If you did not request this, ignore this email.`,
   };
 }

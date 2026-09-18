@@ -6,6 +6,7 @@
 // only builds the document.
 import 'server-only';
 import PDFDocument from 'pdfkit';
+import { formatPrice } from '@/lib/utils';
 
 export interface ReportPdfTransaction {
   date: string | Date;
@@ -33,8 +34,13 @@ export interface ReportPdfInput {
   currency?: string;
 }
 
+// PDFKit's standard Helvetica font can't render the narrow no-break space
+// (U+202F) that `Number.toLocaleString('fr-FR')` uses as a thousands
+// separator — it falls back to a visible glyph that looks like "/" (e.g.
+// "40 /000 FCFA" instead of "40 000 FCFA"). `formatPrice` normalizes that
+// to a plain ASCII space, which every PDF font supports.
 function formatAmount(n: number, currency = 'FCFA'): string {
-  return `${n.toLocaleString('fr-FR')} ${currency}`;
+  return formatPrice(n, currency);
 }
 
 function formatDate(d: string | Date): string {

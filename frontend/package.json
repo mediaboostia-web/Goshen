@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000 --turbopack",
+    "dev": "concurrently -n next,drain -c blue,green \"pnpm run dev:next\" \"pnpm run dev:drain\"",
+    "dev:next": "next dev --port 3000 --turbopack",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
@@ -51,6 +52,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.5",
     "dotenv-cli": "^11.0.0",
     "eslint-config-next": "^16.2.6",
     "fast-glob": "^3.3.3",

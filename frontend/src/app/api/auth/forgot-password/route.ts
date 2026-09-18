@@ -45,7 +45,7 @@ const limiter = createEmailLimiter(redis ? { redis } : {}, {
   windowMs: 60 * 60 * 1000, // 1 hour (D-08)
   max: Number(process.env.AUTH_FORGOT_RATE_LIMIT_MAX ?? 3),
   code: 'TOO_MANY_FORGOT_ATTEMPTS',
-  message: 'Too many password-reset requests. Try again later.',
+  message: 'Trop de demandes de réinitialisation. Réessayez plus tard.',
 });
 
 function formatIssues(err: z.ZodError) {

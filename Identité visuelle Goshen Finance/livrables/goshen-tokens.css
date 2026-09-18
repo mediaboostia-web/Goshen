@@ -1,5 +1,9 @@
-/* Goshen — jetons de marque v1.0
-   Charte graphique Goshen, pilier II. Ne pas ajouter de couleur hors de cette liste. */
+/* Goshen — jetons de marque v2.0
+   Charte graphique Goshen, pilier II. v2 assouplit délibérément trois règles de v1.0
+   (angle de courbure zéro, un seul bouton émeraude par écran, aucun dégradé/lueur)
+   pour l'app produit — le livrable imprimé charte-goshen.html reste la référence v1.0
+   pour les supports papier/marketing. Toujours documenter toute nouvelle couleur ici
+   plutôt que de l'introduire ad hoc dans le code. */
 :root {
   /* Encre */
   --goshen-ink-100: #e8ebf0;
@@ -34,13 +38,42 @@
   --goshen-gold-900: #6b5427;
   --goshen-gold: var(--goshen-gold-500);
 
+  /* Accents de statut (v2, app uniquement) — un rôle fonctionnel chacun,
+     jamais interchangeables : rose/rouge = sortie d'argent, bleu/indigo =
+     échéance planifiée, violet = navigation secondaire (annexes/paroisses). */
+  --goshen-rose-500: #f43f5e;
+  --goshen-red-600: #dc2626;
+  --goshen-blue-500: #3b82f6;
+  --goshen-indigo-600: #4f46e5;
+  --goshen-violet-500: #8b5cf6;
+  --goshen-slate-600: #475569;
+  --goshen-slate-700: #334155;
+
+  /* Dégradés nommés (v2, app uniquement) */
+  --goshen-gradient-hero: linear-gradient(
+    135deg,
+    var(--goshen-emerald-900),
+    var(--goshen-ink-800),
+    var(--goshen-emerald-700)
+  );
+  --goshen-gradient-primary: linear-gradient(
+    135deg,
+    var(--goshen-emerald-500),
+    var(--goshen-emerald-700)
+  );
+  --goshen-gradient-danger: linear-gradient(135deg, var(--goshen-rose-500), var(--goshen-red-600));
+  --goshen-gradient-info: linear-gradient(135deg, var(--goshen-blue-500), var(--goshen-indigo-600));
+
   /* Typographie */
   --goshen-font-title: 'Archivo', Helvetica, Arial, sans-serif;
   --goshen-font-body: 'Archivo', Helvetica, Arial, sans-serif;
   --goshen-font-mono: 'Space Mono', ui-monospace, monospace;
 
-  /* Structure */
-  --goshen-radius: 0;
+  /* Structure — v1.0 imposait un rayon zéro partout ; v2 l'assouplit pour
+     l'app (cartes/boutons arrondis, langage plus "produit SaaS"). Le papier
+     (charte-goshen.html) garde le rayon zéro. */
+  --goshen-radius: 1rem;
+  --goshen-radius-btn: 0.75rem;
   --goshen-rule-strong: 2px;
   --goshen-rule-thin: 1px;
   --goshen-tap: 44px;
@@ -116,7 +149,10 @@ hr,
   text-align: right;
 }
 
-/* Bouton d'action — un seul émeraude par écran */
+/* Bouton d'action — v2 : plusieurs boutons d'action par écran sont permis
+   quand chacun porte un rôle fonctionnel distinct (voir les accents de
+   statut ci-dessus) ; l'émeraude reste réservé à l'action principale/entrée
+   d'argent. */
 .goshen-btn {
   display: inline-flex;
   align-items: center;
@@ -125,19 +161,26 @@ hr,
   min-height: var(--goshen-tap);
   padding: 0.75rem 1.25rem;
   border: 0;
-  border-radius: var(--goshen-radius);
-  background: var(--goshen-emerald);
+  border-radius: var(--goshen-radius-btn);
+  background: var(--goshen-gradient-primary);
   color: var(--goshen-paper);
   font-family: var(--goshen-font-body);
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    filter 150ms ease;
 }
 .goshen-btn:hover {
-  background: var(--goshen-emerald-700);
+  filter: brightness(1.08);
+  box-shadow: 0 8px 20px -8px rgb(13 148 136 / 0.5);
+  transform: translateY(-1px);
 }
 .goshen-btn:active {
-  background: var(--goshen-emerald-900);
+  filter: brightness(0.95);
+  transform: translateY(0);
 }
 .goshen-btn[disabled] {
   opacity: 0.45;

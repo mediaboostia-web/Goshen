@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
@@ -9,6 +10,8 @@ import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { DocumentReportIcon, CheckCircleIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -21,6 +24,7 @@ interface IncomeTransaction {
   amount: number;
   date: string;
   notes: string | null;
+  paymentMethod: string | null;
   category: { name: string };
   branch: { name: string };
   author: { name: string | null; email: string };
@@ -52,6 +56,7 @@ export default function IncomesPage() {
   const [branchId, setBranchId] = useState<string>('');
   const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0] ?? '');
   const [notes, setNotes] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
 
   useEffect(() => {
     if (currentBranch) {
@@ -126,6 +131,7 @@ export default function IncomesPage() {
           categoryId,
           date: new Date(date).toISOString(),
           notes: notes.trim() || undefined,
+          paymentMethod: paymentMethod || undefined,
         },
       });
 
@@ -142,6 +148,7 @@ export default function IncomesPage() {
       toast(`Entrée de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée !`, 'success');
       setAmount('');
       setNotes('');
+      setPaymentMethod('');
       await loadData();
       await refreshBranches();
     } catch (err) {
@@ -163,12 +170,14 @@ export default function IncomesPage() {
     branchName: string;
     date: string;
     notes?: string | null;
+    paymentMethod?: string | null;
   }) => {
     setActiveInvoiceData({
       transactionId: tx.id,
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
       churchName: church?.name || 'Votre Église',
+      ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
       churchAddress: tx.branchName,
       recipientName: 'Culte Dominical & Assemblée Locale',
@@ -179,19 +188,17 @@ export default function IncomesPage() {
           no: '01',
           description: tx.categoryName,
           subDescription: tx.notes || 'Collecte et offrandes enregistrées au grand livre',
-          price: tx.amount,
-          qty: '1',
-          total: tx.amount,
+          amount: tx.amount,
         },
       ],
-      subTotal: tx.amount,
-      tax: 0,
-      discount: 0,
-      grandTotal: tx.amount,
-      paymentMethod: 'Caisse Locale Espèces / Airtel Money',
+      total: tx.amount,
+      paymentMethod: tx.paymentMethod
+        ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
+        : formatPaymentMethods(church?.paymentMethods),
+      ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
       terms: 'Récépissé officiel de culte certifié conforme aux registres paroissiaux.',
-      signatoryName: 'Diacre Trésorier de Caisse',
-      signatoryRole: 'Comptabilité Paroissiale',
+      ...(church?.phone ? { phone: church.phone } : {}),
+      ...(church?.email ? { email: church.email } : {}),
     });
   };
 
@@ -229,23 +236,13 @@ export default function IncomesPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => openIncomeInvoice(lastSavedIncome)}
-                className="rounded-xl bg-[#e11d48] hover:bg-[#be123c] px-4 py-2 text-xs font-bold text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <DocumentReportIcon className="h-4 w-4" />
-                <span>Imprimer / Télécharger Facture-Reçu</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLastSavedIncome(null)}
-                className="text-emerald-800 hover:text-emerald-950 font-bold px-2 py-1 text-sm cursor-pointer"
-              >
-                &times;
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setLastSavedIncome(null)}
+              className="text-emerald-800 hover:text-emerald-950 font-bold px-2 py-1 text-sm cursor-pointer"
+            >
+              &times;
+            </button>
           </div>
         )}
 
@@ -297,6 +294,15 @@ export default function IncomesPage() {
                     <label className="block font-bold text-stone-700 mb-1">
                       Catégorie de collecte *
                     </label>
+                    {categories.length === 0 && !loading && (
+                      <p className="mb-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-800">
+                        Aucune catégorie d’entrée n’existe encore.{' '}
+                        <Link href="/settings/church" className="font-bold underline">
+                          Créez-en une dans Paramètres
+                        </Link>
+                        .
+                      </p>
+                    )}
                     <Select
                       aria-label="Catégorie de collecte"
                       options={categories.map((c) => ({ value: c.id, label: c.name }))}
@@ -314,11 +320,22 @@ export default function IncomesPage() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">Date du culte</label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                    <DatePicker value={date} onChange={setDate} />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Moyen de paiement (optionnel)
+                    </label>
+                    <Select
+                      aria-label="Moyen de paiement"
+                      value={paymentMethod}
+                      onChange={setPaymentMethod}
+                      placeholder={`Par défaut (${formatPaymentMethods(church?.paymentMethods)})`}
+                      options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
+                        value,
+                        label,
+                      }))}
                     />
                   </div>
 
@@ -337,7 +354,7 @@ export default function IncomesPage() {
 
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || categories.length === 0}
                     className="w-full rounded-lg bg-emerald-800 py-3 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                   >
                     {submitting ? 'Enregistrement…' : 'Valider l’entrée'}
@@ -418,6 +435,7 @@ export default function IncomesPage() {
                                 branchName: inc.branch.name,
                                 date: inc.date,
                                 notes: inc.notes,
+                                paymentMethod: inc.paymentMethod,
                               })
                             }
                             className="rounded-xl border border-stone-200 bg-white px-2.5 py-1 text-xs font-bold text-[#e11d48] hover:bg-[#e11d48] hover:text-white transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1"

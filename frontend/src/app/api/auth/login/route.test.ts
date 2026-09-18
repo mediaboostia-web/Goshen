@@ -187,7 +187,7 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error).toBe('ACCOUNT_SUSPENDED');
-    expect(body.message).toMatch(/suspended/i);
+    expect(body.message).toMatch(/suspendu/i);
     // WR-04 — recordSuccess IS called: credentials passed verifyPassword,
     // so the user is legitimate; clearing the lockout counter prevents
     // post-restore lockout (where N-1 pre-suspension failures + 1 fresh

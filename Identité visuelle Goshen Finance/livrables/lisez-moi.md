@@ -1,4 +1,4 @@
-# Goshen — livrables de marque v1.0
+# Goshen — livrables de marque v2.0 (app) / v1.0 (papier)
 
 ## Contenu
 
@@ -36,7 +36,9 @@ direction de marque.
 - Rapports financiers : A4 blanc 90 g minimum, recto seul.
 - Valeurs CMJN de la page 12 : conversions indicatives FOGRA39, à valider sur épreuve contractuelle.
 
-## Constantes non négociables
+## Constantes non négociables — papier (charte-goshen.html, v1.0)
+
+Le livrable imprimé garde les règles d'origine, inchangées :
 
 1. Angle de courbure zéro, partout.
 2. Tout est aligné à gauche.
@@ -46,3 +48,26 @@ direction de marque.
 6. L'or ne porte jamais de texte courant.
 7. Photographies en noir et blanc, sans filtre.
 8. Aucun emoji, aucune lueur, aucun dégradé.
+
+## Constantes non négociables — app (goshen-tokens.css, v2.0)
+
+Décision produit : l'app peut diverger du papier pour porter un langage plus
+"SaaS moderne". Trois règles sont assouplies, les cinq autres restent :
+
+1. ~~Angle de courbure zéro~~ → coins arrondis autorisés (`--goshen-radius`,
+   `--goshen-radius-btn`).
+2. Tout est aligné à gauche. (inchangé)
+3. Deux épaisseurs de filet : 2 px et 1 px. (inchangé)
+4. ~~Un seul bouton émeraude par écran~~ → plusieurs boutons d'action
+   autorisés s'ils portent chacun un rôle fonctionnel distinct et documenté
+   (accents de statut dans `goshen-tokens.css` : rose/rouge = sortie
+   d'argent, bleu/indigo = échéance planifiée, violet = navigation
+   secondaire). L'émeraude reste réservé à l'action principale/entrée
+   d'argent — jamais réutilisé pour autre chose sur le même écran.
+5. Tout montant en Space Mono, aligné à droite. (inchangé)
+6. L'or ne porte jamais de texte courant. (inchangé)
+7. Photographies en noir et blanc, sans filtre. (inchangé)
+8. ~~Aucun emoji, aucune lueur, aucun dégradé~~ → dégradés et lueurs (blobs
+   flous décoratifs) autorisés, toujours via les jetons `--goshen-gradient-*`
+   documentés, jamais une couleur ou un dégradé improvisé directement dans
+   le code. L'emoji reste interdit comme icône (SVG uniquement).

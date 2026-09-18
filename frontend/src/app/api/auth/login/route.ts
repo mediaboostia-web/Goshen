@@ -47,7 +47,7 @@ const limiter = createEmailLimiter(
     windowMs: 15 * 60 * 1000,
     max: Number(process.env.AUTH_LOGIN_RATE_LIMIT_MAX ?? 10),
     code: 'TOO_MANY_LOGIN_ATTEMPTS',
-    message: 'Too many login attempts. Try again later.',
+    message: 'Trop de tentatives de connexion. Réessayez plus tard.',
   },
 );
 
@@ -60,14 +60,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       body = await req.json();
     } catch {
       return NextResponse.json(
-        { error: 'VALIDATION_FAILED', message: 'Invalid JSON body' },
+        { error: 'VALIDATION_FAILED', message: 'Requête invalide.' },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
     }
     const parsed = LoginSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'VALIDATION_FAILED', message: 'Invalid request body' },
+        { error: 'VALIDATION_FAILED', message: 'Requête invalide.' },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (await isLockedOut(email)) {
       log.warn('login blocked by lockout', { email });
       return NextResponse.json(
-        { error: 'LOCKED_OUT', message: 'Account temporarily locked.' },
+        { error: 'LOCKED_OUT', message: 'Compte temporairement verrouillé. Réessayez plus tard.' },
         { status: 423, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!user || !user.passwordHash) {
       await dummyBcryptCompare(password);
       return NextResponse.json(
-        { error: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' },
+        { error: 'INVALID_CREDENTIALS', message: 'Adresse email ou mot de passe incorrect.' },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -135,12 +135,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const r = await recordFailure(email);
       if (r.locked) {
         return NextResponse.json(
-          { error: 'LOCKED_OUT', message: 'Account temporarily locked.' },
+          {
+            error: 'LOCKED_OUT',
+            message: 'Compte temporairement verrouillé. Réessayez plus tard.',
+          },
           { status: 423, headers: { 'x-request-id': ctx.requestId } },
         );
       }
       return NextResponse.json(
-        { error: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' },
+        { error: 'INVALID_CREDENTIALS', message: 'Adresse email ou mot de passe incorrect.' },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -149,7 +152,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     //    Don't recordFailure here; it's not a credential failure.
     if (!user.emailVerifiedAt) {
       return NextResponse.json(
-        { error: 'EMAIL_NOT_VERIFIED', message: 'Please verify your email first.' },
+        { error: 'EMAIL_NOT_VERIFIED', message: 'Veuillez d’abord vérifier votre adresse email.' },
         { status: 403, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -171,7 +174,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         {
           error: 'ACCOUNT_SUSPENDED',
-          message: 'This account has been suspended. Contact support.',
+          message: 'Ce compte a été suspendu. Contactez le support.',
         },
         { status: 403, headers: { 'x-request-id': ctx.requestId } },
       );

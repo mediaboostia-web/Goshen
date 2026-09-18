@@ -23,6 +23,19 @@ import {
 
 type TabKey = 'compte' | 'securite' | 'membres' | 'eglise' | 'facturation';
 
+const NOTIFICATION_EVENT_TYPES: { key: string; label: string; description: string }[] = [
+  {
+    key: 'low_balance',
+    label: 'Solde de caisse bas',
+    description: 'Alerte lorsque le solde d’une annexe passe sous le seuil défini.',
+  },
+  {
+    key: 'recurring_expense_due',
+    label: 'Charge fixe à échéance',
+    description: 'Rappel lorsqu’une charge récurrente (loyer, salaire…) arrive à échéance.',
+  },
+];
+
 interface MemberItem {
   id: string;
   name: string;
@@ -60,6 +73,14 @@ function SettingsContent() {
   >('TREASURER');
   const [newMemberBranch, setNewMemberBranch] = useState<string>('ALL');
   const [invitingMember, setInvitingMember] = useState(false);
+
+  // Tab: Compte (Préférences de notification)
+  interface ChannelPref {
+    email?: boolean;
+    inApp?: boolean;
+  }
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, ChannelPref>>({});
+  const [savingNotifPref, setSavingNotifPref] = useState<string | null>(null);
 
   // Tab: Église
   const [churchName, setChurchName] = useState(church?.name || '');
@@ -110,6 +131,47 @@ function SettingsContent() {
     void loadMembers();
   }, [loadMembers]);
 
+  const loadNotifPrefs = useCallback(async () => {
+    try {
+      const res = await api<{ prefs: Record<string, ChannelPref> }>('/api/notifications/prefs');
+      setNotifPrefs(res.prefs || {});
+    } catch {
+      // Handled — defaults (all channels enabled) apply when nothing loads.
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadNotifPrefs();
+  }, [loadNotifPrefs]);
+
+  // Opt-out semantics mirror the backend (isChannelEnabled in prefs-merge.ts):
+  // a missing entry means the channel is enabled.
+  function isNotifChannelEnabled(eventType: string, channel: 'email' | 'inApp'): boolean {
+    const v = notifPrefs[eventType]?.[channel];
+    return v !== false;
+  }
+
+  async function toggleNotifPref(eventType: string, channel: 'email' | 'inApp') {
+    const current = isNotifChannelEnabled(eventType, channel);
+    const next = !current;
+    setNotifPrefs((prev) => ({ ...prev, [eventType]: { ...prev[eventType], [channel]: next } }));
+    setSavingNotifPref(`${eventType}:${channel}`);
+    try {
+      await api('/api/notifications/prefs', {
+        method: 'PATCH',
+        body: { prefs: { [eventType]: { [channel]: next } } },
+      });
+    } catch (err) {
+      setNotifPrefs((prev) => ({
+        ...prev,
+        [eventType]: { ...prev[eventType], [channel]: current },
+      }));
+      toast(err instanceof ApiError ? err.message : 'Erreur réseau.', 'error');
+    } finally {
+      setSavingNotifPref(null);
+    }
+  }
+
   // Handle password submission
   async function onSubmitPassword(e: FormEvent) {
     e.preventDefault();
@@ -127,19 +189,29 @@ function SettingsContent() {
 
     setSavingPassword(true);
     try {
-      await api('/api/auth/change-password', {
-        method: 'PUT',
-        body: { currentPassword, newPassword },
-      });
+      if (user?.hasPassword) {
+        await api('/api/auth/change-password', {
+          method: 'PUT',
+          body: { currentPassword, newPassword },
+        });
+        toast('Mot de passe mis à jour avec succès.', 'success');
+      } else {
+        // OAuth-only account (e.g. signed up with Google) — no current
+        // password exists yet, so this is the dedicated first-time-set path.
+        await api('/api/auth/set-password', {
+          method: 'POST',
+          body: { newPassword },
+        });
+        toast('Mot de passe créé avec succès.', 'success');
+      }
       setPasswordSuccess(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      toast('Mot de passe mis à jour avec succès.', 'success');
       await refresh();
     } catch (err) {
       setPasswordError(
-        err instanceof ApiError ? err.message : 'Erreur lors du changement de mot de passe.',
+        err instanceof ApiError ? err.message : 'Erreur lors de l’enregistrement du mot de passe.',
       );
     } finally {
       setSavingPassword(false);
@@ -394,6 +466,61 @@ function SettingsContent() {
               </div>
             )}
 
+            {activeTab === 'compte' && (
+              <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6 mt-6">
+                <div className="border-b border-stone-100 pb-4">
+                  <h2 className="font-serif text-xl font-bold text-stone-900">
+                    Préférences de Notification
+                  </h2>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Choisissez comment vous souhaitez être averti pour chaque type d’événement.
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-stone-500 border-b border-stone-100">
+                        <th className="font-bold py-2 pr-4">Événement</th>
+                        <th className="font-bold py-2 px-4 text-center">Email</th>
+                        <th className="font-bold py-2 pl-4 text-center">Dans l’application</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {NOTIFICATION_EVENT_TYPES.map((evt) => (
+                        <tr key={evt.key} className="border-b border-stone-50 last:border-0">
+                          <td className="py-3 pr-4">
+                            <p className="font-bold text-stone-800">{evt.label}</p>
+                            <p className="text-stone-500 mt-0.5">{evt.description}</p>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <input
+                              type="checkbox"
+                              aria-label={`${evt.label} — Email`}
+                              checked={isNotifChannelEnabled(evt.key, 'email')}
+                              disabled={savingNotifPref === `${evt.key}:email`}
+                              onChange={() => toggleNotifPref(evt.key, 'email')}
+                              className="accent-emerald-800 h-4 w-4"
+                            />
+                          </td>
+                          <td className="py-3 pl-4 text-center">
+                            <input
+                              type="checkbox"
+                              aria-label={`${evt.label} — Dans l’application`}
+                              checked={isNotifChannelEnabled(evt.key, 'inApp')}
+                              disabled={savingNotifPref === `${evt.key}:inApp`}
+                              onChange={() => toggleNotifPref(evt.key, 'inApp')}
+                              className="accent-emerald-800 h-4 w-4"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* ── 2. ONGLET: SÉCURITÉ ── */}
             {activeTab === 'securite' && (
               <div className="space-y-6">
@@ -401,10 +528,12 @@ function SettingsContent() {
                 <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
                   <div className="border-b border-stone-100 pb-4 mb-6">
                     <h2 className="font-serif text-xl font-bold text-stone-900">
-                      Mot de Passe de Connexion
+                      {user?.hasPassword ? 'Mot de Passe de Connexion' : 'Créer un Mot de Passe'}
                     </h2>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      Changez votre mot de passe pour protéger l'accès à la comptabilité de l'église
+                      {user?.hasPassword
+                        ? "Changez votre mot de passe pour protéger l'accès à la comptabilité de l'église"
+                        : 'Votre compte utilise la connexion Google. Créez un mot de passe pour pouvoir aussi vous connecter avec votre email.'}
                     </p>
                   </div>
 
@@ -417,24 +546,30 @@ function SettingsContent() {
                   {passwordSuccess && (
                     <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 font-semibold flex items-center gap-1.5">
                       <CheckCircleIcon className="h-4 w-4 text-emerald-700" />
-                      <span>Votre mot de passe a été modifié avec succès.</span>
+                      <span>
+                        {user?.hasPassword
+                          ? 'Votre mot de passe a été modifié avec succès.'
+                          : 'Votre mot de passe a été créé avec succès.'}
+                      </span>
                     </div>
                   )}
 
                   <form onSubmit={onSubmitPassword} className="space-y-4 text-xs max-w-lg">
-                    <div>
-                      <label className="block font-bold text-stone-700 mb-1">
-                        Mot de passe actuel
-                      </label>
-                      <input
-                        type="password"
-                        required
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                      />
-                    </div>
+                    {user?.hasPassword && (
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">
+                          Mot de passe actuel
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="••••••••••••"
+                          className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                        />
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -471,7 +606,11 @@ function SettingsContent() {
                       disabled={savingPassword}
                       className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
                     >
-                      {savingPassword ? 'Modification en cours…' : 'Mettre à jour'}
+                      {savingPassword
+                        ? 'Enregistrement…'
+                        : user?.hasPassword
+                          ? 'Mettre à jour'
+                          : 'Créer le mot de passe'}
                     </button>
                   </form>
                 </div>
@@ -689,93 +828,127 @@ function SettingsContent() {
 
             {/* ── 4. ONGLET: ÉGLISE & PAROISSES ── */}
             {activeTab === 'eglise' && (
-              <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
-                <div className="border-b border-stone-100 pb-4">
-                  <h2 className="font-serif text-xl font-bold text-stone-900">
-                    Configuration de la Communauté
-                  </h2>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Paramètres canoniques et légaux figurant sur les rapports officiels imprimés
-                  </p>
+              <div className="space-y-6">
+                {/* Gestion avancée — annexes & catégories, chacune sur sa propre page */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Link
+                    href="/settings/branches"
+                    className="group rounded-2xl border border-stone-200 bg-white p-5 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all flex items-start gap-4"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 group-hover:bg-emerald-100 transition-colors">
+                      <BuildingBranchIcon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-serif text-base font-bold text-stone-900">
+                          Annexes & Paroisses
+                        </h3>
+                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-bold text-stone-600 shrink-0">
+                          {branches.length}
+                        </span>
+                      </div>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Ajoutez vos paroisses et annexes, réglez leur seuil d’alerte de trésorerie.
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 mt-3 group-hover:underline">
+                        Gérer les annexes &rarr;
+                      </span>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/settings/church"
+                    className="group rounded-2xl border border-stone-200 bg-white p-5 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all flex items-start gap-4"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 group-hover:bg-emerald-100 transition-colors">
+                      <ReceiptTextIcon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-serif text-base font-bold text-stone-900">
+                        Catégories Financières
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Personnalisez vos motifs de dîmes, offrandes et dépenses, et les moyens de
+                        paiement acceptés.
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 mt-3 group-hover:underline">
+                        Gérer les catégories &rarr;
+                      </span>
+                    </div>
+                  </Link>
                 </div>
 
-                <form onSubmit={onSubmitChurch} className="space-y-4 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-stone-700 mb-1">
-                        Nom officiel de l'église
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={churchName}
-                        onChange={(e) => setChurchName(e.target.value)}
-                        placeholder="Ex: Communauté Évangélique de la Grâce"
-                        className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-stone-700 mb-1">
-                        Dénomination / Fédération chrétienne
-                      </label>
-                      <input
-                        type="text"
-                        value={denomination}
-                        onChange={(e) => setDenomination(e.target.value)}
-                        placeholder="Ex: Assemblées de Dieu, Alliance Chrétienne, Baptiste"
-                        className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-stone-700 mb-1">
-                      Devise monétaire paritaire
-                    </label>
-                    <Select
-                      aria-label="Devise monétaire paritaire"
-                      value={currency}
-                      onChange={setCurrency}
-                      options={[
-                        { value: 'FCFA', label: 'FCFA (Franc CFA)' },
-                        { value: 'EUR', label: 'EUR (€ Euro)' },
-                        { value: 'USD', label: 'USD ($ Dollar américain)' },
-                      ]}
-                    />
-                    <p className="mt-1 text-[11px] text-stone-400">
-                      Le seuil d’alerte de trésorerie se règle par annexe dans « Gérer les annexes
-                      ».
+                <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+                  <div className="border-b border-stone-100 pb-4">
+                    <h2 className="font-serif text-xl font-bold text-stone-900">
+                      Configuration de la Communauté
+                    </h2>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Paramètres canoniques et légaux figurant sur les rapports officiels imprimés
                     </p>
                   </div>
 
-                  <div className="pt-2 flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-stone-100 mt-6 gap-3">
-                    <div className="flex flex-wrap items-center gap-4">
-                      <Link
-                        href="/settings/branches"
-                        className="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1"
-                      >
-                        <BuildingBranchIcon className="h-4 w-4" />
-                        <span>Gérer les annexes et paroisses &rarr;</span>
-                      </Link>
-                      <Link
-                        href="/settings/church"
-                        className="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1"
-                      >
-                        <ReceiptTextIcon className="h-4 w-4" />
-                        <span>Gérer les catégories financières &rarr;</span>
-                      </Link>
+                  <form onSubmit={onSubmitChurch} className="space-y-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">
+                          Nom officiel de l'église
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={churchName}
+                          onChange={(e) => setChurchName(e.target.value)}
+                          placeholder="Ex: Communauté Évangélique de la Grâce"
+                          className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">
+                          Dénomination / Fédération chrétienne
+                        </label>
+                        <input
+                          type="text"
+                          value={denomination}
+                          onChange={(e) => setDenomination(e.target.value)}
+                          placeholder="Ex: Assemblées de Dieu, Alliance Chrétienne, Baptiste"
+                          className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                        />
+                      </div>
                     </div>
 
-                    <button
-                      type="submit"
-                      disabled={savingChurch}
-                      className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
-                    >
-                      {savingChurch ? 'Enregistrement…' : 'Enregistrer'}
-                    </button>
-                  </div>
-                </form>
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">
+                        Devise monétaire paritaire
+                      </label>
+                      <Select
+                        aria-label="Devise monétaire paritaire"
+                        value={currency}
+                        onChange={setCurrency}
+                        options={[
+                          { value: 'FCFA', label: 'FCFA (Franc CFA)' },
+                          { value: 'EUR', label: 'EUR (€ Euro)' },
+                          { value: 'USD', label: 'USD ($ Dollar américain)' },
+                        ]}
+                      />
+                      <p className="mt-1 text-[11px] text-stone-400">
+                        Le seuil d’alerte de trésorerie se règle par annexe dans « Gérer les annexes
+                        ».
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex justify-end border-t border-stone-100 mt-6">
+                      <button
+                        type="submit"
+                        disabled={savingChurch}
+                        className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
+                      >
+                        {savingChurch ? 'Enregistrement…' : 'Enregistrer'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
 
@@ -794,7 +967,9 @@ function SettingsContent() {
                   <span className="self-start sm:self-auto rounded-md bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
                     {church?.plan === 'PREMIUM'
                       ? 'Formule Premium (15 000 FCFA)'
-                      : 'Formule Essentiel (3 500 FCFA)'}
+                      : church?.plan === 'ESSENTIAL'
+                        ? 'Formule Essentiel (3 500 FCFA)'
+                        : 'Formule Gratuite (0 FCFA)'}
                   </span>
                 </div>
 
@@ -806,7 +981,7 @@ function SettingsContent() {
                         Statut de l'abonnement pastoral
                       </p>
                       <p className="font-serif text-2xl font-bold text-white mt-1">
-                        Abonnement Actif &bull; {church?.plan || 'PREMIUM'}
+                        Abonnement Actif &bull; {church?.plan || 'FREE'}
                       </p>
                       <p className="text-xs text-emerald-100/80 mt-1">
                         Accès complet multi-paroisses, pièces justificatives illimitées et reçus

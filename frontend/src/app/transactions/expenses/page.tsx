@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react';
+import Link from 'next/link';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
@@ -10,6 +11,8 @@ import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { DocumentReportIcon, CheckCircleIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -24,6 +27,7 @@ interface ExpenseTransaction {
   beneficiary: string | null;
   notes: string | null;
   receiptUrl: string | null;
+  paymentMethod: string | null;
   category: { name: string };
   branch: { name: string };
   author: { name: string | null; email: string };
@@ -61,6 +65,7 @@ export default function ExpensesPage() {
   const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0] ?? '');
   const [beneficiary, setBeneficiary] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [receiptUrl, setReceiptUrl] = useState<string>('');
   const [receiptPublicId, setReceiptPublicId] = useState<string>('');
 
@@ -175,6 +180,7 @@ export default function ExpensesPage() {
           notes: notes.trim() || undefined,
           receiptUrl: receiptUrl || undefined,
           receiptPublicId: receiptPublicId || undefined,
+          paymentMethod: paymentMethod || undefined,
         },
       });
 
@@ -196,6 +202,7 @@ export default function ExpensesPage() {
       setAmount('');
       setBeneficiary('');
       setNotes('');
+      setPaymentMethod('');
       setReceiptUrl('');
       setReceiptPublicId('');
       await loadData();
@@ -220,12 +227,14 @@ export default function ExpensesPage() {
     date: string;
     beneficiary?: string | null;
     notes?: string | null;
+    paymentMethod?: string | null;
   }) => {
     setActiveInvoiceData({
       transactionId: tx.id,
       invoiceNumber: `DEP-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
       churchName: church?.name || 'Votre Église',
+      ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
       churchAddress: tx.branchName,
       recipientName: tx.beneficiary || 'Prestataire / Fournisseur de Services',
@@ -238,24 +247,18 @@ export default function ExpensesPage() {
           subDescription:
             tx.notes ||
             `Décaissement autorisé — ${tx.beneficiary ? `Bénéficiaire : ${tx.beneficiary}` : 'Justificatif conforme'}`,
-          price: tx.amount,
-          qty: 1,
-          total: tx.amount,
+          amount: tx.amount,
         },
       ],
-      subTotal: tx.amount,
-      grandTotal: tx.amount,
-      paymentMethod: 'Caisse Locale / Virement Bancaire',
-      paymentDetails:
-        'Décaissement validé par la Trésorerie Générale de Goshen Finance avec signature autorisée.',
+      total: tx.amount,
+      paymentMethod: tx.paymentMethod
+        ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
+        : formatPaymentMethods(church?.paymentMethods),
+      ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
       terms:
-        'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique.',
-      tax: 0,
-      discount: 0,
-      signatoryName: 'Le Trésorier',
-      signatoryRole: 'Trésorier Général & Comptable',
-      phone: '+241 01 23 45 67',
-      email: 'tresorerie@goshen-finance.org',
+        'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique. Décaissement validé par la Trésorerie Générale avec signature autorisée.',
+      ...(church?.phone ? { phone: church.phone } : {}),
+      ...(church?.email ? { email: church.email } : {}),
     });
   };
 
@@ -327,23 +330,13 @@ export default function ExpensesPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => openExpenseInvoice(lastSavedExpense)}
-                className="rounded-xl bg-[#e11d48] hover:bg-[#be123c] px-4 py-2 text-xs font-bold text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <DocumentReportIcon className="h-4 w-4" />
-                <span>Imprimer / Télécharger Facture-Reçu</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLastSavedExpense(null)}
-                className="text-emerald-800 hover:text-emerald-950 font-bold px-2 py-1 text-sm cursor-pointer"
-              >
-                &times;
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setLastSavedExpense(null)}
+              className="text-emerald-800 hover:text-emerald-950 font-bold px-2 py-1 text-sm cursor-pointer"
+            >
+              &times;
+            </button>
           </div>
         )}
 
@@ -396,6 +389,15 @@ export default function ExpensesPage() {
                     <label className="block font-bold text-stone-700 mb-1">
                       Catégorie de dépense *
                     </label>
+                    {categories.length === 0 && !loading && (
+                      <p className="mb-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-800">
+                        Aucune catégorie de dépense n’existe encore.{' '}
+                        <Link href="/settings/church" className="font-bold underline">
+                          Créez-en une dans Paramètres
+                        </Link>
+                        .
+                      </p>
+                    )}
                     <Select
                       aria-label="Catégorie de dépense"
                       options={categories.map((c) => ({ value: c.id, label: c.name }))}
@@ -426,11 +428,22 @@ export default function ExpensesPage() {
                     <label className="block font-bold text-stone-700 mb-1">
                       Date du décaissement
                     </label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
+                    <DatePicker value={date} onChange={setDate} />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      Moyen de paiement (optionnel)
+                    </label>
+                    <Select
+                      aria-label="Moyen de paiement"
+                      value={paymentMethod}
+                      onChange={setPaymentMethod}
+                      placeholder={`Par défaut (${formatPaymentMethods(church?.paymentMethods)})`}
+                      options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
+                        value,
+                        label,
+                      }))}
                     />
                   </div>
 
@@ -484,7 +497,7 @@ export default function ExpensesPage() {
 
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || categories.length === 0}
                     className="w-full rounded-lg bg-stone-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-stone-800 disabled:opacity-50 transition-colors"
                   >
                     {submitting ? 'Validation…' : 'Valider la dépense'}
@@ -582,6 +595,7 @@ export default function ExpensesPage() {
                                 date: exp.date,
                                 beneficiary: exp.beneficiary,
                                 notes: exp.notes,
+                                paymentMethod: exp.paymentMethod,
                               })
                             }
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 text-[#e11d48] hover:bg-red-100 text-[11px] font-bold transition-colors cursor-pointer"

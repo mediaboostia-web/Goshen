@@ -83,7 +83,7 @@ describe('POST /api/cron/recurring-expense-reminders (PRD F19)', () => {
     expect(createArgs.data).toMatchObject({
       userId: 'treasurer-1',
       type: 'recurring_expense_due',
-      dedupeKey: 'recurring-reminder:exec-1:24h',
+      dedupeKey: 'recurring-reminder:exec-1:24h:treasurer-1',
     });
     expect(await res.json()).toEqual({ ok: true, remindersSent: 1, escalationsSent: 0 });
   });
@@ -106,7 +106,12 @@ describe('POST /api/cron/recurring-expense-reminders (PRD F19)', () => {
     const dedupeKeys = notificationCreate.mock.calls.map(
       (c) => (c[0] as { data: { dedupeKey: string } }).data.dedupeKey,
     );
-    expect(dedupeKeys).toEqual(['recurring-reminder:exec-1:48h', 'recurring-reminder:exec-1:48h']);
+    // Distinct per recipient: dedupeKey is a global @unique column, so a
+    // shared key here would silently drop the second recipient's row.
+    expect(dedupeKeys).toEqual([
+      'recurring-reminder:exec-1:48h:treasurer-1',
+      'recurring-reminder:exec-1:48h:pastor-1',
+    ]);
     expect(await res.json()).toEqual({ ok: true, remindersSent: 0, escalationsSent: 2 });
   });
 

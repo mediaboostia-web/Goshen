@@ -21,6 +21,10 @@ export interface ChurchUserAccess {
     plan: string;
     planExpiresAt: Date | null;
     ownerId: string;
+    paymentMethods: string[];
+    paymentDetails: string | null;
+    email: string | null;
+    phone: string | null;
   };
   member: {
     id: string;
@@ -54,9 +58,16 @@ export async function resolveChurchUser(userId: string): Promise<ChurchUserAcces
     : null;
 
   if (!membership) {
+    // No orderBy here used to mean "whatever order Postgres happens to
+    // return" — for a user belonging to more than one church (e.g. invited
+    // as treasurer elsewhere before ever creating their own), that could
+    // silently resolve to an older, unrelated membership instead of the one
+    // they most recently joined/created. Most-recent-first is the more
+    // sensible default when the cookie is absent/stale.
     membership = await prisma.organizationMember.findFirst({
       where: { userId },
       include: membershipInclude,
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -76,6 +87,10 @@ export async function resolveChurchUser(userId: string): Promise<ChurchUserAcces
         plan: membership.organization.plan,
         planExpiresAt: membership.organization.planExpiresAt,
         ownerId: membership.organization.ownerId,
+        paymentMethods: membership.organization.paymentMethods,
+        paymentDetails: membership.organization.paymentDetails,
+        email: membership.organization.email,
+        phone: membership.organization.phone,
       },
       member: {
         id: membership.id,
@@ -115,6 +130,10 @@ export async function resolveChurchUser(userId: string): Promise<ChurchUserAcces
         plan: owned.plan,
         planExpiresAt: owned.planExpiresAt,
         ownerId: owned.ownerId,
+        paymentMethods: owned.paymentMethods,
+        paymentDetails: owned.paymentDetails,
+        email: owned.email,
+        phone: owned.phone,
       },
       member: {
         id: newMember.id,

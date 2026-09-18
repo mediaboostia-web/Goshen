@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
+import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
@@ -8,6 +9,15 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { slugify } from '@/lib/server/slug';
+import { ACTIVE_ORG_COOKIE } from '@/lib/server/church/resolve-church';
+
+function isProd(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+// Mirrors /api/church/switch's cookie (same name/options) — see that route
+// for why this is a long-lived preference cookie, not a session cookie.
+const ACTIVE_ORG_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const DEFAULT_INCOMES = [
   'Dîmes ordinaires',
@@ -56,6 +66,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const auth = await requireAuth(req.headers.get('authorization'));
     if (auth instanceof NextResponse) return auth;
+
+    // One email = one church. Someone already belonging to a church
+    // (as pastor, treasurer, secretary or auditor) cannot create/own a
+    // second one — mirrors the same rule enforced on invites in
+    // /api/church/members.
+    const existingMembership = await prisma.organizationMember.findFirst({
+      where: { userId: auth.user.sub },
+    });
+    if (existingMembership) {
+      return NextResponse.json(
+        {
+          error: 'ALREADY_IN_CHURCH',
+          message: 'Ce compte est déjà associé à une église sur Goshen.',
+        },
+        { status: 409 },
+      );
+    }
 
     const body = await req.json().catch(() => null);
     const parsed = OnboardingBody.safeParse(body);
@@ -185,6 +212,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // database; over a real network hop to a remote Postgres (Neon, or any
     // hosted provider) that easily gets tight even without heavy load, and
     // trips "Transaction already closed" once it expires mid-run.
+
+    // A user who already belongs to another church (e.g. invited as
+    // treasurer elsewhere before ever signing up themselves) would otherwise
+    // keep landing back on that older membership after onboarding —
+    // resolveChurchUser falls back to an arbitrary existing membership when
+    // this cookie is absent. Explicitly activate the church just created.
+    const store = await cookies();
+    store.set(ACTIVE_ORG_COOKIE, organization.id, {
+      httpOnly: true,
+      secure: isProd(),
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ACTIVE_ORG_COOKIE_MAX_AGE,
+    });
 
     return NextResponse.json({ success: true, organization }, { status: 201 });
   });

@@ -56,8 +56,12 @@ export function Select({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const selected = options.find((o) => o.value === value);
+  // Accent-insensitive: "be" must match "Bénin", not just unaccented names
+  // like "Belgique" — without this, typing "be" only ever surfaced entries
+  // that happened to contain a plain "be" byte sequence.
+  const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const visibleOptions = searchable
-    ? options.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()))
+    ? options.filter((o) => normalize(o.label).includes(normalize(query.trim())))
     : options;
 
   useEffect(() => {

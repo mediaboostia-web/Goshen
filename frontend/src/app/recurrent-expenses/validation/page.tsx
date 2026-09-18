@@ -113,7 +113,7 @@ export default function RecurrentValidationPage() {
       {/* Postpone Modal */}
       {postponeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-w-md w-full bg-white rounded-2xl p-6 shadow-xl border border-stone-200 text-xs">
+          <div className="max-w-md w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-6 shadow-xl border border-stone-200 text-xs">
             <h3 className="font-serif text-base font-bold text-stone-900 pb-2 border-b border-stone-100">
               Reporter l’échéance &bull; {postponeTarget.recurringExpense.name}
             </h3>

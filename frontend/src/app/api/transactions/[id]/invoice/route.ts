@@ -16,17 +16,17 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { canAccessBranch } from '@/lib/server/church/branch-access';
 import { generateInvoicePdf } from '@/lib/server/reports/invoice-pdf';
 import { uploadBuffer, StorageNotConfiguredError } from '@/lib/server/upload/cloudinary-client';
 import { log } from '@/lib/server/observability/log';
+import { planLimitsFor } from '@/lib/server/subscription/plan-limits';
 
 const InvoiceItem = z.object({
   no: z.string(),
   description: z.string(),
   subDescription: z.string().optional(),
-  price: z.number(),
-  qty: z.union([z.number(), z.string()]),
-  total: z.number(),
+  amount: z.number(),
 });
 
 const ArchiveInvoiceBody = z.object({
@@ -36,10 +36,7 @@ const ArchiveInvoiceBody = z.object({
   recipientAddress: z.string().optional(),
   recipientContact: z.string().optional(),
   items: z.array(InvoiceItem).min(1),
-  subTotal: z.number(),
-  tax: z.number().optional(),
-  discount: z.number().optional(),
-  grandTotal: z.number(),
+  total: z.number(),
   paymentMethod: z.string(),
   paymentDetails: z.string().optional(),
   terms: z.string().optional(),
@@ -74,6 +71,12 @@ export async function POST(
     if (!transaction) {
       return NextResponse.json({ error: 'TRANSACTION_NOT_FOUND' }, { status: 404 });
     }
+    if (!canAccessBranch(access, transaction.branchId)) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Vous n’avez pas accès à cette annexe.' },
+        { status: 403 },
+      );
+    }
 
     const body = await req.json().catch(() => null);
     const parsed = ArchiveInvoiceBody.safeParse(body);
@@ -84,6 +87,25 @@ export async function POST(
       );
     }
 
+    const { maxInvoicesPerMonth } = planLimitsFor(access.church.plan);
+    if (Number.isFinite(maxInvoicesPerMonth)) {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const invoiceCountThisMonth = await prisma.generatedInvoice.count({
+        where: { organizationId: access.church.id, createdAt: { gte: startOfMonth } },
+      });
+      if (invoiceCountThisMonth >= maxInvoicesPerMonth) {
+        return NextResponse.json(
+          {
+            error: 'PLAN_INVOICE_LIMIT',
+            message: `Le forfait gratuit est limité à ${maxInvoicesPerMonth} facture archivée par mois. Passez à un forfait supérieur pour en générer davantage.`,
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     let uploaded;
     try {
       const pdfBuffer = await generateInvoicePdf({
@@ -91,6 +113,7 @@ export async function POST(
         churchName: access.church.name,
         churchDenomination: access.church.denomination,
         churchAddress: transaction.branch.name,
+        churchLogoUrl: access.church.logoUrl,
       });
       // No .pdf suffix on the public_id: Cloudinary appends the detected
       // format extension to the delivery URL itself — adding one here
@@ -127,6 +150,10 @@ export async function POST(
       where: { id: transaction.id },
       data: { receiptUrl: uploaded.secureUrl, receiptPublicId: uploaded.publicId },
       select: { id: true, receiptUrl: true, receiptPublicId: true },
+    });
+
+    await prisma.generatedInvoice.create({
+      data: { organizationId: access.church.id, transactionId: transaction.id },
     });
 
     return NextResponse.json({ transaction: updated }, { status: 200 });

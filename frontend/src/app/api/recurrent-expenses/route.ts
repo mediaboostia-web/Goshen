@@ -8,13 +8,19 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { allowedBranchIds, canAccessBranch } from '@/lib/server/church/branch-access';
+import {
+  RECURRING_FREQUENCIES,
+  computeInitialDueDate,
+} from '@/lib/server/recurring-expenses/schedule';
 
 const CreateRecurrentExpenseBody = z.object({
   branchId: z.string().min(1, 'Annexe requise'),
   name: z.string().min(3, 'Nom du modèle requis (ex: Cotisation caisse nationale)'),
   amount: z.number().int().positive('Montant requis'),
-  frequency: z.enum(['WEEKLY', 'MONTHLY']),
+  frequency: z.enum(RECURRING_FREQUENCIES),
   dueDay: z.number().int().min(0).max(31),
+  dueMonth: z.number().int().min(1).max(12).optional(),
   categoryId: z.string().min(1, 'Catégorie requise'),
 });
 
@@ -32,11 +38,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const { searchParams } = new URL(req.url);
     const branchId = searchParams.get('branchId');
 
+    const allowed = allowedBranchIds(access);
+    if (branchId && branchId !== 'CONSOLIDATED' && allowed && !allowed.includes(branchId)) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Vous n’avez pas accès à cette annexe.' },
+        { status: 403 },
+      );
+    }
+
     const where: Record<string, unknown> = {
       organizationId: access.church.id,
     };
     if (branchId && branchId !== 'CONSOLIDATED') {
       where.branchId = branchId;
+    } else if (allowed) {
+      where.branchId = { in: allowed };
     }
 
     const [models, pendingExecutions] = await Promise.all([
@@ -53,7 +69,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           status: 'PENDING',
           recurringExpense: {
             organizationId: access.church.id,
-            ...(branchId && branchId !== 'CONSOLIDATED' ? { branchId } : {}),
+            ...(branchId && branchId !== 'CONSOLIDATED'
+              ? { branchId }
+              : allowed
+                ? { branchId: { in: allowed } }
+                : {}),
           },
         },
         include: {
@@ -102,7 +122,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { branchId, name, amount, frequency, dueDay, categoryId } = parsed.data;
+    const { branchId, name, amount, frequency, dueDay, dueMonth, categoryId } = parsed.data;
 
     // branchId/categoryId come from the client — must be verified to belong
     // to the caller's own organization before use. Without this, a pastor
@@ -121,6 +141,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!targetCategory) {
       return NextResponse.json({ error: 'CATEGORY_NOT_FOUND' }, { status: 404 });
     }
+    if (!canAccessBranch(access, branchId)) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Vous n’avez pas accès à cette annexe.' },
+        { status: 403 },
+      );
+    }
 
     // Create the recurring model and its first pending execution
     const model = await prisma.$transaction(
@@ -133,25 +159,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             amount,
             frequency,
             dueDay,
+            dueMonth: frequency === 'YEARLY' ? (dueMonth ?? new Date().getMonth() + 1) : null,
             categoryId,
             status: 'ACTIVE',
           },
         });
 
-        // Calculate initial due date
-        const now = new Date();
-        const dueDate = new Date();
-        if (frequency === 'MONTHLY') {
-          dueDate.setDate(Math.min(dueDay, 28));
-          if (dueDate < now) {
-            dueDate.setMonth(dueDate.getMonth() + 1);
-          }
-        } else {
-          // Weekly (dueDay 0=Sunday)
-          const currentDay = now.getDay();
-          const diff = (dueDay - currentDay + 7) % 7;
-          dueDate.setDate(now.getDate() + (diff === 0 ? 7 : diff));
-        }
+        const dueDate = computeInitialDueDate(frequency, dueDay, rec.dueMonth);
 
         await tx.recurringExpenseExecution.create({
           data: {

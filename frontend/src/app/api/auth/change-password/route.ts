@@ -83,7 +83,12 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     // 3. Lockout flag check.
     if (await isLockedOut(auth.user.email)) {
       log.warn('change-password blocked by lockout', { userId: auth.user.sub });
-      return jsonError('LOCKED_OUT', 423, ctx.requestId, 'Account temporarily locked.');
+      return jsonError(
+        'LOCKED_OUT',
+        423,
+        ctx.requestId,
+        'Compte temporairement verrouillé. Réessayez plus tard.',
+      );
     }
 
     // 4. Body validation.
@@ -92,7 +97,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       const json = await req.json();
       body = Body.parse(json);
     } catch {
-      return jsonError('VALIDATION_FAILED', 400, ctx.requestId, 'Invalid request body');
+      return jsonError('VALIDATION_FAILED', 400, ctx.requestId, 'Requête invalide.');
     }
 
     // 5. Password policy — length, banned, optional HIBP. All BEFORE DB read
@@ -103,7 +108,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
         'PASSWORD_TOO_SHORT',
         400,
         ctx.requestId,
-        `Password must be at least ${minLength} characters`,
+        `Le mot de passe doit contenir au moins ${minLength} caractères.`,
       );
     }
     if (isBanned(body.newPassword)) {
@@ -111,7 +116,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
         'PASSWORD_BANNED',
         400,
         ctx.requestId,
-        'This password is too common — choose another',
+        'Ce mot de passe est trop courant — choisissez-en un autre.',
       );
     }
     if (process.env.PASSWORD_HIBP_CHECK === '1' && (await isPwned(body.newPassword))) {
@@ -119,7 +124,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
         'PASSWORD_PWNED',
         400,
         ctx.requestId,
-        'This password has appeared in a known data breach — choose another',
+        'Ce mot de passe est apparu dans une fuite de données connue — choisissez-en un autre.',
       );
     }
 
@@ -136,7 +141,12 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       },
     });
     if (!user || !user.passwordHash) {
-      return jsonError('INVALID_CREDENTIALS', 400, ctx.requestId, 'Current password is incorrect');
+      return jsonError(
+        'INVALID_CREDENTIALS',
+        400,
+        ctx.requestId,
+        'Le mot de passe actuel est incorrect.',
+      );
     }
 
     // 7. Verify currentPassword. On fail, recordFailure(email) increments the
@@ -147,9 +157,19 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       const r = await recordFailure(user.email);
       if (r.locked) {
         log.warn('change-password lockout triggered', { userId: user.id });
-        return jsonError('LOCKED_OUT', 423, ctx.requestId, 'Account temporarily locked.');
+        return jsonError(
+          'LOCKED_OUT',
+          423,
+          ctx.requestId,
+          'Compte temporairement verrouillé. Réessayez plus tard.',
+        );
       }
-      return jsonError('INVALID_CREDENTIALS', 400, ctx.requestId, 'Current password is incorrect');
+      return jsonError(
+        'INVALID_CREDENTIALS',
+        400,
+        ctx.requestId,
+        'Le mot de passe actuel est incorrect.',
+      );
     }
 
     // 8+9. Hash new password and atomically update passwordHash + tokenVersion.

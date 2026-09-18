@@ -15,6 +15,25 @@ export function formatPrice(amount: number, currency: string = ''): string {
   return currency ? `${formatted} ${currency}` : formatted;
 }
 
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  ESPECES: 'Espèces',
+  MOBILE_MONEY: 'Mobile Money',
+  CARTE_BANCAIRE: 'Carte bancaire',
+};
+
+/**
+ * Builds the "Moyen de paiement" display string shown on invoices/receipts
+ * from the church's actually-configured payment methods (Organization.
+ * paymentMethods), instead of a hardcoded placeholder string. Returns a
+ * neutral message inviting configuration when nothing has been set yet.
+ */
+export function formatPaymentMethods(methods: string[] | null | undefined): string {
+  if (!methods || methods.length === 0) {
+    return 'Non configuré — voir Paramètres > Église';
+  }
+  return methods.map((code) => PAYMENT_METHOD_LABELS[code] ?? code).join(' / ');
+}
+
 /**
  * Detect in-app browsers (Facebook, Instagram, TikTok). These WebViews
  * often block redirects to native payment apps.

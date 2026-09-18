@@ -9,6 +9,8 @@ import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
 
 interface ReportPreview {
   openingBalance: number;
@@ -27,7 +29,24 @@ interface ReportPreview {
     category: { name: string };
     branch: { name: string };
     notes: string | null;
+    paymentMethod: string | null;
   }[];
+}
+
+// A period/bilan invoice covers many transactions — show the method(s) they
+// were actually recorded with (e.g. "Espèces, Mobile Money"), never a
+// static church-wide default that may not match what was really used.
+function summarizePaymentMethods(
+  transactions: ReportPreview['transactions'] | undefined,
+  fallback: string[] | undefined,
+): string {
+  const used = Array.from(
+    new Set((transactions || []).map((t) => t.paymentMethod).filter((m): m is string => !!m)),
+  );
+  if (used.length > 0) {
+    return used.map((m) => PAYMENT_METHOD_LABELS[m] ?? m).join(', ');
+  }
+  return formatPaymentMethods(fallback);
 }
 
 interface ArchivedReport {
@@ -184,6 +203,7 @@ export default function ReportsPage() {
     date: new Date(startDate).toLocaleDateString('fr-FR'),
     dueDate: new Date(endDate).toLocaleDateString('fr-FR'),
     churchName: church?.name || 'Votre Église',
+    ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
     churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
     churchAddress: selectedBranchObj?.name || '',
     recipientName: selectedBranchObj?.name
@@ -201,20 +221,16 @@ export default function ReportsPage() {
             subDescription:
               tx.notes ||
               `Écriture enregistrée le ${new Date(tx.date).toLocaleDateString('fr-FR')}`,
-            price: tx.amount,
-            qty: '1',
-            total: tx.amount,
+            amount: tx.amount,
           }))
         : [],
-    subTotal: preview?.totalIncome || 0,
-    tax: 0,
-    discount: 0,
-    grandTotal: preview?.totalIncome || 0,
-    paymentMethod: 'Virement bancaire / Mobile Money / Caisse',
+    total: preview?.totalIncome || 0,
+    paymentMethod: summarizePaymentMethods(preview?.transactions, church?.paymentMethods),
+    ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
     terms:
       'Cette facture et récépissé comptable atteste la régularité des écritures inscrites dans les registres de l’église conformément aux normes comptables en vigueur.',
-    signatoryName: 'Le Trésorier',
-    signatoryRole: 'Trésorier Général',
+    ...(church?.phone ? { phone: church.phone } : {}),
+    ...(church?.email ? { email: church.email } : {}),
   };
 
   function buildTransactionInvoiceData(tx: ReportPreview['transactions'][number]): InvoiceData {
@@ -224,6 +240,7 @@ export default function ReportsPage() {
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
       date: new Date(tx.date).toLocaleDateString('fr-FR'),
       churchName: church?.name || 'Votre Église',
+      ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
       churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
       churchAddress: tx.branch.name,
       recipientName: isIncome
@@ -236,19 +253,17 @@ export default function ReportsPage() {
           no: '01',
           description: tx.category.name,
           subDescription: tx.notes || `Écriture enregistrée le ${tx.branch.name}`,
-          price: tx.amount,
-          qty: '1',
-          total: tx.amount,
+          amount: tx.amount,
         },
       ],
-      subTotal: tx.amount,
-      tax: 0,
-      discount: 0,
-      grandTotal: tx.amount,
-      paymentMethod: 'Caisse Locale Espèces / Airtel Money',
+      total: tx.amount,
+      paymentMethod: tx.paymentMethod
+        ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
+        : formatPaymentMethods(church?.paymentMethods),
+      ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
       terms: 'Récépissé officiel certifié conforme aux registres paroissiaux de l’église.',
-      signatoryName: isIncome ? 'Diacre Trésorier de Caisse' : 'Le Trésorier',
-      signatoryRole: isIncome ? 'Comptabilité Paroissiale' : 'Trésorier de l’Église',
+      ...(church?.phone ? { phone: church.phone } : {}),
+      ...(church?.email ? { email: church.email } : {}),
     };
   }
 
@@ -272,14 +287,12 @@ export default function ReportsPage() {
             recipientAddress: built.recipientAddress,
             recipientContact: built.recipientContact,
             items: built.items,
-            subTotal: built.subTotal,
-            tax: built.tax,
-            discount: built.discount,
-            grandTotal: built.grandTotal,
+            total: built.total,
             paymentMethod: built.paymentMethod,
+            paymentDetails: built.paymentDetails,
             terms: built.terms,
-            signatoryName: built.signatoryName,
-            signatoryRole: built.signatoryRole,
+            phone: built.phone,
+            email: built.email,
           },
         },
       );
@@ -327,7 +340,7 @@ export default function ReportsPage() {
               className="rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
             >
               <DocumentReportIcon className="h-4 w-4" />
-              <span>Facture / Reçu A4</span>
+              <span>Facture / Reçu</span>
             </button>
 
             <button
@@ -344,7 +357,7 @@ export default function ReportsPage() {
               disabled={!preview}
               className="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Imprimer Bilan A4</span>
+              <span>Imprimer Bilan</span>
             </button>
             <button
               type="button"
@@ -380,12 +393,7 @@ export default function ReportsPage() {
             <label className="block font-bold text-stone-700 mb-1">
               {periodType === 'SUNDAY_SERVICE' ? 'Date du culte' : 'Mois / Date de référence'}
             </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-hidden bg-white"
-            />
+            <DatePicker value={selectedDate} onChange={setSelectedDate} />
           </div>
 
           <div>

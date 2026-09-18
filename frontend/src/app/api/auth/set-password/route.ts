@@ -71,12 +71,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const json = await req.json();
       body = Body.parse(json);
     } catch {
-      return jsonError('VALIDATION_FAILED', 400, ctx.requestId, 'Invalid request body');
+      return jsonError('VALIDATION_FAILED', 400, ctx.requestId, 'Requête invalide.');
     }
 
     // 4. Password policy gates BEFORE the DB read.
     if (isBanned(body.newPassword)) {
-      return jsonError('PASSWORD_BANNED', 400, ctx.requestId, 'This password is too common.');
+      return jsonError('PASSWORD_BANNED', 400, ctx.requestId, 'Ce mot de passe est trop courant.');
     }
     const minLength = Number(process.env.AUTH_PASSWORD_MIN_LENGTH ?? 10);
     if (body.newPassword.length < minLength) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'PASSWORD_TOO_SHORT',
         400,
         ctx.requestId,
-        `Password must be at least ${minLength} characters`,
+        `Le mot de passe doit contenir au moins ${minLength} caractères.`,
       );
     }
     if (process.env.PASSWORD_HIBP_CHECK === '1' && (await isPwned(body.newPassword))) {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'PASSWORD_PWNED',
         400,
         ctx.requestId,
-        'This password has appeared in a known data breach — choose another',
+        'Ce mot de passe est apparu dans une fuite de données connue — choisissez-en un autre.',
       );
     }
 
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'PASSWORD_ALREADY_SET',
         409,
         ctx.requestId,
-        'A password is already set. Use change-password instead.',
+        'Un mot de passe est déjà défini. Utilisez le changement de mot de passe.',
       );
     }
 

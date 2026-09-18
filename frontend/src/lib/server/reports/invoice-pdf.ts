@@ -4,14 +4,13 @@
 // and persists the URL on FinancialTransaction.receiptUrl/receiptPublicId.
 import 'server-only';
 import PDFDocument from 'pdfkit';
+import { formatPrice } from '@/lib/utils';
 
 export interface InvoicePdfItem {
   no: string;
   description: string;
   subDescription?: string | undefined;
-  price: number;
-  qty: number | string;
-  total: number;
+  amount: number;
 }
 
 export interface InvoicePdfInput {
@@ -23,14 +22,12 @@ export interface InvoicePdfInput {
   // are sourced from a Zod-parsed request body (`.optional()` → `| undefined`).
   churchDenomination?: string | null;
   churchAddress?: string | null;
+  churchLogoUrl?: string | null;
   recipientName: string;
   recipientAddress?: string | undefined;
   recipientContact?: string | undefined;
   items: InvoicePdfItem[];
-  subTotal: number;
-  tax?: number | undefined;
-  discount?: number | undefined;
-  grandTotal: number;
+  total: number;
   paymentMethod: string;
   paymentDetails?: string | undefined;
   terms?: string | undefined;
@@ -42,16 +39,41 @@ export interface InvoicePdfInput {
 
 const ACCENT = '#e11d48';
 
+// PDFKit's standard Helvetica font can't render the narrow no-break space
+// (U+202F) that `Number.toLocaleString('fr-FR')` uses as a thousands
+// separator — it falls back to a visible glyph that looks like "/" (e.g.
+// "40 /000 F" instead of "40 000 F"). `formatPrice` normalizes that to a
+// plain ASCII space, which every PDF font supports.
 function formatAmount(n: number): string {
-  return `${n.toLocaleString('fr-FR')} FCFA`;
+  return formatPrice(n, 'FCFA');
+}
+
+// pdfkit only embeds JPEG/PNG — a WEBP logo (allowed at upload time for the
+// web UI) would throw mid-render, so we check Content-Type and skip the
+// image rather than fail the whole invoice. The church name still renders
+// as text either way.
+async function fetchLogoBuffer(url: string): Promise<Buffer | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('jpeg') && !contentType.includes('png')) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Renders the invoice/receipt as an A4 PDF and resolves with the full
- * document as a Buffer. Never touches the network or the filesystem — the
- * caller (the invoice route) uploads it to Cloudinary and stores the URL.
+ * document as a Buffer. Never touches the filesystem — the caller (the
+ * invoice route) uploads it to Cloudinary and stores the URL. Fetches the
+ * church's logo bytes over the network (if configured) before opening the
+ * PDF stream, since PDFDocument's synchronous drawing calls can't await.
  */
 export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer> {
+  const logoBuffer = input.churchLogoUrl ? await fetchLogoBuffer(input.churchLogoUrl) : null;
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -61,12 +83,35 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
       doc.on('error', reject);
 
       // ── Header ──────────────────────────────────────────────────────
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#0c0a09').text(input.churchName);
+      let logoDrawn = false;
+      if (logoBuffer) {
+        try {
+          doc.image(logoBuffer, 50, 45, { fit: [32, 32] });
+          logoDrawn = true;
+        } catch {
+          logoDrawn = false;
+        }
+      }
+      const headerX = logoDrawn ? 92 : 50;
+
+      doc
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .fillColor('#0c0a09')
+        .text(input.churchName, headerX, 50, { width: 250 });
       if (input.churchDenomination) {
-        doc.fontSize(9).font('Helvetica').fillColor('#78716c').text(input.churchDenomination);
+        doc
+          .fontSize(9)
+          .font('Helvetica')
+          .fillColor('#78716c')
+          .text(input.churchDenomination, headerX, doc.y + 2, { width: 250 });
       }
       if (input.churchAddress) {
-        doc.fontSize(9).font('Helvetica').fillColor('#78716c').text(input.churchAddress);
+        doc
+          .fontSize(9)
+          .font('Helvetica')
+          .fillColor('#78716c')
+          .text(input.churchAddress, headerX, doc.y + 2, { width: 250 });
       }
 
       doc
@@ -118,9 +163,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .fontSize(9)
         .font('Helvetica-Bold')
         .text('DESCRIPTION', 60, tableTop + 6)
-        .text('PRIX', 330, tableTop + 6, { width: 70, align: 'right' })
-        .text('QTÉ', 400, tableTop + 6, { width: 50, align: 'center' })
-        .text('TOTAL', 450, tableTop + 6, { width: 85, align: 'right' });
+        .text('MONTANT', 400, tableTop + 6, { width: 135, align: 'right' });
 
       let rowY = tableTop + 22;
       input.items.forEach((row, idx) => {
@@ -143,16 +186,10 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         }
         doc
           .fontSize(9)
-          .font('Helvetica')
-          .fillColor('#0c0a09')
-          .text(`${row.price.toLocaleString('fr-FR')} F`, 330, rowY + 6, {
-            width: 70,
-            align: 'right',
-          })
-          .text(String(row.qty), 400, rowY + 6, { width: 50, align: 'center' })
           .font('Helvetica-Bold')
-          .text(`${row.total.toLocaleString('fr-FR')} F`, 450, rowY + 6, {
-            width: 85,
+          .fillColor('#0c0a09')
+          .text(formatPrice(row.amount, 'F'), 400, rowY + 6, {
+            width: 135,
             align: 'right',
           });
         rowY += rowHeight;
@@ -198,38 +235,15 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         }
       }
 
-      let totalsY = footerTop;
-      doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor('#57534e')
-        .text('Sous-total :', 330, totalsY, { width: 100 })
-        .fillColor('#0c0a09')
-        .font('Helvetica-Bold')
-        .text(formatAmount(input.subTotal), 430, totalsY, { width: 105, align: 'right' });
-      totalsY += 16;
-      doc
-        .font('Helvetica')
-        .fillColor('#57534e')
-        .text('TVA (0%) :', 330, totalsY, { width: 100 })
-        .fillColor('#78716c')
-        .text(formatAmount(input.tax || 0), 430, totalsY, { width: 105, align: 'right' });
-      totalsY += 16;
-      doc
-        .fillColor('#57534e')
-        .text('Remise 0% :', 330, totalsY, { width: 100 })
-        .fillColor('#78716c')
-        .text(formatAmount(input.discount || 0), 430, totalsY, { width: 105, align: 'right' });
-      totalsY += 24;
-
+      const totalsY = footerTop;
       doc.rect(330, totalsY, 205, 28).fill(ACCENT);
       doc
         .fillColor('#ffffff')
         .fontSize(9)
         .font('Helvetica-Bold')
-        .text('TOTAL GÉNÉRAL', 340, totalsY + 9)
+        .text('TOTAL', 340, totalsY + 9)
         .fontSize(11)
-        .text(formatAmount(input.grandTotal), 330, totalsY + 8, { width: 195, align: 'right' });
+        .text(formatAmount(input.total), 330, totalsY + 8, { width: 195, align: 'right' });
 
       doc
         .fontSize(8)

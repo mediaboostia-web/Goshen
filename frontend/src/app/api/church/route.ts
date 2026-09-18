@@ -9,10 +9,17 @@ import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
 
+const PAYMENT_METHOD_CODES = ['ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE'] as const;
+
 const UpdateChurchBody = z.object({
-  name: z.string().min(2, 'Le nom de l’église doit contenir au moins 2 caractères'),
+  name: z.string().min(2, 'Le nom de l’église doit contenir au moins 2 caractères').optional(),
   denomination: z.string().optional(),
-  currency: z.enum(['FCFA', 'EUR', 'USD']),
+  currency: z.enum(['FCFA', 'EUR', 'USD']).optional(),
+  paymentMethods: z.array(z.enum(PAYMENT_METHOD_CODES)).optional(),
+  paymentDetails: z.string().max(500).optional(),
+  email: z.string().email('Adresse email invalide').max(255).or(z.literal('')).optional(),
+  phone: z.string().max(30).optional(),
+  logoUrl: z.string().url('URL de logo invalide').max(500).or(z.literal('')).optional(),
 });
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
@@ -48,15 +55,22 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { name, denomination, currency } = parsed.data;
+    const { name, denomination, currency, paymentMethods, paymentDetails, email, phone, logoUrl } =
+      parsed.data;
+
+    const data: Record<string, unknown> = {};
+    if (name !== undefined) data.name = name;
+    if (denomination !== undefined) data.denomination = denomination || null;
+    if (currency !== undefined) data.currency = currency;
+    if (paymentMethods !== undefined) data.paymentMethods = paymentMethods;
+    if (paymentDetails !== undefined) data.paymentDetails = paymentDetails || null;
+    if (email !== undefined) data.email = email || null;
+    if (phone !== undefined) data.phone = phone || null;
+    if (logoUrl !== undefined) data.logoUrl = logoUrl || null;
 
     const church = await prisma.organization.update({
       where: { id: access.church.id },
-      data: {
-        name,
-        denomination: denomination || null,
-        currency,
-      },
+      data,
     });
 
     return NextResponse.json({ church });

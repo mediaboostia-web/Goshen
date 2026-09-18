@@ -47,7 +47,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const refreshCookie = req.cookies.get(REFRESH_COOKIE_NAME)?.value;
     if (!refreshCookie) {
       return NextResponse.json(
-        { error: 'INVALID_REFRESH', message: 'Refresh token missing.' },
+        { error: 'INVALID_REFRESH', message: 'Session expirée. Veuillez vous reconnecter.' },
         { status: 401, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const payload = await verifyRefreshToken(refreshCookie);
     if (!payload) {
       return NextResponse.json(
-        { error: 'INVALID_REFRESH', message: 'Refresh token invalid or expired.' },
+        { error: 'INVALID_REFRESH', message: 'Session expirée. Veuillez vous reconnecter.' },
         { status: 401, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -66,14 +66,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     if (!user) {
       return NextResponse.json(
-        { error: 'INVALID_REFRESH', message: 'Account not found.' },
+        { error: 'INVALID_REFRESH', message: 'Compte introuvable.' },
         { status: 401, headers: { 'x-request-id': ctx.requestId } },
       );
     }
     if (user.tokenVersion !== payload.tokenVersion) {
       // D-19 — refresh post-password-change is rejected.
       return NextResponse.json(
-        { error: 'INVALID_REFRESH', message: 'Session expired.' },
+        { error: 'INVALID_REFRESH', message: 'Session expirée. Veuillez vous reconnecter.' },
         { status: 401, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // to revoke per-token state.
     if (user.status === 'SUSPENDED') {
       return NextResponse.json(
-        { error: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended.' },
+        { error: 'ACCOUNT_SUSPENDED', message: 'Ce compte a été suspendu.' },
         { status: 403, headers: { 'x-request-id': ctx.requestId } },
       );
     }
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const release = await acquireRefreshLock(user.id);
     if (!release) {
       return NextResponse.json(
-        { error: 'CONFLICT', message: 'Concurrent refresh; retry shortly.' },
+        { error: 'CONFLICT', message: 'Veuillez réessayer dans un instant.' },
         { status: 409, headers: { 'x-request-id': ctx.requestId } },
       );
     }

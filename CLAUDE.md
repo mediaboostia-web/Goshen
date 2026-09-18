@@ -42,7 +42,7 @@ pnpm workspace — run from repo root unless noted. The root `package.json` is a
 
 Integration tests are deferred (no formal harness in v1) — `pnpm smoke:auth` provides a manual UAT script for the auth happy path against a running `pnpm dev`. See README.
 
-**Local email delivery under `pnpm dev`:** the outbox-drain and email-queue-drain crons only run under Vercel's actual Cron infrastructure — nothing triggers them automatically in local dev, so a signup/verification/resend email sits queued until someone POSTs both endpoints (with `Authorization: Bearer ${CRON_SECRET}`). Run `pnpm dev:drain` in a second terminal alongside `pnpm dev` to poll both every 10s (dev-only convenience script, `frontend/scripts/dev-drain.ts` — never runs in production).
+**Local email delivery under `pnpm dev`:** the outbox-drain and email-queue-drain crons only run under Vercel's actual Cron infrastructure — nothing triggers them automatically in local dev. The `after()`-based immediate-send path (see `lib/server/outbox/dispatch-now.ts`) is also unreliable under `next dev --turbopack` — its callback can silently never run, so a signup/verification/resend email can sit queued indefinitely with no error surfaced. `pnpm dev` therefore runs the Next dev server AND `pnpm dev:drain` together (via `concurrently`, see `frontend/package.json`), polling both cron endpoints every 10s so queued emails still go out within ~10s even when the immediate-send path drops silently. Use `pnpm dev:next` for the bare Next server without the drain loop. `frontend/scripts/dev-drain.ts` is dev-only and never runs in production.
 
 **Before committing:** `pnpm format && pnpm lint && pnpm typecheck && pnpm test` — must all pass.
 

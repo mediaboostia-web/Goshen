@@ -105,7 +105,7 @@ describe('POST /api/auth/refresh', () => {
     expect(res.status).toBe(409);
     const body = await res.json();
     expect(body.error).toBe('CONFLICT');
-    expect(body.message).toMatch(/retry/i);
+    expect(body.message).toMatch(/réessayer/i);
   });
 
   it('Test 6: release called even if setAuthCookies throws', async () => {

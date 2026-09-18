@@ -77,7 +77,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               recurringExpenseId: model.id,
               branchId: model.branchId,
             },
-            dedupeKey: `recurring-reminder:${execution.id}:${stage}`,
+            // Must be unique per recipient — the dedupeKey column has a
+            // global @unique constraint, so without recipient.userId here
+            // the second recipient's insert (e.g. the Pastor at the 48h
+            // stage, once the Treasurer's row already exists) collides with
+            // the first's and is silently dropped as "already sent",
+            // leaving only one of the two actually notified.
+            dedupeKey: `recurring-reminder:${execution.id}:${stage}:${recipient.userId}`,
           });
           if (created) {
             if (stage === '48h') escalationsSent++;

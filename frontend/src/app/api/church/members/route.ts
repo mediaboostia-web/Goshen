@@ -1,13 +1,16 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, after, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { planLimitsFor } from '@/lib/server/subscription/plan-limits';
+import { memberAddedEmail } from '@/lib/server/church/member-added-email';
+import { sendCriticalEmailNow } from '@/lib/server/notifications/send-critical-email-now';
 
 const InviteMemberBody = z.object({
   email: z.string().email('Email invalide'),
@@ -80,20 +83,44 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // Check if already member
-    const existing = await prisma.organizationMember.findUnique({
-      where: {
-        organizationId_userId: {
-          organizationId: access.church.id,
-          userId: targetUser.id,
-        },
-      },
+    // One email = one church. Check ANY existing membership (not just this
+    // org) — a pastor must not be able to silently pull someone who already
+    // belongs to (or owns) a different church into their own.
+    const anyMembership = await prisma.organizationMember.findFirst({
+      where: { userId: targetUser.id },
     });
 
-    if (existing) {
+    if (anyMembership) {
+      if (anyMembership.organizationId === access.church.id) {
+        return NextResponse.json(
+          { error: 'ALREADY_MEMBER', message: 'Cet utilisateur est déjà membre de l’église.' },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
-        { error: 'ALREADY_MEMBER', message: 'Cet utilisateur est déjà membre de l’église.' },
+        {
+          error: 'EMAIL_ALREADY_IN_USE',
+          message:
+            'Cette adresse email est déjà associée à une autre église sur Goshen. Utilisez une autre adresse email pour cette personne.',
+        },
         { status: 409 },
+      );
+    }
+
+    const { maxUsers } = planLimitsFor(access.church.plan);
+    const memberCount = await prisma.organizationMember.count({
+      where: { organizationId: access.church.id },
+    });
+    if (memberCount >= maxUsers) {
+      return NextResponse.json(
+        {
+          error: 'PLAN_USER_LIMIT',
+          message:
+            maxUsers === 1
+              ? 'Le forfait gratuit est limité au pasteur seul. Passez à un forfait payant pour ajouter des trésoriers, secrétaires ou commissaires.'
+              : `Votre forfait actuel est limité à ${maxUsers} utilisateurs. Passez à un forfait supérieur pour en ajouter davantage.`,
+        },
+        { status: 403 },
       );
     }
 
@@ -132,6 +159,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return member;
       },
       { timeout: 15000 },
+    );
+
+    // Best-effort, after the response is on the wire — the person must be
+    // told a new church granted them access, but a mail hiccup must never
+    // fail the membership that already committed above.
+    after(() =>
+      sendCriticalEmailNow({
+        to: email,
+        ...memberAddedEmail({
+          churchName: access.church.name,
+          role,
+          loginUrl: `${process.env.APP_URL || 'http://localhost:3000'}/login`,
+        }),
+      }),
     );
 
     return NextResponse.json({ success: true, member: newMembership }, { status: 201 });

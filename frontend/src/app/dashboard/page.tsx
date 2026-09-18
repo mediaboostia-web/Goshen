@@ -9,6 +9,7 @@ import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
 import {
   ChurchIcon,
   CoinsHandIcon,
@@ -36,8 +37,8 @@ interface TransactionItem {
   date: string;
   beneficiary: string | null;
   notes: string | null;
-  paymentMethod?: string;
   receiptUrl: string | null;
+  paymentMethod: string | null;
   category: { name: string };
   branch: { name: string };
   author: { name: string | null; email: string };
@@ -54,8 +55,8 @@ interface DisplayTransaction {
   categoryName?: string;
   notes?: string | null;
   amount: number;
-  paymentMethod?: string;
   authorName?: string;
+  paymentMethod?: string | null;
 }
 
 interface PendingExecution {
@@ -80,6 +81,7 @@ export default function DashboardPage() {
     selectBranch,
     refreshBranches,
     loading: branchLoading,
+    error: branchError,
   } = useBranch();
 
   // Real data states
@@ -144,14 +146,19 @@ export default function DashboardPage() {
       router.replace('/login');
       return;
     }
-    if (!authLoading && !branchLoading && user && !church) {
+    // branchError means the church lookup itself failed (e.g. a transient
+    // DB hiccup) — not that this user genuinely has no church yet. Treating
+    // the two the same used to bounce a returning user with a real church
+    // into onboarding on nothing more than a slow/flaky request, tempting
+    // them into creating a duplicate church out of confusion.
+    if (!authLoading && !branchLoading && user && !church && !branchError) {
       router.replace('/onboarding');
       return;
     }
     if (church) {
       void fetchDashboardData();
     }
-  }, [authLoading, branchLoading, user, church, router, fetchDashboardData]);
+  }, [authLoading, branchLoading, user, church, branchError, router, fetchDashboardData]);
 
   // Branch switcher handler
   const handleSwitchBranch = (id: string | 'CONSOLIDATED') => {
@@ -274,6 +281,7 @@ export default function DashboardPage() {
       invoiceNumber: `INV-${tx.id ? String(tx.id).slice(0, 8).toUpperCase() : '2026-0841'}`,
       date: tx.date || new Date().toLocaleDateString('fr-FR'),
       churchName: church?.name || 'Votre Église',
+      ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
       churchAddress: tx.branchName || 'Paroisse',
       recipientName:
@@ -292,22 +300,18 @@ export default function DashboardPage() {
             (tx.type === 'INCOME'
               ? 'Collecte et libéralités dominicales approuvées'
               : 'Règlement de charge avec pièce comptable'),
-          price: tx.amount,
-          qty: '1',
-          total: tx.amount,
+          amount: tx.amount,
         },
       ],
-      subTotal: tx.amount,
-      tax: 0,
-      discount: 0,
-      grandTotal: tx.amount,
+      total: tx.amount,
       paymentMethod: tx.paymentMethod
-        ? String(tx.paymentMethod).replace('_', ' ')
-        : 'Caisse Espèces Libreville',
+        ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
+        : formatPaymentMethods(church?.paymentMethods),
+      ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
       terms:
         'Certifié conforme aux écritures du grand livre de la communauté. Pièce justificative officielle.',
-      signatoryName: tx.authorName || 'Le Trésorier',
-      signatoryRole: 'Trésorier de Caisse',
+      ...(church?.phone ? { phone: church.phone } : {}),
+      ...(church?.email ? { email: church.email } : {}),
     });
   };
 
@@ -317,6 +321,7 @@ export default function DashboardPage() {
       invoiceNumber: `PER-${new Date().getFullYear()}-${periodFilter}`,
       date: new Date().toLocaleDateString('fr-FR'),
       churchName: church?.name || 'Votre Église',
+      ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
       churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
       churchAddress: activeBranchLabel,
       recipientName: `Conseil Paroissial & Commission des Finances`,
@@ -327,28 +332,32 @@ export default function DashboardPage() {
           no: '01',
           description: 'Dîmes & Offrandes ordinaires dominicales',
           subDescription: `Total des collectes de culte (${periodFilter === 'MONTH' ? 'Ce mois' : periodFilter === 'SUNDAY' ? 'Dernier culte' : 'Trimestre'})`,
-          price: activeIncomes,
-          qty: '1',
-          total: activeIncomes,
+          amount: activeIncomes,
         },
         {
           no: '02',
           description: 'Décaissements autorisés & Charges courantes',
           subDescription: 'Factures SEEG, loyers de sanctuaire et charges acquittées',
-          price: activeExpenses,
-          qty: '1',
-          total: activeExpenses,
+          amount: activeExpenses,
         },
       ],
-      subTotal: activeIncomes,
-      tax: 0,
-      discount: 0,
-      grandTotal: activeIncomes,
-      paymentMethod: 'Virement bancaire / Mobile Money / Caisse',
+      total: activeIncomes,
+      paymentMethod: (() => {
+        // A period invoice covers many transactions — show the method(s)
+        // actually used, not a static church-wide default that may not
+        // match what was really recorded.
+        const used = Array.from(
+          new Set(transactions.map((t) => t.paymentMethod).filter((m): m is string => !!m)),
+        );
+        return used.length > 0
+          ? used.map((m) => PAYMENT_METHOD_LABELS[m] ?? m).join(', ')
+          : formatPaymentMethods(church?.paymentMethods);
+      })(),
+      ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
       terms:
         'Synthèse officielle des opérations financières de la période certifiée par la trésorerie.',
-      signatoryName: 'Le Trésorier',
-      signatoryRole: 'Trésorier Général',
+      ...(church?.phone ? { phone: church.phone } : {}),
+      ...(church?.email ? { email: church.email } : {}),
     });
   };
 
@@ -369,9 +378,9 @@ export default function DashboardPage() {
         time: new Date(tx.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         beneficiary: tx.beneficiary,
         notes: tx.notes,
-        paymentMethod: tx.paymentMethod || 'CASH',
         receiptUrl: tx.receiptUrl,
         authorName: tx.author?.name || tx.author?.email?.split('@')[0] || 'Trésorier',
+        paymentMethod: tx.paymentMethod,
       }));
   }, [transactions, txFilter]);
 
@@ -386,9 +395,23 @@ export default function DashboardPage() {
   const netProjected = activeBalance - pendingTotalAmount;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] text-stone-900 pb-24 md:pb-12 font-sans selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-emerald-50/50 text-stone-900 pb-24 md:pb-12 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       <AppHeader />
       <AppNav />
+
+      {branchError && !church && (
+        <div className="mx-auto max-w-7xl px-4 pt-3">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 flex items-center justify-between shadow-xs">
+            <span>Impossible de charger votre église pour le moment. {branchError}</span>
+            <button
+              onClick={() => void refreshBranches()}
+              className="text-red-700 hover:text-red-950 font-bold ml-4 underline"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
 
       {loadError && (
         <div className="mx-auto max-w-7xl px-4 pt-3">
@@ -423,12 +446,23 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6 sm:space-y-8">
         {/* ── 1. GABONESE SANCTUARY HERO ACCOUNT CARD (Rich Gradient, Pro Effects, Branch Switcher) ── */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 border border-emerald-800/80">
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-950 via-slate-900 to-emerald-900 p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/30 border border-emerald-800/80">
+          {/* Decorative glow blobs — depth without literal texture/noise.
+              -z-10 (not the default z-auto) so they stay behind the normal-flow
+              content below, since an absolutely positioned box otherwise
+              paints above static siblings regardless of DOM order. */}
+          <div className="pointer-events-none absolute -z-10 -top-24 -right-16 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -z-10 -bottom-32 -left-10 h-72 w-72 rounded-full bg-teal-500/10 blur-3xl" />
+
           {/* Top Bar inside Card */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-emerald-800/80 pb-5">
             <div className="flex items-start sm:items-center gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-900/90 border border-emerald-600/50 text-emerald-100 shadow-md">
-                <ChurchIcon className="h-6 w-6 text-emerald-200" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-900/90 border border-emerald-600/50 text-emerald-100 shadow-md">
+                {church?.logoUrl ? (
+                  <img src={church.logoUrl} alt="" className="h-full w-full object-contain" />
+                ) : (
+                  <ChurchIcon className="h-6 w-6 text-emerald-200" />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -533,19 +567,6 @@ export default function DashboardPage() {
                       </>
                     )}
                   </div>
-
-                  {/* Direct Add Branch button on Card — Pastor only, mirrors the 403 in api/church/branches */}
-                  {church?.isPastor && (
-                    <button
-                      type="button"
-                      onClick={() => setIsAddBranchModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-900/70 hover:bg-emerald-800 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:text-white border border-emerald-700/60 shadow-xs transition-colors cursor-pointer"
-                      title="Ajouter une nouvelle annexe ou paroisse"
-                    >
-                      <PlusIcon className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Ajouter une annexe</span>
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -645,74 +666,66 @@ export default function DashboardPage() {
 
           {/* Card Bottom: 4 Quick Action Buttons (Rich Themed Gradients, Elevation & Shadow Effects) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-emerald-800/80">
-            {/* Action 1: Saisie Culte (Emerald Gradient Backdrop) */}
+            {/* Action 1: Saisie Culte — vibrant emerald (brand primary / inflow) */}
             <Link
               href="/transactions/incomes"
-              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-emerald-800/90 via-emerald-900 to-emerald-950 p-3.5 border border-emerald-500/40 hover:border-emerald-300 hover:from-emerald-700 hover:to-emerald-900 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/60 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md"
+              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-3.5 border border-emerald-300/40 hover:from-emerald-400 hover:to-emerald-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-emerald-950/20"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 text-emerald-950 font-bold shadow-md ring-2 ring-emerald-300/30 group-hover:scale-105 transition-transform">
-                <CoinsHandIcon className="h-5 w-5 text-emerald-950" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                <CoinsHandIcon className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-white group-hover:text-emerald-100 transition-colors">
-                  + Saisie Culte
-                </p>
-                <p className="text-[10px] text-emerald-200/80">Dîmes & Offrandes</p>
+                <p className="text-xs font-bold text-white">+ Saisie Culte</p>
+                <p className="text-[10px] text-emerald-50/90">Dîmes & Offrandes</p>
               </div>
             </Link>
 
-            {/* Action 2: Décaissement (Amber/Bronze Gradient Backdrop) */}
+            {/* Action 2: Décaissement — rose/red (outflow signal) */}
             <Link
               href="/transactions/expenses"
-              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-amber-900/90 via-stone-900 to-amber-950 p-3.5 border border-amber-500/40 hover:border-amber-300 hover:from-amber-800 hover:to-stone-900 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-950/60 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md"
+              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-3.5 border border-rose-300/40 hover:from-rose-400 hover:to-red-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-rose-950/20"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-amber-950 font-bold shadow-md ring-2 ring-amber-300/30 group-hover:scale-105 transition-transform">
-                <ReceiptTextIcon className="h-5 w-5 text-amber-950" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                <ReceiptTextIcon className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-white group-hover:text-amber-100 transition-colors">
-                  - Décaissement
-                </p>
-                <p className="text-[10px] text-amber-200/80">Dépense avec Reçu</p>
+                <p className="text-xs font-bold text-white">- Décaissement</p>
+                <p className="text-[10px] text-rose-50/90">Dépense avec Reçu</p>
               </div>
             </Link>
 
-            {/* Action 3: Charges Fixes (Cobalt/Slate Gradient Backdrop) */}
+            {/* Action 3: Charges Fixes — blue/indigo (scheduled/structural) */}
             <Link
               href="/recurrent-expenses/validation"
-              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-blue-900/90 via-slate-900 to-blue-950 p-3.5 border border-sky-500/40 hover:border-sky-300 hover:from-blue-800 hover:to-slate-900 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-950/60 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md relative"
+              className="group relative flex items-center gap-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3.5 border border-blue-300/40 hover:from-blue-400 hover:to-indigo-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-indigo-950/20"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 text-slate-950 font-bold shadow-md ring-2 ring-sky-300/30 group-hover:scale-105 transition-transform">
-                <LightningBoltIcon className="h-5 w-5 text-slate-950" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                <LightningBoltIcon className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-bold text-white group-hover:text-sky-100 transition-colors">
-                    Charges Fixes
-                  </p>
+                  <p className="text-xs font-bold text-white">Charges Fixes</p>
                   {activePendingRecurrents.length > 0 && (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-indigo-700 shadow-xs">
                       {activePendingRecurrents.length}
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-sky-200/80">Loyer, SEEG, Factures</p>
+                <p className="text-[10px] text-blue-50/90">Loyer, SEEG, Factures</p>
               </div>
             </Link>
 
-            {/* Action 4: Rapport A4 (Slate/Charcoal Gradient Backdrop) */}
+            {/* Action 4: Rapport A4 — neutral slate (documents, not a transaction) */}
             <Link
               href="/reports"
-              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-slate-800/90 via-stone-900 to-slate-950 p-3.5 border border-slate-400/40 hover:border-stone-300 hover:from-slate-700 hover:to-stone-900 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-950/60 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md"
+              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 p-3.5 border border-slate-400/40 hover:from-slate-500 hover:to-slate-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-slate-950/20"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 text-stone-900 font-bold shadow-md ring-2 ring-white/30 group-hover:scale-105 transition-transform">
-                <DocumentReportIcon className="h-5 w-5 text-stone-900" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                <DocumentReportIcon className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-white group-hover:text-stone-200 transition-colors">
-                  Rapport A4
-                </p>
-                <p className="text-[10px] text-stone-300/80">Homologué Culte</p>
+                <p className="text-xs font-bold text-white">Rapport A4</p>
+                <p className="text-[10px] text-slate-50/80">Homologué Culte</p>
               </div>
             </Link>
           </div>
@@ -721,7 +734,8 @@ export default function DashboardPage() {
         {/* ── 2. METRICS & FINANCIAL HEALTH GAUGES (Clean 2xl Rounded Cards, Solid Borders) ── */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Card 1: Indicateur de Santé & Seuil de Réserve */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
+          <div className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-emerald-50/60 p-6 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheckIcon className="h-4 w-4 text-emerald-800" />
@@ -780,7 +794,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 2: Projection de Fin de Mois */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
+          <div className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-blue-50/50 p-6 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CalendarClockIcon className="h-4 w-4 text-stone-600" />
@@ -832,7 +847,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 3: Switcher Paroisses */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+          <div className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/50 p-6 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-400 to-purple-500" />
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -902,7 +918,8 @@ export default function DashboardPage() {
         {/* ── 3. OFFERINGS BREAKDOWN & RECURRING EXPENSES CENTER ── */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left: Interactive Breakdown of Worship Offerings (7 cols) */}
-          <div className="lg:col-span-7 rounded-2xl border border-stone-200 bg-white p-6 sm:p-7 shadow-xs">
+          <div className="lg:col-span-7 relative overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-emerald-50/40 p-6 sm:p-7 shadow-xs hover:shadow-lg transition-shadow duration-300">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
               <div>
                 <h3 className="font-serif text-lg sm:text-xl font-bold text-emerald-950">
@@ -994,7 +1011,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Right: Imminent Fixed Charges (5 cols) */}
-          <div className="lg:col-span-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+          <div className="lg:col-span-5 relative overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-rose-50/40 p-6 sm:p-7 shadow-xs hover:shadow-lg transition-shadow duration-300 flex flex-col justify-between">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-red-500" />
             <div>
               <div className="flex items-center justify-between border-b border-stone-100 pb-4">
                 <div>
@@ -1179,13 +1197,6 @@ export default function DashboardPage() {
                           {tx.date} à {tx.time}
                         </span>
                         <span>&bull;</span>
-                        <span>
-                          Règlement :{' '}
-                          <strong className="text-stone-600">
-                            {tx.paymentMethod.replace('_', ' ')}
-                          </strong>
-                        </span>
-                        <span>&bull;</span>
                         <span>Saisi par {tx.authorName}</span>
                       </div>
                     </div>
@@ -1304,7 +1315,7 @@ export default function DashboardPage() {
       {/* ── 6. MODAL AJOUT D'ANNEXE RAPIDE ── */}
       {isAddBranchModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4">
-          <div className="relative max-w-md w-full rounded-2xl bg-white p-6 shadow-2xl border border-stone-200">
+          <div className="relative max-w-md w-full max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl border border-stone-200">
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
               <div className="flex items-center gap-2">
                 <BuildingBranchIcon className="h-5 w-5 text-emerald-800" />

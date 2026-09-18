@@ -1,8 +1,24 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
-import { useUser } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+
+// BranchProvider is mounted once in the root layout, above every route —
+// including the public ones nobody should ever be bounced away from just
+// for being logged out (that's the whole point of a landing/login/signup
+// page). Keep this list in sync with the public (no-auth) routes under
+// src/app/.
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/login',
+  '/signup',
+  '/verify-email',
+  '/forgot-password',
+  '/reset-password',
+  '/auth/error',
+]);
 
 export interface Branch {
   id: string;
@@ -23,6 +39,10 @@ export interface Church {
   currency: string;
   plan: string;
   planExpiresAt: string | null;
+  paymentMethods: string[];
+  paymentDetails: string | null;
+  email: string | null;
+  phone: string | null;
   role?: string;
   isPastor?: boolean;
   isTreasurer?: boolean;
@@ -57,7 +77,9 @@ const BranchContext = createContext<BranchContextValue | null>(null);
 const STORAGE_KEY_BRANCH = 'goshen_active_branch_id';
 
 export function BranchProvider({ children }: { children: ReactNode }) {
-  const user = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, loading: authLoading } = useAuth();
   const [church, setChurch] = useState<Church | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
@@ -66,6 +88,18 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchBranches = useCallback(async () => {
+    // Wait for AuthContext to actually resolve the session first. Without
+    // this, `user` is null on the very first render (AuthContext hasn't
+    // finished its /api/auth/me call yet) and the branch below fires
+    // immediately, setting loading=false + church=null. The instant auth
+    // resolves and `user` flips non-null, any consumer reading this
+    // context in that same render still sees that stale "done loading, no
+    // church" snapshot — one render before this effect gets to run the
+    // real fetch — and a page like dashboard/page.tsx that redirects to
+    // /onboarding on "no church" fires that redirect wrongly, every time,
+    // for a returning user who already has one.
+    if (authLoading) return;
+
     if (!user) {
       setChurch(null);
       setBranches([]);
@@ -105,8 +139,17 @@ export function BranchProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
-        // No church configured yet or not authenticated
+      // 404 CHURCH_NOT_FOUND is the API's genuine "no org for this user yet"
+      // signal (see api/church/branches/route.ts). A 401 here is different —
+      // requireAuth() already had its own chance to silently refresh the
+      // access token before this response ever reached us (see the retry
+      // logic in lib/api.ts), so a 401 surfacing all the way to this catch
+      // means that refresh attempt already failed too, i.e. a genuine
+      // session problem — not "no church". Treating it the same as 404
+      // used to make dashboard/page.tsx redirect a returning user with a
+      // real church straight to /onboarding instead of surfacing the
+      // error banner it already renders for exactly this case.
+      if (err instanceof ApiError && err.status === 404) {
         setChurch(null);
         setBranches([]);
       } else {
@@ -115,11 +158,26 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     void fetchBranches();
   }, [fetchBranches]);
+
+  // Route guard: most pages under this provider (transactions, reports,
+  // settings/*, recurrent-expenses, subscription…) have no auth check of
+  // their own — they were relying on the previous `useUser()` import here,
+  // which had this exact redirect built in, but unconditionally — meaning
+  // it also ran on the public routes below (this provider wraps the whole
+  // app in layout.tsx), bouncing every logged-out visitor away from the
+  // landing page, /login and /signup the moment AuthContext finished
+  // resolving "no session". PUBLIC_PATHS opts those routes out while
+  // keeping the redirect for the protected pages that depend on it.
+  useEffect(() => {
+    if (!authLoading && !user && !PUBLIC_PATHS.has(pathname)) {
+      router.replace('/login');
+    }
+  }, [authLoading, user, pathname, router]);
 
   const selectBranch = useCallback((id: string | 'CONSOLIDATED') => {
     setActiveBranchId(id);

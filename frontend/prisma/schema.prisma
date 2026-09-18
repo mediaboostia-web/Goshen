@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -10,29 +9,29 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
+  id              String    @id @default(cuid())
+  email           String    @unique
   // Nullable: OAuth-only users (e.g. signed up with Google) never set a
   // password. Email/password signup still requires it; the auth route
   // enforces presence at runtime.
-  passwordHash      String?
-  emailVerifiedAt   DateTime?
-  tokenVersion      Int       @default(0)
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  tokenVersion    Int       @default(0)
   // Optional display name — populated from OAuth profile on first sign-in.
   // Email/password users can fill it later via /api/auth/me PATCH (future).
-  name              String?
+  name            String?
   // Optional avatar URL — populated from OAuth profile on first sign-in.
-  avatarUrl         String?
+  avatarUrl       String?
   // App-wide role. USER is the default; ADMIN unlocks /admin back-office;
   // SUPERADMIN can promote/demote other admins. Bootstrap an initial
   // SUPERADMIN via `pnpm db:make-superadmin <email>` (see scripts).
-  role              String    @default("USER") // USER | ADMIN | SUPERADMIN
+  role            String    @default("USER") // USER | ADMIN | SUPERADMIN
   // Account status. ACTIVE = login + refresh allowed; SUSPENDED = both
   // refused with 403 ACCOUNT_SUSPENDED. Mutated via /api/admin/users/[id]/status
   // (ADMIN can suspend; only SUPERADMIN can restore).
-  status            String    @default("ACTIVE") // ACTIVE | SUSPENDED
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  status          String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   verificationCodes VerificationCode[]
   uploads           FileUpload[]
@@ -44,10 +43,10 @@ model User {
   // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
   // Apps that need it (marketplace, B2B SaaS, classifieds) wire owner relations
   // on their domain models.
-  ownedOrganizations Organization[]      @relation("OrgOwner")
-  memberships        OrganizationMember[] @relation("OrgMembership")
+  ownedOrganizations    Organization[]         @relation("OrgOwner")
+  memberships           OrganizationMember[]   @relation("OrgMembership")
   financialTransactions FinancialTransaction[]
-  reportsCreated       Report[]
+  reportsCreated        Report[]
 
   @@index([email])
   @@index([role])
@@ -88,16 +87,25 @@ model AdminAction {
 // Goshen Multi-tenancy & Church models
 // ───────────────────────────────────────────────────────────────────────
 model Organization {
-  id                String    @id @default(cuid())
-  slug              String    @unique
+  id                String                 @id @default(cuid())
+  slug              String                 @unique
   name              String
-  denomination      String?   // ex: "Assemblées de Dieu du Gabon"
+  denomination      String? // ex: "Assemblées de Dieu du Gabon"
   logoUrl           String?
-  currency          String    @default("XAF") // FCFA CEMAC
-  plan              String    @default("FREE") // FREE | ESSENTIAL | PREMIUM
+  // Contact info shown on invoices/receipts instead of a hardcoded
+  // placeholder. Null by default — hidden on the invoice until configured.
+  email             String?
+  phone             String?
+  currency          String                 @default("XAF") // FCFA CEMAC
+  plan              String                 @default("FREE") // FREE | ESSENTIAL | PREMIUM
   planExpiresAt     DateTime?
+  // Reception methods the church actually accepts, shown on invoices/receipts
+  // instead of a hardcoded placeholder. Subset of ESPECES | MOBILE_MONEY |
+  // CARTE_BANCAIRE. Empty by default — nothing is assumed until configured.
+  paymentMethods    String[]               @default([])
+  paymentDetails    String? // free text, e.g. a Mobile Money number or bank name
   ownerId           String
-  owner             User      @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  owner             User                   @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   members           OrganizationMember[]
   branches          Branch[]
   categories        ChurchCategory[]
@@ -105,67 +113,81 @@ model Organization {
   recurringExpenses RecurringExpense[]
   reports           Report[]
   subscription      Subscription?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  generatedInvoices GeneratedInvoice[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
 
   @@index([ownerId])
 }
 
-// Role values: PASTOR | TREASURER | SECRETARY | AUDITOR | OWNER | ADMIN | MEMBER
-model OrganizationMember {
+// Append-only log of per-transaction invoice PDFs archived via
+// POST /api/transactions/[id]/invoice — used only to enforce the FREE plan's
+// "1 invoice per month" limit (count rows in the current calendar month).
+model GeneratedInvoice {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User         @relation("OrgMembership", fields: [userId], references: [id], onDelete: Cascade)
-  role           String       @default("TREASURER")
-  branchAccess   MemberBranchAccess[]
+  transactionId  String
   createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+// Role values: PASTOR | TREASURER | SECRETARY | AUDITOR | OWNER | ADMIN | MEMBER
+model OrganizationMember {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                 @relation("OrgMembership", fields: [userId], references: [id], onDelete: Cascade)
+  role           String               @default("TREASURER")
+  branchAccess   MemberBranchAccess[]
+  createdAt      DateTime             @default(now())
 
   @@unique([organizationId, userId])
   @@index([userId])
 }
 
 model Branch {
-  id                  String       @id @default(cuid())
+  id                  String                 @id @default(cuid())
   organizationId      String
-  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name                String       // ex: "Église Mère - Libreville", "Annexe Owendo"
-  city                String?      // ex: "Libreville", "Owendo", "Ntoum"
-  isMain              Boolean      @default(false)
-  currentBalance      Int          @default(0) // en FCFA
-  lowBalanceThreshold Int          @default(25000) // Seuil d'alerte solde bas en FCFA
-  status              String       @default("ACTIVE") // ACTIVE | ARCHIVED
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                String // ex: "Église Mère - Libreville", "Annexe Owendo"
+  city                String? // ex: "Libreville", "Owendo", "Ntoum"
+  isMain              Boolean                @default(false)
+  currentBalance      Int                    @default(0) // en FCFA
+  lowBalanceThreshold Int                    @default(25000) // Seuil d'alerte solde bas en FCFA
+  status              String                 @default("ACTIVE") // ACTIVE | ARCHIVED
   transactions        FinancialTransaction[]
   recurringExpenses   RecurringExpense[]
   reports             Report[]
   memberAccess        MemberBranchAccess[]
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
   @@index([organizationId])
 }
 
 model MemberBranchAccess {
-  id          String             @id @default(cuid())
-  memberId    String
-  member      OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  branchId    String
-  branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  id       String             @id @default(cuid())
+  memberId String
+  member   OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  branchId String
+  branch   Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, branchId])
 }
 
 model ChurchCategory {
-  id             String       @id @default(cuid())
+  id             String                 @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  type           String       // "INCOME" | "EXPENSE"
-  name           String       // ex: "Dîmes", "Offrandes", "Dons bâtiment", "Cotisation Caisse Nationale"
-  isDefault      Boolean      @default(false)
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           String // "INCOME" | "EXPENSE"
+  name           String // ex: "Dîmes", "Offrandes", "Dons bâtiment", "Cotisation Caisse Nationale"
+  isDefault      Boolean                @default(false)
   transactions   FinancialTransaction[]
   recurring      RecurringExpense[]
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime               @default(now())
 
   @@index([organizationId, type])
 }
@@ -176,15 +198,19 @@ model FinancialTransaction {
   organization                Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branchId                    String
   branch                      Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  type                        String         // "INCOME" | "EXPENSE"
-  amount                      Int            // en FCFA
+  type                        String // "INCOME" | "EXPENSE"
+  amount                      Int // en FCFA
   date                        DateTime       @default(now())
   categoryId                  String
   category                    ChurchCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  beneficiary                 String?        // Nom du bénéficiaire (si dépense)
-  receiptUrl                  String?        // Image Cloudinary
+  beneficiary                 String? // Nom du bénéficiaire (si dépense)
+  // Optional per-transaction override of the church's default payment
+  // methods (Organization.paymentMethods) — ESPECES | MOBILE_MONEY |
+  // CARTE_BANCAIRE. Null means "use the church's configured default".
+  paymentMethod               String?
+  receiptUrl                  String? // Image Cloudinary
   receiptPublicId             String?
-  notes                       String?        // Commentaire
+  notes                       String? // Commentaire
   authorId                    String
   author                      User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
   recurringExpenseExecutionId String?
@@ -196,21 +222,22 @@ model FinancialTransaction {
 }
 
 model RecurringExpense {
-  id              String         @id @default(cuid())
-  organizationId  String
-  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branchId        String
-  branch          Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  name            String         // ex: "Cotisation Caisse Nationale ADD", "Loyer Annexe"
-  amount          Int            // en FCFA
-  frequency       String         // "WEEKLY" | "MONTHLY"
-  dueDay          Int            // Jour du mois (1-31) ou jour de semaine (0-6)
-  categoryId      String
-  category        ChurchCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  status          String         @default("ACTIVE") // ACTIVE | PAUSED
-  executions      RecurringExpenseExecution[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id             String                      @id @default(cuid())
+  organizationId String
+  organization   Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branchId       String
+  branch         Branch                      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name           String // ex: "Cotisation Caisse Nationale ADD", "Loyer Annexe"
+  amount         Int // en FCFA
+  frequency      String // "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY"
+  dueDay         Int // Jour du mois (1-31) ou jour de semaine (0-6)
+  dueMonth       Int? // Mois (1-12), utilisé seulement quand frequency = "YEARLY"
+  categoryId     String
+  category       ChurchCategory              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  status         String                      @default("ACTIVE") // ACTIVE | PAUSED
+  executions     RecurringExpenseExecution[]
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
 
   @@index([organizationId, branchId, status])
 }
@@ -235,17 +262,17 @@ model Report {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branchId       String?      // Null = Vue consolidée
+  branchId       String? // Null = Vue consolidée
   branch         Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
   title          String
-  periodType     String       // "SUNDAY_SERVICE" | "MONTHLY" | "QUARTERLY" | "ANNUAL" | "CUSTOM"
+  periodType     String // "SUNDAY_SERVICE" | "MONTHLY" | "QUARTERLY" | "ANNUAL" | "CUSTOM"
   startDate      DateTime
   endDate        DateTime
   openingBalance Int
   closingBalance Int
   totalIncome    Int
   totalExpense   Int
-  data           Json         // Données agrégées JSON
+  data           Json // Données agrégées JSON
   pdfUrl         String?
   createdById    String
   createdBy      User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -255,19 +282,19 @@ model Report {
 }
 
 model Subscription {
-  id                  String       @id @default(cuid())
-  organizationId      String       @unique
-  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  plan                String       @default("FREE") // FREE | ESSENTIAL | PREMIUM
-  status              String       @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELED
-  currentPeriodStart  DateTime     @default(now())
-  currentPeriodEnd    DateTime?
-  provider            String       @default("CHARIOW")
-  chariowPurchaseId   String?      @unique
-  chariowProductId    String?
-  customerPhone       String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan               String       @default("FREE") // FREE | ESSENTIAL | PREMIUM
+  status             String       @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELED
+  currentPeriodStart DateTime     @default(now())
+  currentPeriodEnd   DateTime?
+  provider           String       @default("CHARIOW")
+  chariowPurchaseId  String?      @unique
+  chariowProductId   String?
+  customerPhone      String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@index([status, currentPeriodEnd])
 }
@@ -413,4 +440,3 @@ model WebhookLog {
   @@unique([externalId, eventType])
   @@index([provider, createdAt])
 }
-

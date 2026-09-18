@@ -8,6 +8,7 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { allowedBranchIds, canAccessBranch } from '@/lib/server/church/branch-access';
 import { generateReportPdf } from '@/lib/server/reports/pdf';
 import { uploadBuffer, StorageNotConfiguredError } from '@/lib/server/upload/cloudinary-client';
 import { log } from '@/lib/server/observability/log';
@@ -42,12 +43,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       const startDate = new Date(startStr);
       const endDate = new Date(endStr);
 
+      const allowed = allowedBranchIds(access);
+      if (branchId && branchId !== 'CONSOLIDATED' && allowed && !allowed.includes(branchId)) {
+        return NextResponse.json(
+          { error: 'FORBIDDEN', message: 'Vous n’avez pas accès à cette annexe.' },
+          { status: 403 },
+        );
+      }
+
       const where: Record<string, unknown> = {
         organizationId: access.church.id,
         date: { gte: startDate, lte: endDate },
       };
       if (branchId && branchId !== 'CONSOLIDATED') {
         where.branchId = branchId;
+      } else if (allowed) {
+        where.branchId = { in: allowed };
       }
 
       const transactions = await prisma.financialTransaction.findMany({
@@ -89,7 +100,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         currentBalance = b.currentBalance;
       } else {
         const agg = await prisma.branch.aggregate({
-          where: { organizationId: access.church.id, status: 'ACTIVE' },
+          where: {
+            organizationId: access.church.id,
+            status: 'ACTIVE',
+            ...(allowed ? { id: { in: allowed } } : {}),
+          },
           _sum: { currentBalance: true },
         });
         currentBalance = agg._sum.currentBalance || 0;
@@ -113,9 +128,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // Default: list archived reports
+    // Default: list archived reports. A branch-restricted member sees only
+    // reports scoped to their own branches — a consolidated report
+    // (branchId: null) aggregates the whole org and would otherwise leak
+    // other annexes' totals to them.
+    const listAllowed = allowedBranchIds(access);
     const reports = await prisma.report.findMany({
-      where: { organizationId: access.church.id },
+      where: {
+        organizationId: access.church.id,
+        ...(listAllowed ? { branchId: { in: listAllowed } } : {}),
+      },
       include: {
         branch: { select: { id: true, name: true } },
         createdBy: { select: { name: true, email: true } },
@@ -155,12 +177,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const endDate = new Date(endStr);
 
     const isConsolidated = !branchId || branchId === 'CONSOLIDATED';
+    if (!isConsolidated && !canAccessBranch(access, branchId)) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Vous n’avez pas accès à cette annexe.' },
+        { status: 403 },
+      );
+    }
+    const allowed = allowedBranchIds(access);
     const where: Record<string, unknown> = {
       organizationId: access.church.id,
       date: { gte: startDate, lte: endDate },
     };
     if (!isConsolidated) {
       where.branchId = branchId;
+    } else if (allowed) {
+      // Same rule as the preview above: a restricted member's "consolidated"
+      // report is scoped to their own branches, not the whole org's.
+      where.branchId = { in: allowed };
     }
 
     const transactions = await prisma.financialTransaction.findMany({
@@ -199,7 +232,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       currentBalance = b.currentBalance;
     } else {
       const agg = await prisma.branch.aggregate({
-        where: { organizationId: access.church.id, status: 'ACTIVE' },
+        where: {
+          organizationId: access.church.id,
+          status: 'ACTIVE',
+          ...(allowed ? { id: { in: allowed } } : {}),
+        },
         _sum: { currentBalance: true },
       });
       currentBalance = agg._sum.currentBalance || 0;

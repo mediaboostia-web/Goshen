@@ -39,7 +39,7 @@ const limiter = createEmailLimiter(redis ? { redis } : {}, {
   windowMs: 15 * 60 * 1000,
   max: Number(process.env.AUTH_RESEND_RATE_LIMIT_MAX ?? 3),
   code: 'TOO_MANY_RESEND_ATTEMPTS',
-  message: 'Too many resend attempts. Try again later.',
+  message: 'Trop de tentatives de renvoi. Réessayez plus tard.',
 });
 
 function formatIssues(err: z.ZodError) {
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const res = NextResponse.json(
         {
           error: 'RATE_LIMIT_UNAVAILABLE',
-          message: 'Resend service is unavailable. Try again shortly.',
+          message: 'Le service d’envoi est indisponible. Réessayez dans un instant.',
         },
         { status: 503, headers: { 'Retry-After': '30' } },
       );

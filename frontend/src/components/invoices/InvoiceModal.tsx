@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
@@ -10,9 +10,7 @@ export interface InvoiceItemRow {
   no: string;
   description: string;
   subDescription?: string;
-  price: number;
-  qty: number | string;
-  total: number;
+  amount: number;
 }
 
 export interface InvoiceData {
@@ -27,14 +25,12 @@ export interface InvoiceData {
   churchName: string;
   churchDenomination?: string;
   churchAddress?: string;
+  churchLogoUrl?: string | null;
   recipientName: string;
   recipientAddress?: string;
   recipientContact?: string;
   items: InvoiceItemRow[];
-  subTotal: number;
-  tax?: number;
-  discount?: number;
-  grandTotal: number;
+  total: number;
   paymentMethod: string;
   paymentDetails?: string;
   terms?: string;
@@ -54,13 +50,7 @@ interface InvoiceModalProps {
 export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const [archiving, setArchiving] = useState(false);
-  const [archived, setArchived] = useState(false);
   const [downloading, setDownloading] = useState(false);
-
-  useEffect(() => {
-    setArchived(false);
-  }, [data?.transactionId, data?.invoiceNumber]);
 
   if (!isOpen || !data) return null;
 
@@ -84,10 +74,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
           recipientAddress: data.recipientAddress,
           recipientContact: data.recipientContact,
           items: data.items,
-          subTotal: data.subTotal,
-          tax: data.tax,
-          discount: data.discount,
-          grandTotal: data.grandTotal,
+          total: data.total,
           paymentMethod: data.paymentMethod,
           paymentDetails: data.paymentDetails,
           terms: data.terms,
@@ -98,8 +85,24 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
         },
       },
     );
-    setArchived(true);
     return res.transaction?.receiptUrl || null;
+  }
+
+  // Fetches the PDF bytes and saves them via a synthetic <a download> click
+  // instead of `window.open(url)` — opening the bare Cloudinary URL handed
+  // the user a new browser tab showing/re-hosting the file instead of an
+  // actual save-to-disk download.
+  async function saveUrlAsFile(url: string, filename: string): Promise<void> {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
   }
 
   const handleDownload = async () => {
@@ -113,7 +116,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
     try {
       const url = await archiveInvoice();
       if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
+        await saveUrlAsFile(url, `facture-${data.invoiceNumber}.pdf`);
       } else {
         toast('Le PDF n’a pas pu être généré pour le moment.', 'error');
       }
@@ -124,21 +127,6 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
       );
     } finally {
       setDownloading(false);
-    }
-  };
-
-  const handleArchive = async () => {
-    setArchiving(true);
-    try {
-      await archiveInvoice();
-      toast('Facture archivée avec succès.', 'success');
-    } catch (err) {
-      toast(
-        err instanceof ApiError ? err.message : 'Impossible d’archiver la facture pour le moment.',
-        'error',
-      );
-    } finally {
-      setArchiving(false);
     }
   };
 
@@ -206,30 +194,6 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               <span>Imprimer</span>
             </button>
 
-            {/* Archive Button — only for a real transaction invoice */}
-            {data.transactionId && (
-              <button
-                type="button"
-                onClick={() => void handleArchive()}
-                disabled={archiving || archived}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 disabled:opacity-60 transition-all shadow-xs cursor-pointer"
-                title="Enregistrer cette facture de façon permanente"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 8v13H3V8" />
-                  <path d="M1 3h22v5H1z" />
-                  <path d="M10 12h4" />
-                </svg>
-                <span>{archived ? 'Archivée ✓' : archiving ? 'Archivage…' : 'Archiver'}</span>
-              </button>
-            )}
-
             {/* Close Modal Button */}
             <button
               type="button"
@@ -253,8 +217,16 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             <div className="flex justify-between items-start pb-8 print:pb-4 border-b border-stone-200">
               {/* Left: Brand / Church Logo & Coordinates */}
               <div className="flex items-start gap-3.5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e11d48] text-white font-bold text-2xl shadow-xs">
-                  S
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#e11d48] text-white font-bold text-2xl shadow-xs">
+                  {data.churchLogoUrl ? (
+                    <img
+                      src={data.churchLogoUrl}
+                      alt=""
+                      className="h-full w-full object-contain bg-white"
+                    />
+                  ) : (
+                    (data.churchName || 'É').charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold tracking-tight text-stone-900 uppercase">
@@ -326,9 +298,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                   <tr className="bg-[#e11d48] text-white font-extrabold tracking-wider text-[11px] uppercase">
                     <th className="py-3 px-4 w-12 text-center">N°</th>
                     <th className="py-3 px-4">DESCRIPTION</th>
-                    <th className="py-3 px-4 text-right w-28">PRIX</th>
-                    <th className="py-3 px-4 text-center w-20">QTÉ</th>
-                    <th className="py-3 px-4 text-right w-32">TOTAL</th>
+                    <th className="py-3 px-4 text-right w-36">MONTANT</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -352,14 +322,8 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                             </p>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-semibold text-stone-800 font-mono">
-                          {row.price.toLocaleString('fr-FR')} F
-                        </td>
-                        <td className="py-3.5 px-4 text-center font-semibold text-stone-700 font-mono">
-                          {row.qty}
-                        </td>
                         <td className="py-3.5 px-4 text-right font-bold text-stone-900 font-mono">
-                          {row.total.toLocaleString('fr-FR')} F
+                          {row.amount.toLocaleString('fr-FR')} F
                         </td>
                       </tr>
                     );
@@ -394,69 +358,46 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                   </p>
                 </div>
 
-                {/* Hand-drawn style Signature */}
-                <div className="pt-4 print:pt-2">
-                  <div className="inline-block text-center">
-                    <svg
-                      viewBox="0 0 160 50"
-                      className="h-10 w-36 text-stone-800 mx-auto"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M10 35 C 30 10, 40 45, 60 20 C 75 5, 90 40, 110 25 C 130 10, 140 30, 155 20" />
-                      <path d="M40 30 C 50 15, 70 15, 80 30 C 90 45, 110 45, 120 30" />
-                    </svg>
-                    <p className="font-bold text-xs text-stone-900 mt-1">
-                      {data.signatoryName || 'Le Trésorier'}
-                    </p>
-                    <p className="text-[10px] text-stone-500 font-medium">
-                      {data.signatoryRole || 'Trésorier de l’Église'}
-                    </p>
+                {/* Signature — only shown when the caller actually supplies
+                    one; never a fabricated name/graphic implying the
+                    document was already signed by someone unspecified. */}
+                {data.signatoryName && (
+                  <div className="pt-4 print:pt-2">
+                    <div className="inline-block text-center">
+                      <p className="font-bold text-xs text-stone-900">{data.signatoryName}</p>
+                      {data.signatoryRole && (
+                        <p className="text-[10px] text-stone-500 font-medium">
+                          {data.signatoryRole}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Right Column: Subtotal, Taxes, and Full Red Grand Total Box */}
               <div className="flex flex-col justify-between">
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-stone-100 text-stone-600 font-semibold">
-                    <span>Sous-total :</span>
-                    <span className="font-mono font-bold text-stone-900">
-                      {data.subTotal.toLocaleString('fr-FR')} FCFA
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-stone-100 text-stone-600">
-                    <span>TVA (0%) :</span>
-                    <span className="font-mono text-stone-500">
-                      {(data.tax || 0).toLocaleString('fr-FR')} FCFA
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-stone-100 text-stone-600">
-                    <span>Remise 0% :</span>
-                    <span className="font-mono text-stone-500">
-                      {(data.discount || 0).toLocaleString('fr-FR')} FCFA
-                    </span>
-                  </div>
-
-                  {/* Grand Total Box (Full Red Bar with White Text) */}
-                  <div className="mt-4 rounded-lg bg-[#e11d48] px-5 py-3 text-white flex items-center justify-between shadow-xs">
-                    <span className="font-bold text-xs uppercase tracking-wider">
-                      Total général :
-                    </span>
+                  {/* Total Box (Full Red Bar with White Text) */}
+                  <div className="rounded-lg bg-[#e11d48] px-5 py-3 text-white flex items-center justify-between shadow-xs">
+                    <span className="font-bold text-xs uppercase tracking-wider">Total :</span>
                     <span className="font-mono tabular-nums font-black text-lg tracking-tight">
-                      {data.grandTotal.toLocaleString('fr-FR')} FCFA
+                      {data.total.toLocaleString('fr-FR')} FCFA
                     </span>
                   </div>
                 </div>
 
-                {/* Bottom Thank You & Contacts */}
+                {/* Bottom Thank You & Contacts — real church contact info
+                    only; a field with nothing configured simply doesn't
+                    render, rather than showing a fabricated placeholder. */}
                 <div className="pt-8 print:pt-4 text-center sm:text-right">
                   <p className="font-bold text-sm text-[#e11d48]">Merci pour votre confiance.</p>
-                  <div className="flex items-center justify-center sm:justify-end gap-4 text-[11px] text-stone-500 mt-1">
-                    <span>📞 {data.phone || '+241 07 45 67 89'}</span>
-                    <span>✉️ {data.email || 'finance@eglise.ga'}</span>
-                  </div>
+                  {(data.phone || data.email) && (
+                    <div className="flex items-center justify-center sm:justify-end gap-4 text-[11px] text-stone-500 mt-1">
+                      {data.phone && <span>📞 {data.phone}</span>}
+                      {data.email && <span>✉️ {data.email}</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

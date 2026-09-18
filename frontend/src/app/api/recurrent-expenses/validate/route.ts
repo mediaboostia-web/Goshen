@@ -8,6 +8,11 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { canAccessBranch } from '@/lib/server/church/branch-access';
+import {
+  advanceByOnePeriod,
+  type RecurringFrequency,
+} from '@/lib/server/recurring-expenses/schedule';
 
 const ValidateBody = z.object({
   executionId: z.string().min(1, 'ID d’échéance requis'),
@@ -63,6 +68,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         { error: 'NOT_FOUND', message: 'Échéance introuvable.' },
         { status: 404 },
+      );
+    }
+
+    if (!canAccessBranch(access, execution.recurringExpense.branchId)) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Vous n’avez pas accès à cette annexe.' },
+        { status: 403 },
       );
     }
 
@@ -124,12 +136,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         });
 
         // 4. Schedule next recurring execution
-        const nextDue = new Date(execution.dueDate);
-        if (recurringExpense.frequency === 'MONTHLY') {
-          nextDue.setMonth(nextDue.getMonth() + 1);
-        } else {
-          nextDue.setDate(nextDue.getDate() + 7);
-        }
+        const nextDue = advanceByOnePeriod(
+          execution.dueDate,
+          recurringExpense.frequency as RecurringFrequency,
+        );
 
         await tx.recurringExpenseExecution.create({
           data: {
