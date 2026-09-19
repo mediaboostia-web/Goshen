@@ -147,9 +147,7 @@ export default function BranchesPage() {
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Gestion des Annexes & Lieux de Culte
-            </h1>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">Annexes</h1>
             <p className="text-xs text-stone-500 mt-1">
               Supervisez les caisses indépendantes de chaque annexe rattachée à {church?.name}.
             </p>

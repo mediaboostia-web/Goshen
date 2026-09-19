@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import {
   ChurchIcon,
   ShieldCheckIcon,
-  WalletIcon,
+  HeartHandIcon,
   BuildingBranchIcon,
   CheckCircleIcon,
   UsersGroupIcon,
@@ -21,7 +21,7 @@ import {
   ReceiptTextIcon,
 } from '@/components/icons/ChurchIcons';
 
-type TabKey = 'compte' | 'securite' | 'membres' | 'eglise' | 'facturation';
+type TabKey = 'compte' | 'securite' | 'membres' | 'eglise' | 'soutenir';
 
 const NOTIFICATION_EVENT_TYPES: { key: string; label: string; description: string }[] = [
   {
@@ -276,7 +276,7 @@ function SettingsContent() {
         <div className="border-b border-stone-200 bg-white/60 p-6 rounded-2xl shadow-2xs mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Paramètres & Gestion de l'Église
+              Paramètres
             </h1>
             <p className="text-xs sm:text-sm text-stone-600 mt-1">
               Gérez votre profil pastoral, vos équipes (trésoriers, secrétaires), les paroisses et
@@ -374,23 +374,23 @@ function SettingsContent() {
               </button>
 
               <button
-                onClick={() => setActiveTab('facturation')}
+                onClick={() => setActiveTab('soutenir')}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap text-left border ${
-                  activeTab === 'facturation'
+                  activeTab === 'soutenir'
                     ? 'bg-emerald-900 text-white border-emerald-950 shadow-xs'
                     : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
                 }`}
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                    activeTab === 'facturation'
+                    activeTab === 'soutenir'
                       ? 'bg-emerald-800 text-white'
                       : 'bg-stone-100 text-stone-600'
                   }`}
                 >
-                  <WalletIcon className="h-4 w-4" />
+                  <HeartHandIcon className="h-4 w-4" />
                 </div>
-                <span>Facturation & Plan</span>
+                <span>Soutenir</span>
               </button>
             </nav>
           </div>
@@ -410,8 +410,16 @@ function SettingsContent() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-900 text-white font-serif font-bold text-2xl shadow-xs">
-                    {user?.email?.charAt(0).toUpperCase() || 'P'}
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-900 text-white font-serif font-bold text-2xl shadow-xs">
+                    {church?.logoUrl ? (
+                      <img
+                        src={church.logoUrl}
+                        alt={church.name}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      user?.email?.charAt(0).toUpperCase() || 'P'
+                    )}
                   </div>
                   <div>
                     <p className="font-bold text-stone-900 text-sm">{user?.email}</p>
@@ -952,59 +960,39 @@ function SettingsContent() {
               </div>
             )}
 
-            {/* ── 5. ONGLET: FACTURATION ── */}
-            {activeTab === 'facturation' && (
+            {/* ── 5. ONGLET: SOUTENIR ── */}
+            {activeTab === 'soutenir' && (
               <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
-                <div className="border-b border-stone-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h2 className="font-serif text-xl font-bold text-stone-900">
-                      Abonnement & Règlement
-                    </h2>
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      Paiements mensuels via Mobile Money (Airtel & Moov)
-                    </p>
-                  </div>
-                  <span className="self-start sm:self-auto rounded-md bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                    {church?.plan === 'PREMIUM'
-                      ? 'Formule Premium (15 000 FCFA)'
-                      : church?.plan === 'ESSENTIAL'
-                        ? 'Formule Essentiel (3 500 FCFA)'
-                        : 'Formule Gratuite (0 FCFA)'}
-                  </span>
+                <div className="border-b border-stone-100 pb-4">
+                  <h2 className="font-serif text-xl font-bold text-stone-900">
+                    Soutenir Goshen Finance
+                  </h2>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Goshen Finance est gratuit pour votre église. Un don libre nous aide à maintenir
+                    et améliorer la plateforme.
+                  </p>
                 </div>
 
-                {/* Subscription Card */}
                 <div className="rounded-xl border border-stone-200 bg-stone-900 p-6 text-white shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">
-                        Statut de l'abonnement pastoral
+                      <p className="text-xs text-rose-200 uppercase tracking-wider font-semibold">
+                        Don libre
                       </p>
                       <p className="font-serif text-2xl font-bold text-white mt-1">
-                        Abonnement Actif &bull; {church?.plan || 'FREE'}
+                        Chaque contribution compte
                       </p>
                       <p className="text-xs text-emerald-100/80 mt-1">
-                        Accès complet multi-paroisses, pièces justificatives illimitées et reçus
-                        dominicaux.
+                        Choisissez le montant qui vous convient — aucun engagement, aucun plan.
                       </p>
                     </div>
 
                     <Link
-                      href="/subscription"
-                      className="rounded-lg bg-amber-400 px-4 py-2.5 text-xs font-bold text-stone-950 hover:bg-amber-300 transition-colors self-start sm:self-auto shrink-0 shadow-xs"
+                      href="/soutenir"
+                      className="rounded-lg bg-rose-400 px-4 py-2.5 text-xs font-bold text-stone-950 hover:bg-rose-300 transition-colors self-start sm:self-auto shrink-0 shadow-xs"
                     >
-                      Renouveler ou Modifier &rarr;
+                      Faire un don &rarr;
                     </Link>
-                  </div>
-                </div>
-
-                {/* Invoices History Table */}
-                <div className="pt-4">
-                  <h3 className="font-serif text-base font-bold text-stone-900 mb-3">
-                    Historique des Règlements
-                  </h3>
-                  <div className="rounded-xl border border-stone-200 bg-stone-50 py-8 text-center text-xs text-stone-500">
-                    Aucun règlement enregistré pour l’instant.
                   </div>
                 </div>
               </div>

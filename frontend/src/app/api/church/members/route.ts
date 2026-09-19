@@ -7,8 +7,7 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
-import { planLimitsFor } from '@/lib/server/subscription/plan-limits';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 import { memberAddedEmail } from '@/lib/server/church/member-added-email';
 import { sendCriticalEmailNow } from '@/lib/server/notifications/send-critical-email-now';
 
@@ -29,6 +28,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND', members: [] }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     const members = await prisma.organizationMember.findMany({
       where: { organizationId: access.church.id },
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { status: 403 },
       );
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     const body = await req.json().catch(() => null);
     const parsed = InviteMemberBody.safeParse(body);
@@ -104,23 +105,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             'Cette adresse email est déjà associée à une autre église sur Goshen. Utilisez une autre adresse email pour cette personne.',
         },
         { status: 409 },
-      );
-    }
-
-    const { maxUsers } = planLimitsFor(access.church.plan);
-    const memberCount = await prisma.organizationMember.count({
-      where: { organizationId: access.church.id },
-    });
-    if (memberCount >= maxUsers) {
-      return NextResponse.json(
-        {
-          error: 'PLAN_USER_LIMIT',
-          message:
-            maxUsers === 1
-              ? 'Le forfait gratuit est limité au pasteur seul. Passez à un forfait payant pour ajouter des trésoriers, secrétaires ou commissaires.'
-              : `Votre forfait actuel est limité à ${maxUsers} utilisateurs. Passez à un forfait supérieur pour en ajouter davantage.`,
-        },
-        { status: 403 },
       );
     }
 

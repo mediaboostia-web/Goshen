@@ -2,8 +2,8 @@
   "$comment_1": "Declarative manifest of optional surfaces. Read by AI agents (per PRUNING.md) before atomically removing unused code. v1.2 corrects Prisma relation names against the live schema and removes implicit core references from cross_dependencies (the core layer is always present, so listing it as a dep was misleading).",
   "$comment_2": "Field semantics: `owns` = files the feature owns and that get DELETED on prune. `surgical_edits` = files that get EDITED (not deleted) — typically dispatcher cases, schema relations, type unions. `prune_complexity` = 'safe' | 'with-care' | 'never' (signals the AI must read PRUNING.md carefully).",
   "$comment_3": "`prune_complexity: never` means the codebase cannot be removed without breaking core flows (e.g. signup verification needs email-resend). The feature is still LISTED here because it has env vars / surgical_edits a fork-author should be aware of, but the AI MUST refuse a code-prune request and offer the configure-off (env-empty) alternative instead.",
-  "version": "1.3.0",
-  "$comment_4": "v1.3 removed payments-bictorys, withdrawals, and webhooks-bictorys — this fork (Desio) never uses Bictorys; its only payment surface is the Chariow subscription-billing checkout/webhook, which is application-specific and not (yet) tracked in this manifest.",
+  "version": "1.4.0",
+  "$comment_4": "v1.3 removed payments-bictorys, withdrawals, and webhooks-bictorys. v1.4 removed the Chariow subscription-billing checkout/webhook and all plan-tier gating — this fork (Goshen Finance) is free for churches; its only payment surface is the Maketou donation checkout (lib/server/payments/maketou.ts), application-specific and not (yet) tracked in this manifest.",
   "starter": "izikit@v1.1",
   "features": {
     "oauth-google": {

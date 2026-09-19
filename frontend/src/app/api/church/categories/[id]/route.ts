@@ -7,7 +7,7 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 
 const UpdateCategoryBody = z.object({
   name: z.string().min(2, 'Nom requis'),
@@ -53,6 +53,7 @@ export async function PATCH(
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
     // Mirrors POST /api/church/categories — same gate.
     if (!access.isPastor && !access.isTreasurer) {
       return NextResponse.json(
@@ -106,6 +107,7 @@ export async function DELETE(
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
     if (!access.isPastor && !access.isTreasurer) {
       return NextResponse.json(
         {

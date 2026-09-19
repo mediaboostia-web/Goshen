@@ -77,9 +77,10 @@ describe('.env.example phase 4 additions (UP-01, UP-02)', () => {
 // ───────────────────────────────────────────────────────────────────────
 // Phase 5 — webhook log retention.
 //
-// Tripwire for CRON-05 (webhook-log-purge retention), which now covers the
-// Chariow subscription webhook log. Refactors that drop the default fail
-// CI here. (ORDER_EXPIRATION_MINUTES was removed along with Order/Bictorys.)
+// Tripwire for CRON-05 (webhook-log-purge retention) — no webhook provider
+// is wired by default (Bictorys and Chariow were both removed; Maketou has
+// no webhooks). Refactors that drop the default still fail CI here.
+// (ORDER_EXPIRATION_MINUTES was removed along with Order/Bictorys.)
 // ───────────────────────────────────────────────────────────────────────
 describe('.env.example phase 5 additions (CRON-05)', () => {
   const src = readFileSync(ENV_EXAMPLE, 'utf8');

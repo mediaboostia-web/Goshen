@@ -357,7 +357,7 @@ export default function ChurchSettingsPage() {
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-            Paramètres & Catégories de l’Église
+            Église & Catégories
           </h1>
           <p className="text-xs text-stone-500 mt-1">
             Personnalisez vos rubriques de culte et consultez les informations de {church?.name}.

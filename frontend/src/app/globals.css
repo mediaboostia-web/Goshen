@@ -99,6 +99,35 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Gentle continuous bob for decorative/floating elements (landing page
+   hero shapes, proof chips). Kept to a separate class rather than the
+   scroll-triggered Reveal component, which only ever plays once. */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-delayed {
+    animation: none;
+  }
+}
+
 body {
   background-color: var(--bg-app);
   color: var(--text-primary);

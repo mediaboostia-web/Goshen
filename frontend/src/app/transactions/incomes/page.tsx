@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
+import { queueMutation } from '@/lib/offlineQueue';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
@@ -117,6 +118,35 @@ export default function IncomesPage() {
       return;
     }
 
+    const payload = {
+      branchId,
+      type: 'INCOME',
+      amount: parsedAmount,
+      categoryId,
+      date: new Date(date).toISOString(),
+      notes: notes.trim() || undefined,
+      paymentMethod: paymentMethod || undefined,
+    };
+
+    // Offline: queue the entry instead of failing outright — it syncs
+    // automatically once PwaRegister sees the connection come back.
+    if (!navigator.onLine) {
+      queueMutation({
+        url: '/api/transactions',
+        method: 'POST',
+        body: payload,
+        label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+      });
+      toast(
+        `Hors connexion — entrée de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée localement, synchronisation au retour du réseau.`,
+        'info',
+      );
+      setAmount('');
+      setNotes('');
+      setPaymentMethod('');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const selectedCat = categories.find((c) => c.id === categoryId);
@@ -124,15 +154,7 @@ export default function IncomesPage() {
 
       const createdTx = await api<{ transaction?: { id: string } }>('/api/transactions', {
         method: 'POST',
-        body: {
-          branchId,
-          type: 'INCOME',
-          amount: parsedAmount,
-          categoryId,
-          date: new Date(date).toISOString(),
-          notes: notes.trim() || undefined,
-          paymentMethod: paymentMethod || undefined,
-        },
+        body: payload,
       });
 
       const savedTxInfo = {
@@ -155,7 +177,20 @@ export default function IncomesPage() {
       if (err instanceof ApiError) {
         setError(err.message || 'Erreur lors de l’enregistrement');
       } else {
-        setError('Erreur de communication avec le serveur.');
+        // Connection dropped mid-request — queue it rather than losing the entry.
+        queueMutation({
+          url: '/api/transactions',
+          method: 'POST',
+          body: payload,
+          label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+        });
+        toast(
+          `Connexion perdue — entrée enregistrée localement, synchronisation au retour du réseau.`,
+          'info',
+        );
+        setAmount('');
+        setNotes('');
+        setPaymentMethod('');
       }
     } finally {
       setSubmitting(false);
@@ -210,7 +245,7 @@ export default function IncomesPage() {
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-            Enregistrement des Entrées & Culte
+            Entrées & Culte
           </h1>
           <p className="text-xs text-stone-500 mt-1">
             Saisie rapide des dîmes, offrandes et libéralités avec prévisualisation immédiate de la

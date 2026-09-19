@@ -18,6 +18,10 @@ const PUBLIC_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/auth/error',
+  // Donations are open to anonymous visitors (confirmed product decision —
+  // supporting the platform must not require an account).
+  '/soutenir',
+  '/soutenir/merci',
 ]);
 
 export interface Branch {
@@ -37,8 +41,7 @@ export interface Church {
   denomination: string | null;
   logoUrl: string | null;
   currency: string;
-  plan: string;
-  planExpiresAt: string | null;
+  status: string;
   paymentMethods: string[];
   paymentDetails: string | null;
   email: string | null;
@@ -65,6 +68,7 @@ interface BranchContextValue {
   isConsolidated: boolean;
   loading: boolean;
   error: string | null;
+  orgSuspended: boolean;
   selectBranch: (branchId: string | 'CONSOLIDATED') => void;
   refreshBranches: () => Promise<void>;
   // Multi-church support — `memberships` almost always has exactly one row.
@@ -86,6 +90,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const [activeBranchId, setActiveBranchId] = useState<string | 'CONSOLIDATED'>('CONSOLIDATED');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [orgSuspended, setOrgSuspended] = useState<boolean>(false);
 
   const fetchBranches = useCallback(async () => {
     // Wait for AuthContext to actually resolve the session first. Without
@@ -111,6 +116,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
+      setOrgSuspended(false);
       const [res] = await Promise.all([
         api<{ church: Church; branches: Branch[] }>('/api/church/branches'),
         // Best-effort: memberships is a UI nicety (multi-church switcher).
@@ -152,6 +158,10 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       if (err instanceof ApiError && err.status === 404) {
         setChurch(null);
         setBranches([]);
+      } else if (err instanceof ApiError && err.code === 'ORGANIZATION_SUSPENDED') {
+        setOrgSuspended(true);
+        setChurch(null);
+        setBranches([]);
       } else {
         setError(err instanceof Error ? err.message : 'Erreur chargement annexes');
       }
@@ -173,8 +183,15 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   // landing page, /login and /signup the moment AuthContext finished
   // resolving "no session". PUBLIC_PATHS opts those routes out while
   // keeping the redirect for the protected pages that depend on it.
+  //
+  // /admin/* is excluded outright rather than added to PUBLIC_PATHS: those
+  // routes are NOT public, but admin/layout.tsx already runs its own gate
+  // (GET /api/admin/me, redirecting to /admin/login with the right reason).
+  // Letting this guard also fire there raced both redirects against each
+  // other — /admin/login would render for an instant, then get yanked to
+  // the generic /login before the admin gate's own check finished.
   useEffect(() => {
-    if (!authLoading && !user && !PUBLIC_PATHS.has(pathname)) {
+    if (!authLoading && !user && !PUBLIC_PATHS.has(pathname) && !pathname.startsWith('/admin')) {
       router.replace('/login');
     }
   }, [authLoading, user, pathname, router]);
@@ -214,6 +231,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
         isConsolidated,
         loading,
         error,
+        orgSuspended,
         selectBranch,
         refreshBranches: fetchBranches,
         memberships,

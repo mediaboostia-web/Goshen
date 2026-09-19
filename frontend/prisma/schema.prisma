@@ -97,8 +97,12 @@ model Organization {
   email             String?
   phone             String?
   currency          String                 @default("XAF") // FCFA CEMAC
-  plan              String                 @default("FREE") // FREE | ESSENTIAL | PREMIUM
-  planExpiresAt     DateTime?
+  // Platform-level status. ACTIVE = normal access; SUSPENDED = every
+  // resolveChurchUser()-gated route refuses with 403 ORGANIZATION_SUSPENDED.
+  // Mutated via /api/admin/organizations/[id]/status (ADMIN or SUPERADMIN —
+  // suspending a church never touches platform admin control, unlike
+  // User.status, so no SUPERADMIN-only restore asymmetry is needed here).
+  status            String                 @default("ACTIVE") // ACTIVE | SUSPENDED
   // Reception methods the church actually accepts, shown on invoices/receipts
   // instead of a hardcoded placeholder. Subset of ESPECES | MOBILE_MONEY |
   // CARTE_BANCAIRE. Empty by default — nothing is assumed until configured.
@@ -112,17 +116,18 @@ model Organization {
   transactions      FinancialTransaction[]
   recurringExpenses RecurringExpense[]
   reports           Report[]
-  subscription      Subscription?
   generatedInvoices GeneratedInvoice[]
+  donations         Donation[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
 
   @@index([ownerId])
+  @@index([status])
 }
 
-// Append-only log of per-transaction invoice PDFs archived via
-// POST /api/transactions/[id]/invoice — used only to enforce the FREE plan's
-// "1 invoice per month" limit (count rows in the current calendar month).
+// Append-only audit log of per-transaction invoice PDFs archived via
+// POST /api/transactions/[id]/invoice. No quota is enforced anymore (the app
+// is free) — kept as historical record and for admin stats.
 model GeneratedInvoice {
   id             String       @id @default(cuid())
   organizationId String
@@ -281,22 +286,26 @@ model Report {
   @@index([organizationId, createdAt])
 }
 
-model Subscription {
-  id                 String       @id @default(cuid())
-  organizationId     String       @unique
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  plan               String       @default("FREE") // FREE | ESSENTIAL | PREMIUM
-  status             String       @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELED
-  currentPeriodStart DateTime     @default(now())
-  currentPeriodEnd   DateTime?
-  provider           String       @default("CHARIOW")
-  chariowPurchaseId  String?      @unique
-  chariowProductId   String?
-  customerPhone      String?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+// Free-amount donations to support the platform, paid via Maketou
+// (lib/server/payments/maketou.ts). organizationId is optional and
+// SetNull-on-delete: a donation is platform-level financial history that
+// must survive even if the donating church is later deleted.
+model Donation {
+  id             String        @id @default(cuid())
+  maketouCartId  String        @unique
+  status         String        @default("PENDING") // PENDING | COMPLETED | FAILED | ABANDONED
+  amount         Int // smallest currency unit (FCFA has no decimals)
+  currency       String        @default("XAF")
+  donorEmail     String?
+  donorName      String?
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  meta           Json?
+  createdAt      DateTime      @default(now())
+  completedAt    DateTime?
 
-  @@index([status, currentPeriodEnd])
+  @@index([status, createdAt])
+  @@index([organizationId])
 }
 
 // ───────────────────────────────────────────────────────────────────────

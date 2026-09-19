@@ -7,7 +7,7 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 
 const PAYMENT_METHOD_CODES = ['ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE'] as const;
 
@@ -35,6 +35,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     if (!access.isPastor) {
       return NextResponse.json(

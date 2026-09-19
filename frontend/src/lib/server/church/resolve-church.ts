@@ -1,5 +1,6 @@
 import 'server-only';
 import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/server/prisma';
 
 const COOKIE_PREFIX = process.env.COOKIE_PREFIX || 'app';
@@ -18,8 +19,7 @@ export interface ChurchUserAccess {
     denomination: string | null;
     logoUrl: string | null;
     currency: string;
-    plan: string;
-    planExpiresAt: Date | null;
+    status: string;
     ownerId: string;
     paymentMethods: string[];
     paymentDetails: string | null;
@@ -84,8 +84,7 @@ export async function resolveChurchUser(userId: string): Promise<ChurchUserAcces
         denomination: membership.organization.denomination,
         logoUrl: membership.organization.logoUrl,
         currency: membership.organization.currency,
-        plan: membership.organization.plan,
-        planExpiresAt: membership.organization.planExpiresAt,
+        status: membership.organization.status,
         ownerId: membership.organization.ownerId,
         paymentMethods: membership.organization.paymentMethods,
         paymentDetails: membership.organization.paymentDetails,
@@ -127,8 +126,7 @@ export async function resolveChurchUser(userId: string): Promise<ChurchUserAcces
         denomination: owned.denomination,
         logoUrl: owned.logoUrl,
         currency: owned.currency,
-        plan: owned.plan,
-        planExpiresAt: owned.planExpiresAt,
+        status: owned.status,
         ownerId: owned.ownerId,
         paymentMethods: owned.paymentMethods,
         paymentDetails: owned.paymentDetails,
@@ -148,4 +146,18 @@ export async function resolveChurchUser(userId: string): Promise<ChurchUserAcces
   }
 
   return null;
+}
+
+// Every resolveChurchUser() caller must check access.church.status and return
+// this 403 for SUSPENDED before doing anything else — suspension (via
+// PATCH /api/admin/organizations/[id]/status) must cut off API access, not
+// just hide the dashboard UI.
+export function orgSuspendedResponse(): NextResponse {
+  return NextResponse.json(
+    {
+      error: 'ORGANIZATION_SUSPENDED',
+      message: 'Cette église a été suspendue. Contactez le support.',
+    },
+    { status: 403 },
+  );
 }

@@ -342,7 +342,7 @@ export default function RecurrentExpensesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Modèles de Dépenses Récurrentes
+              Dépenses Récurrentes
             </h1>
             <p className="text-xs text-stone-500 mt-1">
               Configurez vos charges fixes (cotisations, loyer, salaires) pour ne plus jamais rien

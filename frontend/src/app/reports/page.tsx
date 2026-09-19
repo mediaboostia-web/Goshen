@@ -321,7 +321,7 @@ export default function ReportsPage() {
         <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Génération des Rapports Financiers & Factures
+              Rapports & Factures
             </h1>
             <p className="text-xs text-stone-500 mt-1">
               Éditez en 1 clic le compte-rendu dominical officiel ou la facture récapitulative A4

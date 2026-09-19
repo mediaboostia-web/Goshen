@@ -217,7 +217,7 @@ export default function MembersPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Gestion des Membres & Permissions
+              Membres & Permissions
             </h1>
             <p className="text-xs text-stone-500 mt-1">
               Attribuez les rôles précis (Trésorier, Secrétaire, Auditeur) pour sécuriser l’accès

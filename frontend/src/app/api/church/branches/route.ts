@@ -7,9 +7,8 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 import { allowedBranchIds } from '@/lib/server/church/branch-access';
-import { planLimitsFor } from '@/lib/server/subscription/plan-limits';
 
 const CreateBranchBody = z.object({
   name: z.string().min(2, 'Le nom de l’annexe doit contenir au moins 2 caractères'),
@@ -28,6 +27,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND', branches: [] }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     const allowed = allowedBranchIds(access);
     const branches = await prisma.branch.findMany({
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     if (!access.isPastor) {
       return NextResponse.json(
@@ -80,20 +81,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         { error: 'VALIDATION_FAILED', details: parsed.error.issues },
         { status: 400 },
-      );
-    }
-
-    const { maxBranches } = planLimitsFor(access.church.plan);
-    const branchCount = await prisma.branch.count({
-      where: { organizationId: access.church.id, status: 'ACTIVE' },
-    });
-    if (branchCount >= maxBranches) {
-      return NextResponse.json(
-        {
-          error: 'PLAN_BRANCH_LIMIT',
-          message: `Votre forfait actuel est limité à ${maxBranches} annexe${maxBranches > 1 ? 's' : ''}. Passez à un forfait supérieur pour en ajouter davantage.`,
-        },
-        { status: 403 },
       );
     }
 

@@ -120,7 +120,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             denomination: denomination ?? null,
             ownerId: auth.user.sub,
             currency: 'XAF',
-            plan: 'FREE',
           },
         });
 

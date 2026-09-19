@@ -118,12 +118,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // 6+7. Hash and atomically write passwordHash + bump tokenVersion.
+    // The only way to reach this route is an active session with no
+    // passwordHash — i.e. an OAuth-only account (password signup never
+    // issues a session before /verify-email). The OAuth callback already
+    // refuses providers that don't report email_verified=true, so setting
+    // emailVerifiedAt here is always a true statement, not a shortcut —
+    // it just stops a Google-verified account from being permanently
+    // unable to use password login too.
     const newHash = await hashPassword(body.newPassword);
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash: newHash,
         tokenVersion: { increment: 1 },
+        emailVerifiedAt: new Date(),
       },
       select: { id: true, email: true, tokenVersion: true },
     });

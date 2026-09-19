@@ -14,11 +14,17 @@
 // here too, so a polling UI cannot burn the back-office budget.
 //
 // CAPABILITY LIST CONTRACT (D-ADMIN-04 — locked):
-//   ADMIN sees 8 capabilities: users:read, users:status:suspend,
-//     orders:read, withdrawals:read, audit-log:read, outbox:read,
-//     email-queue:read, rate-limits:read.
-//   SUPERADMIN sees 11: same 8 + users:role + users:status:restore +
-//     withdrawals:cancel.
+//   ADMIN sees 9 capabilities: users:read, users:status:suspend,
+//     organizations:read, organizations:suspend, donations:read,
+//     audit-log:read, outbox:read, email-queue:read, rate-limits:read.
+//   SUPERADMIN sees 11: same 9 + users:role + users:status:restore.
+//     (organizations:suspend needs no SUPERADMIN-only restore asymmetry —
+//     unlike User.status, suspending a church never touches platform
+//     admin control. See lib/server/church/resolve-church.ts.)
+//
+// No orders:*/withdrawals:* here — this schema has no Order/Withdrawal
+// models (those were generic-starter leftovers with no corresponding
+// routes in this app).
 //
 // Front-end teams can pivot off this shape; changing the list is a
 // breaking change to the back-office UI.
@@ -34,8 +40,9 @@ const CAPABILITIES_BY_ROLE: Record<'ADMIN' | 'SUPERADMIN', readonly string[]> = 
   ADMIN: [
     'users:read',
     'users:status:suspend',
-    'orders:read',
-    'withdrawals:read',
+    'organizations:read',
+    'organizations:suspend',
+    'donations:read',
     'audit-log:read',
     'outbox:read',
     'email-queue:read',
@@ -46,9 +53,9 @@ const CAPABILITIES_BY_ROLE: Record<'ADMIN' | 'SUPERADMIN', readonly string[]> = 
     'users:role',
     'users:status:suspend',
     'users:status:restore',
-    'orders:read',
-    'withdrawals:read',
-    'withdrawals:cancel',
+    'organizations:read',
+    'organizations:suspend',
+    'donations:read',
     'audit-log:read',
     'outbox:read',
     'email-queue:read',

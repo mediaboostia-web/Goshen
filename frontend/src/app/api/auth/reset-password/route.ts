@@ -169,6 +169,11 @@ export async function POST(req: NextRequest): Promise<Response> {
             data: {
               passwordHash,
               tokenVersion: { increment: 1 },
+              // Consuming a single-use code delivered to this exact inbox
+              // (self-service reset, or a superadmin invite) is proof of
+              // email ownership — mark it verified so this doesn't stay a
+              // permanent blocker on password login (mirrors set-password).
+              emailVerifiedAt: new Date(),
             },
           });
         },

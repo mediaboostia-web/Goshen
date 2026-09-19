@@ -7,7 +7,7 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 
 const CreateCategoryBody = z.object({
   name: z.string().min(2, 'Nom requis'),
@@ -47,6 +47,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND', categories: [] }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     const dbCategories = await prisma.churchCategory.findMany({
       where: { organizationId: access.church.id },
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
     // PRD F12/F15: category CRUD is reserved to whoever actually enters
     // money day-to-day — same gate as transactions/recurring expenses.
     if (!access.isPastor && !access.isTreasurer) {

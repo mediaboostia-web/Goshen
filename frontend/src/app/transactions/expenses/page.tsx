@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
+import { queueMutation } from '@/lib/offlineQueue';
 import { COOKIE_PREFIX } from '@/lib/constants';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
@@ -166,22 +167,50 @@ export default function ExpensesPage() {
       return;
     }
 
+    const payload = {
+      branchId,
+      type: 'EXPENSE',
+      amount: parsedAmount,
+      categoryId,
+      date: new Date(date).toISOString(),
+      beneficiary: beneficiary.trim() || undefined,
+      notes: notes.trim() || undefined,
+      receiptUrl: receiptUrl || undefined,
+      receiptPublicId: receiptPublicId || undefined,
+      paymentMethod: paymentMethod || undefined,
+    };
+
+    function resetForm() {
+      setAmount('');
+      setBeneficiary('');
+      setNotes('');
+      setPaymentMethod('');
+      setReceiptUrl('');
+      setReceiptPublicId('');
+    }
+
+    // Offline: queue the entry instead of failing outright — it syncs
+    // automatically once PwaRegister sees the connection come back.
+    if (!navigator.onLine) {
+      queueMutation({
+        url: '/api/transactions',
+        method: 'POST',
+        body: payload,
+        label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+      });
+      toast(
+        `Hors connexion — dépense de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée localement, synchronisation au retour du réseau.`,
+        'info',
+      );
+      resetForm();
+      return;
+    }
+
     setSubmitting(true);
     try {
       const createdTx = await api<{ transaction?: { id: string } }>('/api/transactions', {
         method: 'POST',
-        body: {
-          branchId,
-          type: 'EXPENSE',
-          amount: parsedAmount,
-          categoryId,
-          date: new Date(date).toISOString(),
-          beneficiary: beneficiary.trim() || undefined,
-          notes: notes.trim() || undefined,
-          receiptUrl: receiptUrl || undefined,
-          receiptPublicId: receiptPublicId || undefined,
-          paymentMethod: paymentMethod || undefined,
-        },
+        body: payload,
       });
 
       const matchedCat = categories.find((c) => c.id === categoryId);
@@ -199,19 +228,25 @@ export default function ExpensesPage() {
       setLastSavedExpense(savedTxInfo);
 
       toast(`Dépense de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée !`, 'success');
-      setAmount('');
-      setBeneficiary('');
-      setNotes('');
-      setPaymentMethod('');
-      setReceiptUrl('');
-      setReceiptPublicId('');
+      resetForm();
       await loadData();
       await refreshBranches();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || 'Erreur lors de l’enregistrement');
       } else {
-        setError('Erreur de communication avec le serveur.');
+        // Connection dropped mid-request — queue it rather than losing the entry.
+        queueMutation({
+          url: '/api/transactions',
+          method: 'POST',
+          body: payload,
+          label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+        });
+        toast(
+          `Connexion perdue — dépense enregistrée localement, synchronisation au retour du réseau.`,
+          'info',
+        );
+        resetForm();
       }
     } finally {
       setSubmitting(false);
@@ -301,7 +336,7 @@ export default function ExpensesPage() {
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-            Dépenses & Décaissements avec Justificatifs
+            Dépenses & Justificatifs
           </h1>
           <p className="text-xs text-stone-500 mt-1">
             Enregistrez chaque sortie d’argent avec son motif et attachez la photo du reçu pour une

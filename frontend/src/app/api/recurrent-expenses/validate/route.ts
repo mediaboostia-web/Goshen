@@ -7,7 +7,7 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 import { canAccessBranch } from '@/lib/server/church/branch-access';
 import {
   advanceByOnePeriod,
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     if (!access.isTreasurer && !access.isPastor) {
       return NextResponse.json(

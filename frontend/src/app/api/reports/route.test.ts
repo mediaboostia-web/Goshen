@@ -49,8 +49,7 @@ const CHURCH = {
   denomination: 'Assemblées de Dieu du Gabon',
   logoUrl: null,
   currency: 'XAF',
-  plan: 'ESSENTIAL',
-  planExpiresAt: null,
+  status: 'ACTIVE',
   ownerId: 'user-1',
 };
 

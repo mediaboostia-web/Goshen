@@ -15,12 +15,11 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { resolveChurchUser } from '@/lib/server/church/resolve-church';
+import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 import { canAccessBranch } from '@/lib/server/church/branch-access';
 import { generateInvoicePdf } from '@/lib/server/reports/invoice-pdf';
 import { uploadBuffer, StorageNotConfiguredError } from '@/lib/server/upload/cloudinary-client';
 import { log } from '@/lib/server/observability/log';
-import { planLimitsFor } from '@/lib/server/subscription/plan-limits';
 
 const InvoiceItem = z.object({
   no: z.string(),
@@ -62,6 +61,7 @@ export async function POST(
     if (!access) {
       return NextResponse.json({ error: 'CHURCH_NOT_FOUND' }, { status: 404 });
     }
+    if (access.church.status === 'SUSPENDED') return orgSuspendedResponse();
 
     const { id } = await ctx.params;
     const transaction = await prisma.financialTransaction.findFirst({
@@ -85,25 +85,6 @@ export async function POST(
         { error: 'VALIDATION_FAILED', details: parsed.error.issues },
         { status: 400 },
       );
-    }
-
-    const { maxInvoicesPerMonth } = planLimitsFor(access.church.plan);
-    if (Number.isFinite(maxInvoicesPerMonth)) {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      const invoiceCountThisMonth = await prisma.generatedInvoice.count({
-        where: { organizationId: access.church.id, createdAt: { gte: startOfMonth } },
-      });
-      if (invoiceCountThisMonth >= maxInvoicesPerMonth) {
-        return NextResponse.json(
-          {
-            error: 'PLAN_INVOICE_LIMIT',
-            message: `Le forfait gratuit est limité à ${maxInvoicesPerMonth} facture archivée par mois. Passez à un forfait supérieur pour en générer davantage.`,
-          },
-          { status: 403 },
-        );
-      }
     }
 
     let uploaded;

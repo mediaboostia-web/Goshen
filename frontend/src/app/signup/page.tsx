@@ -7,6 +7,7 @@ import { api, ApiError } from '@/lib/api';
 import { ChurchIcon, GoogleIcon, ShieldCheckIcon } from '@/components/icons/ChurchIcons';
 import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 import { ChurchIdentityFields } from '@/components/onboarding/ChurchIdentityFields';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -194,15 +195,13 @@ export default function SignupPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">Mot de passe</label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     required
                     minLength={8}
                     autoComplete="new-password"
                     placeholder="Min. 8 car."
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
+                    onChange={setPassword}
                   />
                 </div>
 
@@ -210,15 +209,13 @@ export default function SignupPage() {
                   <label className="block font-bold text-stone-700 mb-1">
                     Confirmer mot de passe
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     required
                     minLength={8}
                     autoComplete="new-password"
                     placeholder="Répétez"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
+                    onChange={setConfirmPassword}
                   />
                 </div>
               </div>

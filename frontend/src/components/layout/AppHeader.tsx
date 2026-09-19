@@ -79,23 +79,14 @@ export function AppHeader() {
               </div>
             </Link>
 
-            {/* Plan badge */}
+            {/* Support the platform */}
             {church && (
-              <span
-                className={`hidden rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-block ${
-                  church.plan === 'PREMIUM'
-                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                    : church.plan === 'ESSENTIAL'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                      : 'bg-stone-100 text-stone-700'
-                }`}
+              <Link
+                href="/soutenir"
+                className="hidden items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors sm:inline-flex"
               >
-                {church.plan === 'PREMIUM'
-                  ? 'Plan Premium'
-                  : church.plan === 'ESSENTIAL'
-                    ? 'Plan Essentiel'
-                    : 'Plan Gratuit'}
-              </span>
+                Soutenir <span aria-hidden="true">♥</span>
+              </Link>
             )}
           </div>
 
@@ -155,15 +146,23 @@ export function AppHeader() {
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-900 text-white font-bold text-xs shadow-xs ring-2 ring-emerald-700/40 hover:ring-emerald-600 transition-all focus:outline-hidden cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-emerald-900 text-white font-bold text-xs shadow-xs ring-2 ring-emerald-700/40 hover:ring-emerald-600 transition-all focus:outline-hidden cursor-pointer"
                 title="Menu du compte & Déconnexion"
                 aria-expanded={isProfileMenuOpen}
               >
-                {user?.name
-                  ? user.name.slice(0, 2).toUpperCase()
-                  : user?.email
-                    ? user.email.slice(0, 1).toUpperCase()
-                    : 'G'}
+                {church?.logoUrl ? (
+                  <img
+                    src={church.logoUrl}
+                    alt={church.name}
+                    className="h-full w-full object-contain"
+                  />
+                ) : user?.name ? (
+                  user.name.slice(0, 2).toUpperCase()
+                ) : user?.email ? (
+                  user.email.slice(0, 1).toUpperCase()
+                ) : (
+                  'G'
+                )}
               </button>
 
               {isProfileMenuOpen && (

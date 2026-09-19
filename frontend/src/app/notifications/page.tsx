@@ -101,7 +101,7 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Centre de Notifications
+              Notifications
             </h1>
             <p className="text-xs text-stone-500 mt-1">
               Alertes de solde bas, rappels d’échéances et activités de caisse.
