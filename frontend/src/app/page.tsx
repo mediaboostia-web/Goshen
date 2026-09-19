@@ -435,98 +435,47 @@ export default function HomePage() {
               </p>
             </Reveal>
 
-            {/* 4 Indicateurs clés valorisant l'application (utilisation hors-connexion, dîmes/offrandes, dépenses/factures, multi-annexes) */}
+            {/* 4 Indicateurs clés épurés avec séparateurs verticaux (style référence) */}
             <Reveal delayMs={350}>
-              <div className="mt-7 pt-5 border-t border-stone-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                {/* 1. Hors-ligne & Mobile */}
-                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100/80">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.75}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4.5 w-4.5"
-                    >
-                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                      <path d="M12 18h.01" />
-                      <path d="M10 6h4" />
-                    </svg>
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
-                        100% Hors-ligne
-                      </span>
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="mt-8 pt-7 border-t border-stone-200/80">
+                <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:divide-stone-200 text-center">
+                  {/* 1. Hors connexion & mobile */}
+                  <div className="px-2 sm:px-3">
+                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                      100%
                     </div>
-                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
-                      Mobile & sans connexion
-                    </h4>
-                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
-                      Saisie pendant le culte, synchronisation automatique dès le retour du réseau.
+                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                      hors connexion & mobile
                     </p>
                   </div>
-                </div>
 
-                {/* 2. Dîmes & Offrandes */}
-                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-100/80">
-                    <CoinsHandIcon className="h-4.5 w-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">
-                        Dîmes & Offrandes
-                      </span>
+                  {/* 2. Gratuit pour toute église */}
+                  <div className="px-2 sm:px-3">
+                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                      0 FCFA
                     </div>
-                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
-                      Clôture de culte en direct
-                    </h4>
-                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
-                      Répartition par panier ou fidèle, avec zéro trou ni écart de caisse.
+                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                      gratuit pour toute église
                     </p>
                   </div>
-                </div>
 
-                {/* 3. Dépenses récurrentes & Facturation */}
-                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100/80">
-                    <ReceiptTextIcon className="h-4.5 w-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">
-                        Facturation & Dépenses
-                      </span>
+                  {/* 3. Dîmes & clôture de culte */}
+                  <div className="px-2 sm:px-3">
+                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                      2 min
                     </div>
-                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
-                      Reçus & Charges fixes
-                    </h4>
-                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
-                      Photos des justificatifs, échéances récurrentes et bilans PDF prêts.
+                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                      dîmes & clôture de culte
                     </p>
                   </div>
-                </div>
 
-                {/* 4. Multi-annexes & Gratuit */}
-                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-800 border border-teal-100/80">
-                    <BuildingBranchIcon className="h-4.5 w-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-800">
-                        Toutes Églises • Gratuit
-                      </span>
+                  {/* 4. Facturation & bilans */}
+                  <div className="px-2 sm:px-3">
+                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                      1 clic
                     </div>
-                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
-                      Multi-annexes illimité
-                    </h4>
-                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
-                      Une paroisse ou un réseau mondial, sans carte bancaire ni abonnement.
+                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                      factures & bilans PDF
                     </p>
                   </div>
                 </div>
