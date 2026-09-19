@@ -16,6 +16,8 @@ import {
   ChevronDownIcon,
   AlertTriangleIcon,
   ReceiptTextIcon,
+  CoinsHandIcon,
+  BuildingBranchIcon,
 } from '@/components/icons/ChurchIcons';
 
 const WHATSAPP_COMMUNITY_URL =
@@ -431,6 +433,104 @@ export default function HomePage() {
                 <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
                 100% gratuit, aucune carte bancaire &bull; Prêt en moins de 2 minutes
               </p>
+            </Reveal>
+
+            {/* 4 Indicateurs clés valorisant l'application (utilisation hors-connexion, dîmes/offrandes, dépenses/factures, multi-annexes) */}
+            <Reveal delayMs={350}>
+              <div className="mt-7 pt-5 border-t border-stone-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                {/* 1. Hors-ligne & Mobile */}
+                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100/80">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4.5 w-4.5"
+                    >
+                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                      <path d="M12 18h.01" />
+                      <path d="M10 6h4" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
+                        100% Hors-ligne
+                      </span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
+                      Mobile & sans connexion
+                    </h4>
+                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
+                      Saisie pendant le culte, synchronisation automatique dès le retour du réseau.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Dîmes & Offrandes */}
+                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-100/80">
+                    <CoinsHandIcon className="h-4.5 w-4.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">
+                        Dîmes & Offrandes
+                      </span>
+                    </div>
+                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
+                      Clôture de culte en direct
+                    </h4>
+                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
+                      Répartition par panier ou fidèle, avec zéro trou ni écart de caisse.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Dépenses récurrentes & Facturation */}
+                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100/80">
+                    <ReceiptTextIcon className="h-4.5 w-4.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">
+                        Facturation & Dépenses
+                      </span>
+                    </div>
+                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
+                      Reçus & Charges fixes
+                    </h4>
+                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
+                      Photos des justificatifs, échéances récurrentes et bilans PDF prêts.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. Multi-annexes & Gratuit */}
+                <div className="group flex items-start gap-3 rounded-2xl border border-stone-200/90 bg-white/95 p-3.5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-800 border border-teal-100/80">
+                    <BuildingBranchIcon className="h-4.5 w-4.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-800">
+                        Toutes Églises • Gratuit
+                      </span>
+                    </div>
+                    <h4 className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug">
+                      Multi-annexes illimité
+                    </h4>
+                    <p className="mt-0.5 text-[11px] text-stone-500 leading-tight">
+                      Une paroisse ou un réseau mondial, sans carte bancaire ni abonnement.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </Reveal>
           </div>
 
