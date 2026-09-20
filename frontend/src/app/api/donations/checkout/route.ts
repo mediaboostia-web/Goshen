@@ -78,7 +78,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (access) organizationId = access.church.id;
     }
 
-    const origin = process.env.APP_URL || 'http://localhost:3000';
+    const rawOrigin =
+      req.headers.get('origin') ||
+      process.env.APP_URL ||
+      'http://127.0.0.1:3000';
+    // Maketou strictly validates redirectURL (rejects 'localhost' without TLD, accepts '127.0.0.1' and public domains)
+    const origin = rawOrigin.replace('://localhost', '://127.0.0.1').replace(/\/+$/, '');
     const nameParts = (donorName || 'Généreux').split(' ');
     const firstName = nameParts[0] || 'Généreux';
     const lastName = nameParts.slice(1).join(' ') || 'Donateur';
@@ -132,6 +137,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             message: 'Le montant minimum n’est pas atteint.',
           },
           { status: 422 },
+        );
+      }
+      if (err instanceof MaketouRequestError) {
+        log.warn('donation checkout failed (Maketou API error)', {
+          status: err.status,
+          code: err.code,
+          error: err.message,
+        });
+        return NextResponse.json(
+          {
+            error: err.code || 'CHECKOUT_FAILED',
+            message: err.message || 'Échec de création du don.',
+          },
+          { status: err.status >= 400 && err.status < 500 ? err.status : 502 },
         );
       }
       log.warn('donation checkout failed', {

@@ -77,16 +77,43 @@ export class MaketouRateLimitedError extends Error {
   }
 }
 
+function formatMaketouErrorMessage(errBody: Record<string, unknown>, statusText: string): string {
+  if (typeof errBody.message === 'string') {
+    return errBody.message;
+  }
+  if (Array.isArray(errBody.message)) {
+    return errBody.message
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && 'constraints' in item && item.constraints) {
+          return Object.values(item.constraints as Record<string, string>).join(', ');
+        }
+        return JSON.stringify(item);
+      })
+      .join(' ; ');
+  }
+  return (typeof errBody.error === 'string' && errBody.error) || statusText;
+}
+
 export class MaketouClient {
-  private apiUrl: string;
-  private apiKey: string;
+  private explicitApiKey?: string;
+  private explicitApiUrl?: string;
 
   constructor(apiKey?: string, apiUrl?: string) {
-    this.apiKey = apiKey || process.env.MAKETOU_API_KEY || '';
-    this.apiUrl = (apiUrl || process.env.MAKETOU_API_URL || 'https://api.maketou.net').replace(
-      /\/$/,
-      '',
-    );
+    this.explicitApiKey = apiKey;
+    this.explicitApiUrl = apiUrl;
+  }
+
+  private get apiKey(): string {
+    return this.explicitApiKey || process.env.MAKETOU_API_KEY || '';
+  }
+
+  private get apiUrl(): string {
+    return (
+      this.explicitApiUrl ||
+      process.env.MAKETOU_API_URL ||
+      'https://api.maketou.net'
+    ).replace(/\/+$/, '');
   }
 
   isConfigured(): boolean {
@@ -98,13 +125,19 @@ export class MaketouClient {
       throw new MaketouNotConfiguredError();
     }
 
+    // Maketou requires a valid FQDN or IP address — it strictly rejects 'localhost' (422 isUrl).
+    // In local development, normalize 'localhost' to '127.0.0.1' so Maketou accepts it.
+    const safeRedirectUrl = input.redirectUrl
+      ? input.redirectUrl.replace('://localhost', '://127.0.0.1')
+      : undefined;
+
     const payload = {
       productDocumentId: input.productDocumentId,
       email: input.email,
       ...(input.firstName ? { firstName: input.firstName } : {}),
       ...(input.lastName ? { lastName: input.lastName } : {}),
       ...(input.phone ? { phone: input.phone } : {}),
-      redirectURL: input.redirectUrl,
+      ...(safeRedirectUrl ? { redirectURL: safeRedirectUrl } : {}),
       ...(input.customerPrice !== undefined ? { customerPrice: input.customerPrice } : {}),
       ...(input.meta ? { meta: input.meta } : {}),
     };
@@ -121,9 +154,9 @@ export class MaketouClient {
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}) as Record<string, unknown>);
       const code = typeof errBody.code === 'string' ? errBody.code : undefined;
-      const message = typeof errBody.message === 'string' ? errBody.message : res.statusText;
+      const message = formatMaketouErrorMessage(errBody, res.statusText);
       throw new MaketouRequestError(
-        `Maketou createCart failed (${res.status}): ${message}`,
+        `Maketou: ${message}`,
         res.status,
         code,
       );
@@ -157,9 +190,9 @@ export class MaketouClient {
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}) as Record<string, unknown>);
       const code = typeof errBody.code === 'string' ? errBody.code : undefined;
-      const message = typeof errBody.message === 'string' ? errBody.message : res.statusText;
+      const message = formatMaketouErrorMessage(errBody, res.statusText);
       throw new MaketouRequestError(
-        `Maketou getCart failed (${res.status}): ${message}`,
+        `Maketou: ${message}`,
         res.status,
         code,
       );
