@@ -30,6 +30,10 @@ const config: NextConfig = {
   // into .next/standalone — required by the Docker runtime image (frontend/Dockerfile).
   // Has no impact on `next dev` / `next start` workflows.
   output: 'standalone',
+  // heic-convert is ESM-only and cannot be bundled by webpack/Turbopack.
+  // Mark it (and pdfkit which uses binary native deps) as server-external so
+  // Next.js loads them directly from node_modules at runtime instead.
+  serverExternalPackages: ['heic-convert', 'pdfkit'],
   async headers() {
     return [
       {
