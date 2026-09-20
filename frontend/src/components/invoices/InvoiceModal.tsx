@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
+import { getCurrencyLabel, getCurrencyShort } from '@/lib/utils';
 
 export interface InvoiceItemRow {
   id?: string;
@@ -37,6 +38,7 @@ export interface InvoiceData {
   signatoryName?: string;
   signatoryRole?: string;
   notes?: string;
+  currency?: string;
   phone?: string;
   email?: string;
 }
@@ -53,6 +55,9 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
   const [downloading, setDownloading] = useState(false);
 
   if (!isOpen || !data) return null;
+
+  const currency = getCurrencyLabel(data.currency);
+  const currencyShort = getCurrencyShort(data.currency);
 
   const handlePrint = () => {
     window.print();
@@ -323,7 +328,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-right font-bold text-stone-900 font-mono">
-                          {row.amount.toLocaleString('fr-FR')} F
+                          {row.amount.toLocaleString('fr-FR')} {currencyShort}
                         </td>
                       </tr>
                     );
@@ -382,7 +387,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                   <div className="rounded-lg bg-[#e11d48] px-5 py-3 text-white flex items-center justify-between shadow-xs">
                     <span className="font-bold text-xs uppercase tracking-wider">Total :</span>
                     <span className="font-mono tabular-nums font-black text-lg tracking-tight">
-                      {data.total.toLocaleString('fr-FR')} FCFA
+                      {data.total.toLocaleString('fr-FR')} {currency}
                     </span>
                   </div>
                 </div>

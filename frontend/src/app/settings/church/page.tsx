@@ -382,7 +382,15 @@ export default function ChurchSettingsPage() {
               </span>
             </div>
             <div>
-              <span className="text-stone-400 block">Devise par défaut</span>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-400 block">Devise par défaut</span>
+                <a
+                  href="/settings?tab=eglise"
+                  className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 underline"
+                >
+                  Modifier
+                </a>
+              </div>
               <span className="font-bold text-emerald-800 text-sm">
                 {church?.currency || 'FCFA'}
               </span>

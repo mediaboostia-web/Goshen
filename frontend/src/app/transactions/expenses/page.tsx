@@ -13,7 +13,7 @@ import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceMod
 import { DocumentReportIcon, CheckCircleIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods, getCurrencyLabel } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -37,6 +37,7 @@ interface ExpenseTransaction {
 export default function ExpensesPage() {
   const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const currency = getCurrencyLabel(church?.currency);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [expenses, setExpenses] = useState<ExpenseTransaction[]>([]);
@@ -155,7 +156,7 @@ export default function ExpensesPage() {
     const parsedAmount = Number.parseInt(amount.replace(/\D/g, ''), 10);
 
     if (!parsedAmount || parsedAmount <= 0) {
-      setError('Veuillez saisir un montant valide supérieur à 0 FCFA.');
+      setError(`Veuillez saisir un montant valide supérieur à 0 ${currency}.`);
       return;
     }
     if (!branchId) {
@@ -196,10 +197,10 @@ export default function ExpensesPage() {
         url: '/api/transactions',
         method: 'POST',
         body: payload,
-        label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+        label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
       });
       toast(
-        `Hors connexion — dépense de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée localement, synchronisation au retour du réseau.`,
+        `Hors connexion — dépense de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée localement, synchronisation au retour du réseau.`,
         'info',
       );
       resetForm();
@@ -227,7 +228,7 @@ export default function ExpensesPage() {
       };
       setLastSavedExpense(savedTxInfo);
 
-      toast(`Dépense de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée !`, 'success');
+      toast(`Dépense de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`, 'success');
       resetForm();
       await loadData();
       await refreshBranches();
@@ -240,7 +241,7 @@ export default function ExpensesPage() {
           url: '/api/transactions',
           method: 'POST',
           body: payload,
-          label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+          label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
         });
         toast(
           `Connexion perdue — dépense enregistrée localement, synchronisation au retour du réseau.`,
@@ -294,6 +295,7 @@ export default function ExpensesPage() {
         'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique. Décaissement validé par la Trésorerie Générale avec signature autorisée.',
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
+      currency: church?.currency,
     });
   };
 
@@ -353,7 +355,7 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} FCFA enregistrée avec
+                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} {currency} enregistrée avec
                   succès !
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
@@ -401,7 +403,7 @@ export default function ExpensesPage() {
                 <form onSubmit={handleAddExpense} className="space-y-4 text-xs">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Montant décaissé (en FCFA) *
+                      Montant décaissé (en {currency}) *
                     </label>
                     <div className="relative">
                       <input
@@ -415,7 +417,7 @@ export default function ExpensesPage() {
                         className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-mono font-bold text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
                       />
                       <span className="absolute inset-y-0 right-3 flex items-center font-bold text-stone-400">
-                        FCFA
+                        {currency}
                       </span>
                     </div>
                   </div>
@@ -552,7 +554,7 @@ export default function ExpensesPage() {
                 <p className="text-xs text-stone-500">
                   Total décaissé affiché :{' '}
                   <span className="font-mono tabular-nums font-bold text-stone-900">
-                    -{totalExpense.toLocaleString('fr-FR')} FCFA
+                    -{totalExpense.toLocaleString('fr-FR')} {currency}
                   </span>
                 </p>
               </div>
@@ -602,7 +604,7 @@ export default function ExpensesPage() {
                         </td>
                         <td className="py-3 text-stone-600 font-medium">{exp.branch.name}</td>
                         <td className="py-3 text-right font-mono tabular-nums font-bold text-stone-900">
-                          -{exp.amount.toLocaleString('fr-FR')} FCFA
+                          -{exp.amount.toLocaleString('fr-FR')} {currency}
                         </td>
                         <td className="py-3 text-center">
                           {exp.receiptUrl ? (

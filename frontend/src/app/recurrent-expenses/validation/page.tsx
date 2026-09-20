@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
+import { getCurrencyLabel } from '@/lib/utils';
 
 interface PendingExecution {
   id: string;
@@ -23,6 +24,7 @@ interface PendingExecution {
 export default function RecurrentValidationPage() {
   const { church, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const currency = getCurrencyLabel(church?.currency);
   const canManage = church ? church.isPastor || church.isTreasurer : true;
 
   const [executions, setExecutions] = useState<PendingExecution[]>([]);
@@ -66,7 +68,7 @@ export default function RecurrentValidationPage() {
       toast(
         `Dépense "${execution.recurringExpense.name}" de ${execution.amount.toLocaleString(
           'fr-FR',
-        )} FCFA validée et décaissée !`,
+        )} ${currency} validée et décaissée !`,
         'success',
       );
       await loadPending();
@@ -233,7 +235,7 @@ export default function RecurrentValidationPage() {
 
                     {isBalanceTight && (
                       <p className="text-[11px] font-semibold text-amber-700">
-                        ⚠️ Solde de l’annexe ({branchBalance.toLocaleString('fr-FR')} FCFA)
+                        ⚠️ Solde de l’annexe ({branchBalance.toLocaleString('fr-FR')} {currency})
                         inférieur au montant demandé.
                       </p>
                     )}
@@ -242,7 +244,7 @@ export default function RecurrentValidationPage() {
                   <div className="flex flex-col sm:items-end gap-3">
                     <div className="font-mono tabular-nums text-3xl font-bold text-emerald-950">
                       {exec.amount.toLocaleString('fr-FR')}{' '}
-                      <span className="text-sm font-sans font-normal text-stone-600">FCFA</span>
+                      <span className="text-sm font-sans font-normal text-stone-600">{currency}</span>
                     </div>
 
                     <div className="flex items-center gap-2">

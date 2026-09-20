@@ -14,7 +14,7 @@ const PAYMENT_METHOD_CODES = ['ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE'] as co
 const UpdateChurchBody = z.object({
   name: z.string().min(2, 'Le nom de l’église doit contenir au moins 2 caractères').optional(),
   denomination: z.string().optional(),
-  currency: z.enum(['FCFA', 'EUR', 'USD']).optional(),
+  currency: z.string().min(1, 'Devise invalide').max(10, 'Devise trop longue').optional(),
   paymentMethods: z.array(z.enum(PAYMENT_METHOD_CODES)).optional(),
   paymentDetails: z.string().max(500).optional(),
   email: z.string().email('Adresse email invalide').max(255).or(z.literal('')).optional(),
@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
     if (denomination !== undefined) data.denomination = denomination || null;
-    if (currency !== undefined) data.currency = currency;
+    if (currency !== undefined) data.currency = currency.toUpperCase().trim();
     if (paymentMethods !== undefined) data.paymentMethods = paymentMethods;
     if (paymentDetails !== undefined) data.paymentDetails = paymentDetails || null;
     if (email !== undefined) data.email = email || null;

@@ -8,13 +8,13 @@ import { GoshenLogo } from '@/components/icons/GoshenLogo';
 import { HeartHandIcon, ShieldCheckIcon, CheckCircleIcon } from '@/components/icons/ChurchIcons';
 
 const STATIC_DONATION_URL = 'https://church-book.mymaketou.shop/products/goshen-finances/checkout';
-const AMOUNT_PRESETS = [2000, 5000, 10000, 25000];
+const AMOUNT_PRESETS = [2000, 10000, 50000, 100000];
 
 export default function SoutenirPage() {
   const { user } = useAuth();
 
-  const [amount, setAmount] = useState<number>(5000);
-  const [customInput, setCustomInput] = useState<string>('5000');
+  const [amount, setAmount] = useState<number>(10000);
+  const [customInput, setCustomInput] = useState<string>('10000');
   const [donorName, setDonorName] = useState<string>('');
   const [donorEmail, setDonorEmail] = useState<string>(user?.email || '');
   const [loading, setLoading] = useState<boolean>(false);
@@ -104,15 +104,14 @@ export default function SoutenirPage() {
       <main className="relative z-10 mx-auto max-w-xl px-4 py-10 sm:py-14">
         {/* Header Hero Pitch */}
         <div className="text-center mb-8">
-          <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-1 text-xs font-bold text-emerald-800 shadow-2xs">
-            <HeartHandIcon className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Soutien libre de la plateforme</span>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 shadow-xs">
+            <HeartHandIcon className="h-7 w-7 text-rose-600" />
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-tight text-emerald-950">
             Soutenir Goshen Finance
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-stone-600 leading-relaxed max-w-md mx-auto">
-            Goshen est entièrement gratuit pour toutes les communautés. Votre don libre nous permet de maintenir les serveurs, le mode hors-ligne et de continuer à développer de nouveaux outils.
+            Goshen est 100% gratuit pour toutes les églises. Votre soutien libre permet de maintenir la plateforme en ligne, de l'améliorer continuellement et de créer des solutions innovantes adaptées aux communautés ecclésiastiques.
           </p>
         </div>
 
@@ -143,7 +142,7 @@ export default function SoutenirPage() {
                 </span>
               </div>
 
-              {/* 4 Presets: 2000, 5000, 10000, 25000 */}
+              {/* 4 Presets: 2000, 10000, 50000, 100000 */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {AMOUNT_PRESETS.map((preset) => {
                   const isSelected = amount === preset && customInput === preset.toString();
@@ -158,9 +157,9 @@ export default function SoutenirPage() {
                           : 'border-stone-200 bg-stone-50/50 hover:bg-stone-50 hover:border-stone-300 text-stone-800'
                       }`}
                     >
-                      {preset === 5000 && (
-                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-xs">
-                          Populaire
+                      {preset === 10000 && (
+                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-xs">
+                          Recommandé
                         </span>
                       )}
                       <span className="font-serif text-base sm:text-lg font-extrabold tracking-tight">

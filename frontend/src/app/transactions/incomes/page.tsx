@@ -12,7 +12,7 @@ import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceMod
 import { DocumentReportIcon, CheckCircleIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods, getCurrencyLabel } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -34,6 +34,7 @@ interface IncomeTransaction {
 export default function IncomesPage() {
   const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const currency = getCurrencyLabel(church?.currency);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [incomes, setIncomes] = useState<IncomeTransaction[]>([]);
@@ -106,7 +107,7 @@ export default function IncomesPage() {
     const parsedAmount = Number.parseInt(amount.replace(/\D/g, ''), 10);
 
     if (!parsedAmount || parsedAmount <= 0) {
-      setError('Veuillez saisir un montant valide supérieur à 0 FCFA.');
+      setError(`Veuillez saisir un montant valide supérieur à 0 ${currency}.`);
       return;
     }
     if (!branchId) {
@@ -135,10 +136,10 @@ export default function IncomesPage() {
         url: '/api/transactions',
         method: 'POST',
         body: payload,
-        label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+        label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
       });
       toast(
-        `Hors connexion — entrée de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée localement, synchronisation au retour du réseau.`,
+        `Hors connexion — entrée de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée localement, synchronisation au retour du réseau.`,
         'info',
       );
       setAmount('');
@@ -167,7 +168,7 @@ export default function IncomesPage() {
       };
       setLastSavedIncome(savedTxInfo);
 
-      toast(`Entrée de ${parsedAmount.toLocaleString('fr-FR')} FCFA enregistrée !`, 'success');
+      toast(`Entrée de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`, 'success');
       setAmount('');
       setNotes('');
       setPaymentMethod('');
@@ -182,7 +183,7 @@ export default function IncomesPage() {
           url: '/api/transactions',
           method: 'POST',
           body: payload,
-          label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} FCFA`,
+          label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
         });
         toast(
           `Connexion perdue — entrée enregistrée localement, synchronisation au retour du réseau.`,
@@ -234,6 +235,7 @@ export default function IncomesPage() {
       terms: 'Récépissé officiel de culte certifié conforme aux registres paroissiaux.',
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
+      currency: church?.currency,
     });
   };
 
@@ -262,7 +264,7 @@ export default function IncomesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} FCFA enregistrée avec
+                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} {currency} enregistrée avec
                   succès !
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
@@ -306,7 +308,7 @@ export default function IncomesPage() {
                 <form onSubmit={handleAddIncome} className="space-y-4 text-xs">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Montant collecté (en FCFA) *
+                      Montant collecté (en {currency}) *
                     </label>
                     <div className="relative">
                       <input
@@ -320,7 +322,7 @@ export default function IncomesPage() {
                         className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-mono font-bold text-emerald-950 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
                       />
                       <span className="absolute inset-y-0 right-3 flex items-center font-bold text-stone-400">
-                        FCFA
+                        {currency}
                       </span>
                     </div>
                   </div>
@@ -409,7 +411,7 @@ export default function IncomesPage() {
                 <p className="text-xs text-stone-500">
                   Total cumulé affiché :{' '}
                   <span className="font-mono tabular-nums font-bold text-emerald-800">
-                    +{totalIncome.toLocaleString('fr-FR')} FCFA
+                    +{totalIncome.toLocaleString('fr-FR')} {currency}
                   </span>
                 </p>
               </div>
@@ -454,7 +456,7 @@ export default function IncomesPage() {
                         </td>
                         <td className="py-3 text-stone-600 font-medium">{inc.branch.name}</td>
                         <td className="py-3 text-right font-mono tabular-nums font-bold text-emerald-800">
-                          +{inc.amount.toLocaleString('fr-FR')} FCFA
+                          +{inc.amount.toLocaleString('fr-FR')} {currency}
                         </td>
                         <td className="py-3 text-right text-stone-500 text-[11px]">
                           {inc.author.name || inc.author.email.split('@')[0]}

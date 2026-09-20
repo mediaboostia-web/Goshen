@@ -6,10 +6,12 @@ import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
+import { getCurrencyLabel } from '@/lib/utils';
 
 export default function BranchesPage() {
   const { church, branches, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const currency = getCurrencyLabel(church?.currency);
   const canManage = church ? church.isPastor : true;
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -108,7 +110,7 @@ export default function BranchesPage() {
 
               <div>
                 <label className="block font-bold text-stone-700 mb-1">
-                  Seuil d’alerte solde bas (en FCFA)
+                  Seuil d’alerte solde bas (en {currency})
                 </label>
                 <input
                   type="number"
@@ -190,14 +192,14 @@ export default function BranchesPage() {
                   <span className="text-[11px] text-stone-500">Solde actuel de caisse</span>
                   <p className="font-mono tabular-nums text-2xl font-bold text-emerald-950 mt-0.5">
                     {b.currentBalance.toLocaleString('fr-FR')}{' '}
-                    <span className="text-xs font-sans font-normal text-stone-600">FCFA</span>
+                    <span className="text-xs font-sans font-normal text-stone-600">{currency}</span>
                   </p>
                 </div>
 
                 <p className="mt-3 text-[11px] text-stone-500">
                   Seuil d’alerte :{' '}
                   <strong className="font-mono tabular-nums text-stone-700">
-                    {b.lowBalanceThreshold.toLocaleString('fr-FR')} FCFA
+                    {b.lowBalanceThreshold.toLocaleString('fr-FR')} {currency}
                   </strong>
                 </p>
               </div>

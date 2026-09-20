@@ -35,6 +35,7 @@ export interface InvoicePdfInput {
   signatoryRole?: string | undefined;
   phone?: string | undefined;
   email?: string | undefined;
+  currency?: string | null;
 }
 
 const ACCENT = '#e11d48';
@@ -44,8 +45,9 @@ const ACCENT = '#e11d48';
 // separator — it falls back to a visible glyph that looks like "/" (e.g.
 // "40 /000 F" instead of "40 000 F"). `formatPrice` normalizes that to a
 // plain ASCII space, which every PDF font supports.
-function formatAmount(n: number): string {
-  return formatPrice(n, 'FCFA');
+function formatAmount(n: number, currency = 'FCFA'): string {
+  const code = !currency || currency === 'XAF' || currency === 'XOF' ? 'FCFA' : currency;
+  return formatPrice(n, code);
 }
 
 // pdfkit only embeds JPEG/PNG — a WEBP logo (allowed at upload time for the
@@ -156,6 +158,9 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
       doc.moveDown();
 
       // ── Items table ─────────────────────────────────────────────────
+      const curLabel = !input.currency || input.currency === 'XAF' || input.currency === 'XOF' ? 'FCFA' : input.currency;
+      const curShort = curLabel === 'FCFA' ? 'F' : curLabel;
+
       const tableTop = doc.y;
       doc.rect(50, tableTop, 495, 22).fill(ACCENT);
       doc
@@ -188,7 +193,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
           .fontSize(9)
           .font('Helvetica-Bold')
           .fillColor('#0c0a09')
-          .text(formatPrice(row.amount, 'F'), 400, rowY + 6, {
+          .text(formatPrice(row.amount, curShort), 400, rowY + 6, {
             width: 135,
             align: 'right',
           });
@@ -243,7 +248,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .font('Helvetica-Bold')
         .text('TOTAL', 340, totalsY + 9)
         .fontSize(11)
-        .text(formatAmount(input.total), 330, totalsY + 8, { width: 195, align: 'right' });
+        .text(formatAmount(input.total, curLabel), 330, totalsY + 8, { width: 195, align: 'right' });
 
       doc
         .fontSize(8)

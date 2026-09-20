@@ -95,6 +95,7 @@ export async function POST(
         churchDenomination: access.church.denomination,
         churchAddress: transaction.branch.name,
         churchLogoUrl: access.church.logoUrl,
+        currency: access.church.currency,
       });
       // No .pdf suffix on the public_id: Cloudinary appends the detected
       // format extension to the delivery URL itself — adding one here

@@ -10,7 +10,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton';
-import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods, getCurrencyLabel, getCurrencyShort } from '@/lib/utils';
 import {
   ChurchIcon,
   CoinsHandIcon,
@@ -130,6 +130,9 @@ export default function DashboardPage() {
     loading: branchLoading,
     error: branchError,
   } = useBranch();
+
+  const currency = getCurrencyLabel(church?.currency);
+  const currencyShort = getCurrencyShort(church?.currency);
 
   // Real data states
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
@@ -359,6 +362,7 @@ export default function DashboardPage() {
         'Certifié conforme aux écritures du grand livre de la communauté. Pièce justificative officielle.',
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
+      currency: church?.currency,
     });
   };
 
@@ -678,7 +682,7 @@ export default function DashboardPage() {
                       {activeBalance.toLocaleString('fr-FR')}
                     </span>
                     <span className="text-xl sm:text-2xl font-bold text-amber-300 font-serif">
-                      FCFA
+                      {currency}
                     </span>
                   </div>
 
@@ -692,7 +696,7 @@ export default function DashboardPage() {
                       <ShieldCheckIcon className="h-3.5 w-3.5 text-amber-300" />
                       <span>Seuil de réserve :</span>
                       <span className="font-mono tabular-nums font-bold text-white">
-                        {activeThreshold.toLocaleString('fr-FR')} FCFA
+                        {activeThreshold.toLocaleString('fr-FR')} {currency}
                       </span>
                     </div>
                   </div>
@@ -707,7 +711,7 @@ export default function DashboardPage() {
                     </div>
                     <p className="mt-1 text-base sm:text-lg font-mono tabular-nums font-bold text-emerald-300">
                       +{activeIncomes.toLocaleString('fr-FR')}{' '}
-                      <span className="text-xs font-normal">F</span>
+                      <span className="text-xs font-normal">{currencyShort}</span>
                     </p>
                   </div>
                   <div>
@@ -717,7 +721,7 @@ export default function DashboardPage() {
                     </div>
                     <p className="mt-1 text-base sm:text-lg font-mono tabular-nums font-bold text-stone-200">
                       -{activeExpenses.toLocaleString('fr-FR')}{' '}
-                      <span className="text-xs font-normal">F</span>
+                      <span className="text-xs font-normal">{currencyShort}</span>
                     </p>
                   </div>
                 </div>
@@ -818,8 +822,8 @@ export default function DashboardPage() {
                     <p className="text-xs text-stone-500">Marge au-dessus du seuil</p>
                     <span className="font-mono tabular-nums text-lg font-bold text-emerald-950">
                       {reserveDiff > 0
-                        ? `+${reserveDiff.toLocaleString('fr-FR')} FCFA`
-                        : `${reserveDiff.toLocaleString('fr-FR')} FCFA`}
+                        ? `+${reserveDiff.toLocaleString('fr-FR')} ${currency}`
+                        : `${reserveDiff.toLocaleString('fr-FR')} ${currency}`}
                     </span>
                   </div>
 
@@ -834,12 +838,12 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-2 flex justify-between text-[11px] text-stone-400">
-                    <span>0 F</span>
+                    <span>0 {currencyShort}</span>
                     <span className="font-mono tabular-nums">
-                      Seuil : {activeThreshold.toLocaleString('fr-FR')} F
+                      Seuil : {activeThreshold.toLocaleString('fr-FR')} {currencyShort}
                     </span>
                     <span className="font-mono tabular-nums font-semibold text-emerald-800">
-                      {(activeThreshold * 2).toLocaleString('fr-FR')} F
+                      {(activeThreshold * 2).toLocaleString('fr-FR')} {currencyShort}
                     </span>
                   </div>
                 </div>
@@ -869,26 +873,26 @@ export default function DashboardPage() {
                   <p className="text-xs text-stone-500">Solde estimé au 30 du mois</p>
                   <p className="mt-1 font-mono tabular-nums text-3xl font-bold text-stone-900">
                     {netProjected.toLocaleString('fr-FR')}{' '}
-                    <span className="text-sm font-sans font-normal text-stone-500">FCFA</span>
+                    <span className="text-sm font-sans font-normal text-stone-500">{currency}</span>
                   </p>
 
                   <div className="mt-3 space-y-1.5 text-xs text-stone-600 border-t border-stone-100 pt-3">
                     <div className="flex justify-between">
                       <span>Solde en caisse :</span>
                       <span className="font-mono tabular-nums font-semibold text-stone-800">
-                        {activeBalance.toLocaleString('fr-FR')} F
+                        {activeBalance.toLocaleString('fr-FR')} {currencyShort}
                       </span>
                     </div>
                     <div className="flex justify-between text-amber-800">
                       <span>Charges récurrentes prévues :</span>
                       <span className="font-mono tabular-nums font-semibold">
-                        -{pendingTotalAmount.toLocaleString('fr-FR')} F
+                        -{pendingTotalAmount.toLocaleString('fr-FR')} {currencyShort}
                       </span>
                     </div>
                     <div className="flex justify-between font-bold text-emerald-900 pt-1 border-t border-dashed border-stone-200">
                       <span>Marge nette prévisionnelle :</span>
                       <span className="font-mono tabular-nums">
-                        {netProjected.toLocaleString('fr-FR')} F
+                        {netProjected.toLocaleString('fr-FR')} {currencyShort}
                       </span>
                     </div>
                   </div>
@@ -991,7 +995,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span className="text-xs font-mono tabular-nums font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200 self-start">
-                    Total : {activeIncomes.toLocaleString('fr-FR')} FCFA
+                    Total : {activeIncomes.toLocaleString('fr-FR')} {currency}
                   </span>
                 </div>
 
@@ -1011,7 +1015,7 @@ export default function DashboardPage() {
                           <div
                             key={idx}
                             style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
-                            title={`${item.category}: ${item.amount.toLocaleString('fr-FR')} FCFA (${item.percentage}%)`}
+                            title={`${item.category}: ${item.amount.toLocaleString('fr-FR')} ${currency} (${item.percentage}%)`}
                             className="h-full transition-all duration-500"
                           />
                         ))}
@@ -1274,7 +1278,7 @@ export default function DashboardPage() {
                             {tx.type === 'INCOME' ? '+' : '-'}
                             {tx.amount.toLocaleString('fr-FR')}{' '}
                             <span className="text-xs font-sans font-normal text-stone-500">
-                              FCFA
+                              {currency}
                             </span>
                           </p>
                         </div>
@@ -1426,7 +1430,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">
-                    Solde initial (FCFA)
+                    Solde initial ({currency})
                   </label>
                   <input
                     type="number"
@@ -1440,7 +1444,7 @@ export default function DashboardPage() {
 
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">
-                    Seuil de réserve (FCFA)
+                    Seuil de réserve ({currency})
                   </label>
                   <input
                     type="number"

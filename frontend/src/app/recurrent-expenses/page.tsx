@@ -9,6 +9,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { CheckCircleIcon, LightningBoltIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
+import { getCurrencyLabel } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -71,8 +72,9 @@ interface RecurrentModel {
 }
 
 export default function RecurrentExpensesPage() {
-  const { church, branches, currentBranch, isConsolidated } = useBranch();
+  const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const currency = getCurrencyLabel(church?.currency);
   const canManage = church ? church.isPastor || church.isTreasurer : true;
 
   const [models, setModels] = useState<RecurrentModel[]>([]);
@@ -137,7 +139,7 @@ export default function RecurrentExpensesPage() {
       return;
     }
     if (!parsedAmount || parsedAmount <= 0) {
-      setError('Veuillez saisir un montant supérieur à 0 FCFA.');
+      setError(`Veuillez saisir un montant supérieur à 0 ${currency}.`);
       return;
     }
     if (!branchId) {
@@ -231,7 +233,7 @@ export default function RecurrentExpensesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">
-                    Montant fixe (FCFA) *
+                    Montant fixe ({currency}) *
                   </label>
                   <input
                     type="number"
@@ -414,7 +416,7 @@ export default function RecurrentExpensesPage() {
                   <h3 className="mt-3 font-serif text-lg font-bold text-stone-900">{m.name}</h3>
                   <p className="font-mono tabular-nums text-2xl font-bold text-emerald-950 mt-1">
                     {m.amount.toLocaleString('fr-FR')}{' '}
-                    <span className="text-xs font-sans font-normal text-stone-500">FCFA</span>
+                    <span className="text-xs font-sans font-normal text-stone-500">{currency}</span>
                   </p>
                   <p className="mt-3 text-xs text-stone-500">
                     Catégorie :{' '}

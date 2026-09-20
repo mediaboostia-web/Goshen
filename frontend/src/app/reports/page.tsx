@@ -10,7 +10,7 @@ import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceMod
 import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { PAYMENT_METHOD_LABELS, formatPaymentMethods } from '@/lib/utils';
+import { PAYMENT_METHOD_LABELS, formatPaymentMethods, getCurrencyLabel } from '@/lib/utils';
 
 interface ReportPreview {
   openingBalance: number;
@@ -67,6 +67,7 @@ interface ArchivedReport {
 export default function ReportsPage() {
   const { church, branches, currentBranch } = useBranch();
   const { toast } = useToast();
+  const currency = getCurrencyLabel(church?.currency);
 
   const [periodType, setPeriodType] = useState<
     'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM'
@@ -231,6 +232,7 @@ export default function ReportsPage() {
       'Cette facture et récépissé comptable atteste la régularité des écritures inscrites dans les registres de l’église conformément aux normes comptables en vigueur.',
     ...(church?.phone ? { phone: church.phone } : {}),
     ...(church?.email ? { email: church.email } : {}),
+    currency: church?.currency,
   };
 
   function buildTransactionInvoiceData(tx: ReportPreview['transactions'][number]): InvoiceData {
@@ -264,6 +266,7 @@ export default function ReportsPage() {
       terms: 'Récépissé officiel certifié conforme aux registres paroissiaux de l’église.',
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
+      currency: church?.currency,
     };
   }
 
@@ -448,7 +451,7 @@ export default function ReportsPage() {
                       }`}
                     >
                       {tx.type === 'INCOME' ? '+' : '-'}
-                      {tx.amount.toLocaleString('fr-FR')} FCFA
+                      {tx.amount.toLocaleString('fr-FR')} {currency}
                     </span>
                     <button
                       type="button"
@@ -544,13 +547,13 @@ export default function ReportsPage() {
               <div>
                 <span className="text-[11px] text-stone-500 font-medium">Solde d’ouverture</span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-stone-900 mt-1">
-                  {preview.openingBalance.toLocaleString('fr-FR')} FCFA
+                  {preview.openingBalance.toLocaleString('fr-FR')} {currency}
                 </p>
               </div>
               <div>
                 <span className="text-[11px] text-emerald-700 font-medium">+ Total Entrées</span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-emerald-800 mt-1">
-                  +{preview.totalIncome.toLocaleString('fr-FR')} FCFA
+                  +{preview.totalIncome.toLocaleString('fr-FR')} {currency}
                 </p>
               </div>
               <div>
@@ -558,13 +561,13 @@ export default function ReportsPage() {
                   - Total Décaissements
                 </span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-stone-800 mt-1">
-                  -{preview.totalExpense.toLocaleString('fr-FR')} FCFA
+                  -{preview.totalExpense.toLocaleString('fr-FR')} {currency}
                 </p>
               </div>
               <div>
                 <span className="text-[11px] text-emerald-950 font-bold">= Solde de clôture</span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-emerald-950 mt-1">
-                  {preview.closingBalance.toLocaleString('fr-FR')} FCFA
+                  {preview.closingBalance.toLocaleString('fr-FR')} {currency}
                 </p>
               </div>
             </div>
@@ -576,7 +579,7 @@ export default function ReportsPage() {
                 <h3 className="font-serif text-sm font-bold text-emerald-950 pb-2 border-b border-emerald-200 uppercase tracking-wider flex justify-between">
                   <span>Détail des Entrées</span>
                   <span className="font-mono tabular-nums text-emerald-800">
-                    +{preview.totalIncome.toLocaleString('fr-FR')} FCFA
+                    +{preview.totalIncome.toLocaleString('fr-FR')} {currency}
                   </span>
                 </h3>
                 <div className="mt-3 space-y-2">
@@ -590,7 +593,7 @@ export default function ReportsPage() {
                       >
                         <span className="text-stone-700 font-medium">{catName}</span>
                         <span className="font-mono tabular-nums font-bold text-stone-900">
-                          {sum.toLocaleString('fr-FR')} FCFA
+                          {sum.toLocaleString('fr-FR')} {currency}
                         </span>
                       </div>
                     ))
@@ -603,7 +606,7 @@ export default function ReportsPage() {
                 <h3 className="font-serif text-sm font-bold text-stone-900 pb-2 border-b border-stone-200 uppercase tracking-wider flex justify-between">
                   <span>Détail des Décaissements</span>
                   <span className="font-mono tabular-nums text-stone-800">
-                    -{preview.totalExpense.toLocaleString('fr-FR')} FCFA
+                    -{preview.totalExpense.toLocaleString('fr-FR')} {currency}
                   </span>
                 </h3>
                 <div className="mt-3 space-y-2">
@@ -617,7 +620,7 @@ export default function ReportsPage() {
                       >
                         <span className="text-stone-700 font-medium">{catName}</span>
                         <span className="font-mono tabular-nums font-bold text-stone-900">
-                          {sum.toLocaleString('fr-FR')} FCFA
+                          {sum.toLocaleString('fr-FR')} {currency}
                         </span>
                       </div>
                     ))
@@ -666,7 +669,7 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-mono tabular-nums font-bold text-emerald-800">
-                      Solde : {rep.closingBalance.toLocaleString('fr-FR')} FCFA
+                      Solde : {rep.closingBalance.toLocaleString('fr-FR')} {currency}
                     </span>
                     {rep.pdfUrl ? (
                       <a

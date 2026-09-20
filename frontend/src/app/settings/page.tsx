@@ -83,16 +83,23 @@ function SettingsContent() {
   const [savingNotifPref, setSavingNotifPref] = useState<string | null>(null);
 
   // Tab: Église
+  const normalizeCurrency = (c?: string | null) => {
+    if (!c) return 'FCFA';
+    const upper = c.toUpperCase().trim();
+    if (upper === 'XAF' || upper === 'XOF') return 'FCFA';
+    return upper;
+  };
+
   const [churchName, setChurchName] = useState(church?.name || '');
   const [denomination, setDenomination] = useState(church?.denomination || '');
-  const [currency, setCurrency] = useState(church?.currency || 'FCFA');
+  const [currency, setCurrency] = useState(() => normalizeCurrency(church?.currency));
   const [savingChurch, setSavingChurch] = useState(false);
 
   useEffect(() => {
     if (church) {
       setChurchName(church.name);
       setDenomination(church.denomination || '');
-      setCurrency(church.currency || 'FCFA');
+      setCurrency(normalizeCurrency(church.currency));
     }
   }, [church]);
 
@@ -257,7 +264,7 @@ function SettingsContent() {
         method: 'PATCH',
         body: { name: churchName.trim(), denomination: denomination.trim() || undefined, currency },
       });
-      toast('Informations de la communauté enregistrées.', 'success');
+      toast('Informations et devise de la communauté enregistrées avec succès !', 'success');
       await refreshBranches();
     } catch (err) {
       toast(err instanceof ApiError ? err.message : 'Erreur lors de la sauvegarde.', 'error');
@@ -935,14 +942,18 @@ function SettingsContent() {
                         value={currency}
                         onChange={setCurrency}
                         options={[
-                          { value: 'FCFA', label: 'FCFA (Franc CFA)' },
-                          { value: 'EUR', label: 'EUR (€ Euro)' },
-                          { value: 'USD', label: 'USD ($ Dollar américain)' },
+                          { value: 'FCFA', label: 'FCFA — Franc CFA (Afrique Centrale & Ouest)' },
+                          { value: 'EUR', label: 'EUR (€) — Euro (France, Europe)' },
+                          { value: 'USD', label: 'USD ($) — Dollar américain (International)' },
+                          { value: 'CAD', label: 'CAD ($) — Dollar canadien' },
+                          { value: 'GBP', label: 'GBP (£) — Livre sterling' },
+                          { value: 'CDF', label: 'CDF — Franc congolais (RDC)' },
+                          { value: 'GNF', label: 'GNF — Franc guinéen' },
+                          { value: 'MGA', label: 'MGA (Ar) — Ariary malgache' },
                         ]}
                       />
                       <p className="mt-1 text-[11px] text-stone-400">
-                        Le seuil d’alerte de trésorerie se règle par annexe dans « Gérer les annexes
-                        ».
+                        Cette devise s’applique sur tout le tableau de bord, les entrées, sorties et rapports.
                       </p>
                     </div>
 

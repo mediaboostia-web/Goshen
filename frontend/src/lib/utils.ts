@@ -11,8 +11,38 @@ export function formatPrice(amount: number, currency: string = ''): string {
   // Some locales (e.g. fr-FR) emit non-breaking spaces (U+00A0) as the
   // grouping separator; normalise any whitespace to a regular space for
   // predictable output.
-  const formatted = amount.toLocaleString('fr-FR').replace(/\s/g, ' ');
+  const formatted = Math.round(amount).toLocaleString('fr-FR').replace(/\s/g, ' ');
   return currency ? `${formatted} ${currency}` : formatted;
+}
+
+/**
+ * Returns a clean, normalized display label for a currency code.
+ * E.g., 'XAF' or 'XOF' -> 'FCFA', 'EUR' -> 'EUR', 'USD' -> 'USD'.
+ */
+export function getCurrencyLabel(currency?: string | null): string {
+  if (!currency) return 'FCFA';
+  const c = currency.toUpperCase().trim();
+  if (c === 'XAF' || c === 'XOF') return 'FCFA';
+  return c;
+}
+
+/**
+ * Returns a short suffix or symbol for currency in compact table cells or cards.
+ * 'FCFA' -> 'F', 'USD' -> '$', 'EUR' -> '€', etc.
+ */
+export function getCurrencyShort(currency?: string | null): string {
+  const c = getCurrencyLabel(currency);
+  if (c === 'FCFA') return 'F';
+  if (c === 'EUR') return '€';
+  if (c === 'USD') return '$';
+  if (c === 'GBP') return '£';
+  return c;
+}
+
+/** Format an integer or float amount with proper thousands separator and church currency. */
+export function formatCurrency(amount: number, currency?: string | null): string {
+  const code = getCurrencyLabel(currency);
+  return formatPrice(amount, code);
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
