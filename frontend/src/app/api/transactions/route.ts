@@ -11,11 +11,12 @@ import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/res
 import { allowedBranchIds, canAccessBranch } from '@/lib/server/church/branch-access';
 import { createNotification } from '@/lib/server/notifications';
 import { log } from '@/lib/server/observability/log';
+import { getCurrencyLabel } from '@/lib/utils';
 
 const CreateTransactionBody = z.object({
   branchId: z.string().min(1, 'Annexe requise'),
   type: z.enum(['INCOME', 'EXPENSE']),
-  amount: z.number().int().positive('Le montant doit être supérieur à 0 FCFA'),
+  amount: z.number().int().positive('Le montant doit être supérieur à 0'),
   categoryId: z.string().min(1, 'Catégorie requise'),
   date: z.string().optional(),
   beneficiary: z.string().optional(),
@@ -204,30 +205,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ]);
 
     // PRD F23 — low-balance alert: notify the Pastor + Treasurer(s) once per
-    // branch per day while the balance stays under the configured threshold.
+    // branch per day while the balance stays under or approaches the configured threshold.
     // Best-effort: a notification failure must never fail the transaction
     // that already committed above.
-    if (updatedBranch.currentBalance < updatedBranch.lowBalanceThreshold) {
+    const churchCurrency = getCurrencyLabel(access.church.currency);
+    const balance = updatedBranch.currentBalance;
+    const threshold = updatedBranch.lowBalanceThreshold;
+    const isUnderThreshold = balance <= threshold;
+    const isApproachingThreshold = balance > threshold && balance <= threshold * 1.15;
+
+    if (isUnderThreshold || isApproachingThreshold) {
       try {
         const recipients = await prisma.organizationMember.findMany({
           where: { organizationId: access.church.id, role: { in: ['PASTOR', 'TREASURER'] } },
           select: { userId: true },
         });
         const dayKey = new Date().toISOString().slice(0, 10);
+        const title = isUnderThreshold ? 'Alerte Solde Minimum' : 'Alerte Préventive Trésorerie';
+        const bodyText = isUnderThreshold
+          ? `Le solde de la caisse « ${updatedBranch.name} » est descendu à ${balance.toLocaleString('fr-FR')} ${churchCurrency}, sous le seuil d’alerte configuré de ${threshold.toLocaleString('fr-FR')} ${churchCurrency}.`
+          : `Le solde de la caisse « ${updatedBranch.name} » (${balance.toLocaleString('fr-FR')} ${churchCurrency}) approche du seuil de sécurité configuré (${threshold.toLocaleString('fr-FR')} ${churchCurrency}). Pensez à anticiper les prochains décaissements.`;
+
         await Promise.all(
           recipients.map((r) =>
             createNotification(prisma, {
               userId: r.userId,
               type: 'low_balance',
-              title: 'Solde bas',
-              body: `Le solde de ${updatedBranch.name} est descendu à ${updatedBranch.currentBalance.toLocaleString('fr-FR')} FCFA, sous le seuil d’alerte de ${updatedBranch.lowBalanceThreshold.toLocaleString('fr-FR')} FCFA.`,
-              data: { branchId: updatedBranch.id, balance: updatedBranch.currentBalance },
-              // Must be unique per recipient, not just per branch/day — the
-              // dedupeKey column has a global @unique constraint, so without
-              // r.userId here the second recipient's insert collides with
-              // the first's and is silently dropped as "already sent",
-              // leaving only one of the Pastor/Treasurer actually notified.
-              dedupeKey: `low-balance:${updatedBranch.id}:${dayKey}:${r.userId}`,
+              title,
+              body: bodyText,
+              data: {
+                branchId: updatedBranch.id,
+                balance: updatedBranch.currentBalance,
+                threshold: updatedBranch.lowBalanceThreshold,
+              },
+              dedupeKey: `low-balance:${updatedBranch.id}:${dayKey}:${isUnderThreshold ? 'under' : 'near'}:${r.userId}`,
             }),
           ),
         );

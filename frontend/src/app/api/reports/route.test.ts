@@ -115,7 +115,7 @@ const SAMPLE_TX = [
     type: 'EXPENSE',
     amount: 30_000,
     date: new Date('2026-06-08T10:00:00Z'),
-    beneficiary: 'SEEG',
+    beneficiary: 'Compagnie Électrique',
     notes: 'Facture électricité',
     category: { name: 'Factures' },
     branch: { name: 'Siège Principal' },

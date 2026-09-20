@@ -13,6 +13,9 @@ import {
   RECURRING_FREQUENCIES,
   computeInitialDueDate,
 } from '@/lib/server/recurring-expenses/schedule';
+import { createNotification } from '@/lib/server/notifications';
+import { getCurrencyLabel } from '@/lib/utils';
+import { log } from '@/lib/server/observability/log';
 
 const CreateRecurrentExpenseBody = z.object({
   branchId: z.string().min(1, 'Annexe requise'),
@@ -182,6 +185,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
       { timeout: 15000 },
     );
+
+    const churchCurrency = getCurrencyLabel(access.church.currency);
+    try {
+      const recipients = await prisma.organizationMember.findMany({
+        where: { organizationId: access.church.id, role: { in: ['PASTOR', 'TREASURER'] } },
+        select: { userId: true },
+      });
+      await Promise.all(
+        recipients.map((r) =>
+          createNotification(prisma, {
+            userId: r.userId,
+            type: 'recurrent_expense_pending',
+            title: 'Charge fixe à valider',
+            body: `Une charge fixe pour « ${model.name} » (${model.amount.toLocaleString('fr-FR')} ${churchCurrency}) est planifiée et requiert votre validation pour décaissement.`,
+            data: {
+              recurringExpenseId: model.id,
+              branchId: model.branchId,
+              amount: model.amount,
+            },
+            dedupeKey: `rec-expense-created:${model.id}:${r.userId}`,
+          }),
+        ),
+      );
+    } catch (err) {
+      log.warn('recurrent-expense creation notification failed', {
+        recurringExpenseId: model.id,
+        error: String(err),
+      });
+    }
 
     return NextResponse.json({ model }, { status: 201 });
   });

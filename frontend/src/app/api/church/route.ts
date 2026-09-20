@@ -9,6 +9,8 @@ import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 
+import { convertCurrencyAmount, normalizeCurrencyCode } from '@/lib/currency-rates';
+
 const PAYMENT_METHOD_CODES = ['ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE'] as const;
 
 const UpdateChurchBody = z.object({
@@ -68,6 +70,72 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (email !== undefined) data.email = email || null;
     if (phone !== undefined) data.phone = phone || null;
     if (logoUrl !== undefined) data.logoUrl = logoUrl || null;
+
+    const targetCurrency = currency !== undefined ? currency.toUpperCase().trim() : undefined;
+    const oldCurrency = access.church.currency
+      ? access.church.currency.toUpperCase().trim()
+      : 'XAF';
+    const isCurrencyChanging =
+      targetCurrency !== undefined &&
+      normalizeCurrencyCode(targetCurrency) !== normalizeCurrencyCode(oldCurrency);
+
+    if (isCurrencyChanging) {
+      const branches = await prisma.branch.findMany({
+        where: { organizationId: access.church.id },
+      });
+      const transactions = await prisma.financialTransaction.findMany({
+        where: { organizationId: access.church.id },
+      });
+      const recurring = await prisma.recurringExpense.findMany({
+        where: { organizationId: access.church.id },
+        include: { executions: true },
+      });
+
+      const church = await prisma.$transaction(async (tx) => {
+        for (const b of branches) {
+          const newBal = convertCurrencyAmount(b.currentBalance, oldCurrency, targetCurrency);
+          const newThresh = convertCurrencyAmount(
+            b.lowBalanceThreshold,
+            oldCurrency,
+            targetCurrency,
+          );
+          await tx.branch.update({
+            where: { id: b.id },
+            data: { currentBalance: newBal, lowBalanceThreshold: newThresh },
+          });
+        }
+
+        for (const t of transactions) {
+          const newAmt = convertCurrencyAmount(t.amount, oldCurrency, targetCurrency);
+          await tx.financialTransaction.update({
+            where: { id: t.id },
+            data: { amount: newAmt },
+          });
+        }
+
+        for (const r of recurring) {
+          const newAmt = convertCurrencyAmount(r.amount, oldCurrency, targetCurrency);
+          await tx.recurringExpense.update({
+            where: { id: r.id },
+            data: { amount: newAmt },
+          });
+          for (const exec of r.executions) {
+            const newExecAmt = convertCurrencyAmount(exec.amount, oldCurrency, targetCurrency);
+            await tx.recurringExpenseExecution.update({
+              where: { id: exec.id },
+              data: { amount: newExecAmt },
+            });
+          }
+        }
+
+        return tx.organization.update({
+          where: { id: access.church.id },
+          data,
+        });
+      });
+
+      return NextResponse.json({ church, converted: true, previousCurrency: oldCurrency });
+    }
 
     const church = await prisma.organization.update({
       where: { id: access.church.id },

@@ -10,7 +10,12 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { InvoiceModal, type InvoiceData } from '@/components/invoices/InvoiceModal';
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton';
-import { PAYMENT_METHOD_LABELS, formatPaymentMethods, getCurrencyLabel, getCurrencyShort } from '@/lib/utils';
+import {
+  PAYMENT_METHOD_LABELS,
+  formatPaymentMethods,
+  getCurrencyLabel,
+  getCurrencyShort,
+} from '@/lib/utils';
 import {
   ChurchIcon,
   CoinsHandIcon,
@@ -117,8 +122,11 @@ function DashboardSkeleton() {
   );
 }
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
 export default function DashboardPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const {
     church,
@@ -388,7 +396,7 @@ export default function DashboardPage() {
         {
           no: '02',
           description: 'Décaissements autorisés & Charges courantes',
-          subDescription: 'Factures SEEG, loyers de sanctuaire et charges acquittées',
+          subDescription: 'Factures d’électricité, loyers de sanctuaire et charges acquittées',
           amount: activeExpenses,
         },
       ],
@@ -673,7 +681,9 @@ export default function DashboardPage() {
               <div className="py-6 sm:py-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-semibold text-emerald-200 tracking-wider uppercase">
-                    <span>Solde Net de Trésorerie Disponible</span>
+                    <span>
+                      {t('dashboard.available_balance', 'Solde Net de Trésorerie Disponible')}
+                    </span>
                     <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   </div>
 
@@ -707,7 +717,7 @@ export default function DashboardPage() {
                   <div className="border-r border-emerald-800/80 pr-5">
                     <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-200/90">
                       <TrendingUpIcon className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>Entrées du mois</span>
+                      <span>{t('dashboard.incomes_this_month', 'Entrées du mois')}</span>
                     </div>
                     <p className="mt-1 text-base sm:text-lg font-mono tabular-nums font-bold text-emerald-300">
                       +{activeIncomes.toLocaleString('fr-FR')}{' '}
@@ -717,7 +727,7 @@ export default function DashboardPage() {
                   <div>
                     <div className="flex items-center gap-1.5 text-[11px] font-medium text-stone-300">
                       <TrendingDownIcon className="h-3.5 w-3.5 text-amber-400" />
-                      <span>Dépenses du mois</span>
+                      <span>{t('dashboard.expenses_this_month', 'Dépenses du mois')}</span>
                     </div>
                     <p className="mt-1 text-base sm:text-lg font-mono tabular-nums font-bold text-stone-200">
                       -{activeExpenses.toLocaleString('fr-FR')}{' '}
@@ -738,7 +748,9 @@ export default function DashboardPage() {
                     <CoinsHandIcon className="h-5 w-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-white">+ Saisie Culte</p>
+                    <p className="text-xs font-bold text-white">
+                      + {t('dashboard.action.new_income', 'Saisie Culte')}
+                    </p>
                     <p className="text-[10px] text-emerald-50/90">Dîmes & Offrandes</p>
                   </div>
                 </Link>
@@ -752,7 +764,9 @@ export default function DashboardPage() {
                     <ReceiptTextIcon className="h-5 w-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-white">- Décaissement</p>
+                    <p className="text-xs font-bold text-white">
+                      - {t('dashboard.action.new_expense', 'Décaissement')}
+                    </p>
                     <p className="text-[10px] text-rose-50/90">Dépense avec Reçu</p>
                   </div>
                 </Link>
@@ -767,14 +781,16 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-left">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-bold text-white">Charges Fixes</p>
+                      <p className="text-xs font-bold text-white">
+                        {t('dashboard.action.recurrent', 'Charges Fixes')}
+                      </p>
                       {activePendingRecurrents.length > 0 && (
                         <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-indigo-700 shadow-xs">
                           {activePendingRecurrents.length}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-blue-50/90">Loyer, SEEG, Factures</p>
+                    <p className="text-[10px] text-blue-50/90">Loyer, Électricité, Eau</p>
                   </div>
                 </Link>
 
@@ -787,7 +803,9 @@ export default function DashboardPage() {
                     <DocumentReportIcon className="h-5 w-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-white">Rapport A4</p>
+                    <p className="text-xs font-bold text-white">
+                      {t('dashboard.action.report_a4', 'Rapport A4')}
+                    </p>
                     <p className="text-[10px] text-slate-50/80">Homologué Culte</p>
                   </div>
                 </Link>
@@ -1085,7 +1103,7 @@ export default function DashboardPage() {
                         Charges Fixes à Valider
                       </h3>
                       <p className="text-xs text-stone-500">
-                        Loyer du temple, factures SEEG et charges
+                        Loyer du temple, factures d’énergie et charges
                       </p>
                     </div>
                     <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-800 border border-red-200">

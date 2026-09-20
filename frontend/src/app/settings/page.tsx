@@ -260,11 +260,22 @@ function SettingsContent() {
     e.preventDefault();
     setSavingChurch(true);
     try {
-      await api('/api/church', {
+      const res = await api<{
+        church: Record<string, unknown>;
+        converted?: boolean;
+        previousCurrency?: string;
+      }>('/api/church', {
         method: 'PATCH',
         body: { name: churchName.trim(), denomination: denomination.trim() || undefined, currency },
       });
-      toast('Informations et devise de la communauté enregistrées avec succès !', 'success');
+      if (res?.converted) {
+        toast(
+          `Conversion monétaire effectuée avec succès (${res.previousCurrency} ➔ ${currency}) ! Les soldes et montants ont été recalculés.`,
+          'success',
+        );
+      } else {
+        toast('Informations et devise de la communauté enregistrées avec succès !', 'success');
+      }
       await refreshBranches();
     } catch (err) {
       toast(err instanceof ApiError ? err.message : 'Erreur lors de la sauvegarde.', 'error');
@@ -953,7 +964,8 @@ function SettingsContent() {
                         ]}
                       />
                       <p className="mt-1 text-[11px] text-stone-400">
-                        Cette devise s’applique sur tout le tableau de bord, les entrées, sorties et rapports.
+                        Cette devise s’applique sur tout le tableau de bord, les entrées, sorties et
+                        rapports.
                       </p>
                     </div>
 

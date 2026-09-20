@@ -31,7 +31,7 @@ const INITIAL_CATEGORIES: DefaultCategory[] = [
   { id: 'cat_missions', name: 'Offrandes de missions & évangélisation', type: 'INCOME' },
   { id: 'cat_aumone', name: 'Aumône & entraide sociale', type: 'INCOME' },
   { id: 'cat_fournitures', name: 'Frais de culte & fournitures', type: 'EXPENSE' },
-  { id: 'cat_seeg', name: 'Factures SEEG & électricité', type: 'EXPENSE' },
+  { id: 'cat_electricite', name: 'Factures électricité, eau & énergie', type: 'EXPENSE' },
   { id: 'cat_loyer', name: 'Loyer & entretien du bâtiment', type: 'EXPENSE' },
   { id: 'cat_pastoral', name: 'Soutien pastoral & ministères', type: 'EXPENSE' },
   { id: 'cat_evenements', name: 'Conférences & événements spéciaux', type: 'EXPENSE' },

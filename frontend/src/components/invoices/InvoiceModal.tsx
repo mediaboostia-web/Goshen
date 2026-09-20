@@ -7,10 +7,10 @@ import { useToast } from '@/contexts/ToastContext';
 import { getCurrencyLabel, getCurrencyShort } from '@/lib/utils';
 
 export interface InvoiceItemRow {
-  id?: string;
+  id?: string | undefined;
   no: string;
   description: string;
-  subDescription?: string;
+  subDescription?: string | undefined;
   amount: number;
 }
 
@@ -19,28 +19,28 @@ export interface InvoiceData {
    *  the modal shows an "Archiver" button that persists a real PDF via
    *  POST /api/transactions/[id]/invoice. Absent for aggregate/period
    *  invoices (e.g. reports/page.tsx) which have no single transaction. */
-  transactionId?: string;
+  transactionId?: string | undefined;
   invoiceNumber: string;
   date: string;
-  dueDate?: string;
+  dueDate?: string | undefined;
   churchName: string;
-  churchDenomination?: string;
-  churchAddress?: string;
-  churchLogoUrl?: string | null;
+  churchDenomination?: string | undefined;
+  churchAddress?: string | undefined;
+  churchLogoUrl?: string | null | undefined;
   recipientName: string;
-  recipientAddress?: string;
-  recipientContact?: string;
+  recipientAddress?: string | undefined;
+  recipientContact?: string | undefined;
   items: InvoiceItemRow[];
   total: number;
   paymentMethod: string;
-  paymentDetails?: string;
-  terms?: string;
-  signatoryName?: string;
-  signatoryRole?: string;
-  notes?: string;
-  currency?: string;
-  phone?: string;
-  email?: string;
+  paymentDetails?: string | undefined;
+  terms?: string | undefined;
+  signatoryName?: string | undefined;
+  signatoryRole?: string | undefined;
+  notes?: string | undefined;
+  currency?: string | undefined;
+  phone?: string | undefined;
+  email?: string | undefined;
 }
 
 interface InvoiceModalProps {

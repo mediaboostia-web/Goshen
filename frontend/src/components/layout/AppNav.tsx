@@ -10,6 +10,7 @@ import {
   LightningBoltIcon,
   DocumentReportIcon,
 } from '@/components/icons/ChurchIcons';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NavItem {
   label: string;
@@ -17,19 +18,23 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Exactly 5 core navigation tabs (Settings is accessed via user profile avatar)
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Tableau de bord', href: '/dashboard', icon: WalletIcon },
-  { label: 'Entrées', href: '/transactions/incomes', icon: CoinsHandIcon },
-  { label: 'Dépenses', href: '/transactions/expenses', icon: ReceiptTextIcon },
-  { label: 'Charges fixes', href: '/recurrent-expenses', icon: LightningBoltIcon },
-  { label: 'Rapports PDF', href: '/reports', icon: DocumentReportIcon },
-];
-
 export function AppNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  const navItems: NavItem[] = [
+    { label: t('nav.dashboard', 'Tableau de bord'), href: '/dashboard', icon: WalletIcon },
+    { label: t('nav.incomes', 'Entrées'), href: '/transactions/incomes', icon: CoinsHandIcon },
+    { label: t('nav.expenses', 'Dépenses'), href: '/transactions/expenses', icon: ReceiptTextIcon },
+    {
+      label: t('nav.recurrent', 'Charges fixes'),
+      href: '/recurrent-expenses',
+      icon: LightningBoltIcon,
+    },
+    { label: t('nav.reports', 'Rapports PDF'), href: '/reports', icon: DocumentReportIcon },
+  ];
 
   useEffect(() => {
     let ticking = false;
@@ -68,7 +73,7 @@ export function AppNav() {
         }`}
       >
         <div className="mx-auto flex max-w-7xl justify-center gap-1 lg:gap-2 px-6">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||
@@ -98,7 +103,7 @@ export function AppNav() {
       {/* Mobile Bottom Navigation Bar - always fixed, never hides on scroll */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-stone-200 bg-white md:hidden">
         <div className="grid grid-cols-5 py-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||

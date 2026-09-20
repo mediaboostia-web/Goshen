@@ -79,6 +79,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { LanguageProvider } from '@/contexts/LanguageContext';
+
 export const viewport: Viewport = {
   themeColor: '#0F172A',
 };
@@ -91,12 +93,14 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${archivo.variable} ${spaceMono.variable}`}>
       <body className={`${archivo.className} font-sans antialiased`}>
-        <ToastProvider>
-          <AuthProvider>
-            <BranchProvider>{children}</BranchProvider>
-          </AuthProvider>
-          <PwaRegister />
-        </ToastProvider>
+        <LanguageProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <BranchProvider>{children}</BranchProvider>
+            </AuthProvider>
+            <PwaRegister />
+          </ToastProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -56,6 +56,7 @@ function OnboardingContent() {
         body: {
           churchName: churchName.trim(),
           denomination: denomination.trim() || undefined,
+          country: country.trim() || undefined,
           // The one branch this creates IS the church for a standalone
           // parish — no need to make the pastor type the name twice.
           mainBranchName: churchName.trim(),

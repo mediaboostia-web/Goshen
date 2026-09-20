@@ -37,9 +37,12 @@ const DEFAULT_EXPENSES = [
   'Aide aux démunis / Social',
 ];
 
+import { getCurrencyForCountry } from '@/lib/currency-country';
+
 const OnboardingBody = z.object({
   churchName: z.string().min(3, 'Le nom de l’église est requis'),
   denomination: z.string().optional(),
+  country: z.string().optional(),
   mainBranchName: z.string().optional().default('Église Mère - Siège'),
   mainBranchCity: z.string().optional(),
   // Whether the branch created here is the church's own central/head site
@@ -96,6 +99,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const {
       churchName,
       denomination,
+      country,
       mainBranchName,
       mainBranchCity,
       isMainBranch,
@@ -110,6 +114,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       finalSlug = `${baseSlug}-${count++}`;
     }
 
+    const churchCurrency = getCurrencyForCountry(country);
+
     const organization = await prisma.$transaction(
       async (tx) => {
         // 1. Create Organization
@@ -119,7 +125,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             slug: finalSlug,
             denomination: denomination ?? null,
             ownerId: auth.user.sub,
-            currency: 'XAF',
+            currency: churchCurrency,
           },
         });
 

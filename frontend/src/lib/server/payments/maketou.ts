@@ -96,8 +96,8 @@ function formatMaketouErrorMessage(errBody: Record<string, unknown>, statusText:
 }
 
 export class MaketouClient {
-  private explicitApiKey?: string;
-  private explicitApiUrl?: string;
+  private explicitApiKey?: string | undefined;
+  private explicitApiUrl?: string | undefined;
 
   constructor(apiKey?: string, apiUrl?: string) {
     this.explicitApiKey = apiKey;
@@ -155,11 +155,7 @@ export class MaketouClient {
       const errBody = await res.json().catch(() => ({}) as Record<string, unknown>);
       const code = typeof errBody.code === 'string' ? errBody.code : undefined;
       const message = formatMaketouErrorMessage(errBody, res.statusText);
-      throw new MaketouRequestError(
-        `Maketou: ${message}`,
-        res.status,
-        code,
-      );
+      throw new MaketouRequestError(`Maketou: ${message}`, res.status, code);
     }
 
     const json = await res.json();
@@ -191,11 +187,7 @@ export class MaketouClient {
       const errBody = await res.json().catch(() => ({}) as Record<string, unknown>);
       const code = typeof errBody.code === 'string' ? errBody.code : undefined;
       const message = formatMaketouErrorMessage(errBody, res.statusText);
-      throw new MaketouRequestError(
-        `Maketou: ${message}`,
-        res.status,
-        code,
-      );
+      throw new MaketouRequestError(`Maketou: ${message}`, res.status, code);
     }
 
     const json = await res.json();
