@@ -1,5 +1,5 @@
 import type { NextConfig } from 'next';
-import { withSentryConfig } from '@sentry/nextjs';
+import { withSentryConfig } from '@sentry/nextjs/config';
 
 // Static security headers applied to every response.
 // Set via next.config.ts (not middleware.ts) so Vercel's edge can serve them
@@ -27,9 +27,9 @@ const securityHeaders = [
 const config: NextConfig = {
   reactStrictMode: true,
   // Standalone output bundles a self-contained server.js + minimal node_modules
-  // into .next/standalone — required by the Docker runtime image (frontend/Dockerfile).
-  // Has no impact on `next dev` / `next start` workflows.
-  output: 'standalone',
+  // into .next/standalone — required by Docker runtime (frontend/Dockerfile),
+  // but bypassed on Vercel which manages its own serverless packaging.
+  ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   // heic-convert is ESM-only and cannot be bundled by webpack/Turbopack.
   // Mark it (and pdfkit which uses binary native deps) as server-external so
   // Next.js loads them directly from node_modules at runtime instead.
@@ -58,5 +58,4 @@ export default withSentryConfig(config, {
   // user base has heavy ad-blocker usage.
   // tunnelRoute: '/monitoring',
   hideSourceMaps: true,
-  disableLogger: true,
 });

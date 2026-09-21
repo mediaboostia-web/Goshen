@@ -32,26 +32,31 @@ function isAuthedPath(pathname: string): boolean {
 }
 
 export function middleware(req: NextRequest): NextResponse {
-  if (AUTHED_PREFIXES.length === 0) return NextResponse.next();
+  try {
+    if (AUTHED_PREFIXES.length === 0) return NextResponse.next();
 
-  const { pathname, search } = req.nextUrl;
-  if (!isAuthedPath(pathname)) return NextResponse.next();
+    const { pathname, search } = req.nextUrl;
+    if (!isAuthedPath(pathname)) return NextResponse.next();
 
-  if (req.cookies.get(ACCESS_COOKIE)?.value) return NextResponse.next();
+    if (req.cookies.get(ACCESS_COOKIE)?.value) return NextResponse.next();
 
-  const target = pathname + search;
+    const target = pathname + search;
 
-  if (!req.cookies.get(REFRESH_COOKIE)?.value) {
+    if (!req.cookies.get(REFRESH_COOKIE)?.value) {
+      const url = req.nextUrl.clone();
+      url.pathname = LOGIN_PATH;
+      url.search = `?next=${encodeURIComponent(target)}`;
+      return NextResponse.redirect(url, 303);
+    }
+
     const url = req.nextUrl.clone();
-    url.pathname = LOGIN_PATH;
+    url.pathname = '/api/auth/refresh-and-return';
     url.search = `?next=${encodeURIComponent(target)}`;
     return NextResponse.redirect(url, 303);
+  } catch (error) {
+    console.error('[Middleware] Error encountered, falling through:', error);
+    return NextResponse.next();
   }
-
-  const url = req.nextUrl.clone();
-  url.pathname = '/api/auth/refresh-and-return';
-  url.search = `?next=${encodeURIComponent(target)}`;
-  return NextResponse.redirect(url, 303);
 }
 
 export const config = {
