@@ -61,4 +61,12 @@ export function middleware(req: NextRequest): NextResponse {
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|.*\\..*).*)'],
+  // Next.js 16 can run middleware/proxy on the Node.js runtime instead of
+  // Edge. On Vercel that path deploys an unbundled middleware.js with a raw
+  // `import ... from 'next/server'` that Node's own loader can never resolve
+  // (ESM or CJS — see vercel/next.js#86434, closed as not planned). Pinning
+  // 'edge' forces the traditional, fully self-contained edge-chunk bundle
+  // (verified locally: no bare imports survive). Nothing here needs Node
+  // APIs — cookies + redirects only.
+  runtime: 'edge',
 };
