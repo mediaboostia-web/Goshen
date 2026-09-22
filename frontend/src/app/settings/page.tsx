@@ -34,6 +34,11 @@ const NOTIFICATION_EVENT_TYPES: { key: string; label: string; description: strin
     label: 'Charge fixe à échéance',
     description: 'Rappel lorsqu’une charge récurrente (loyer, salaire…) arrive à échéance.',
   },
+  {
+    key: 'recurrent_expense_pending',
+    label: 'Charge fixe à valider',
+    description: 'Alerte dès qu’une nouvelle charge fixe planifiée requiert votre validation.',
+  },
 ];
 
 interface MemberItem {

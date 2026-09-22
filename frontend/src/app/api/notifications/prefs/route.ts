@@ -13,7 +13,11 @@ import type { Prisma } from '@prisma/client';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
-import { mergePrefs, type NotificationPrefs } from '@/lib/server/notifications/prefs-merge';
+import {
+  mergePrefs,
+  readPrefs,
+  type NotificationPrefs,
+} from '@/lib/server/notifications/prefs-merge';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 const ChannelPrefs = z.object({
@@ -23,11 +27,6 @@ const ChannelPrefs = z.object({
 const PatchBody = z.object({
   prefs: z.record(z.string().min(1), ChannelPrefs),
 });
-
-function readPrefs(raw: Prisma.JsonValue | undefined | null): NotificationPrefs {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return raw as NotificationPrefs;
-}
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);

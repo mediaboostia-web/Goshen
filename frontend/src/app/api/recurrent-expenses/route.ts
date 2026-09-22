@@ -14,6 +14,7 @@ import {
   computeInitialDueDate,
 } from '@/lib/server/recurring-expenses/schedule';
 import { createNotification } from '@/lib/server/notifications';
+import { isChannelEnabled, readPrefs } from '@/lib/server/notifications/prefs-merge';
 import { getCurrencyLabel } from '@/lib/utils';
 import { log } from '@/lib/server/observability/log';
 
@@ -192,8 +193,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         where: { organizationId: access.church.id, role: { in: ['PASTOR', 'TREASURER'] } },
         select: { userId: true },
       });
+      const prefRows = await prisma.notificationPreferences.findMany({
+        where: { userId: { in: recipients.map((r) => r.userId) } },
+        select: { userId: true, prefs: true },
+      });
+      const prefsByUser = new Map(prefRows.map((p) => [p.userId, readPrefs(p.prefs)]));
+      const optedIn = recipients.filter((r) =>
+        isChannelEnabled(prefsByUser.get(r.userId), 'recurrent_expense_pending', 'inApp'),
+      );
       await Promise.all(
-        recipients.map((r) =>
+        optedIn.map((r) =>
           createNotification(prisma, {
             userId: r.userId,
             type: 'recurrent_expense_pending',

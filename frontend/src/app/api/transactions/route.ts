@@ -10,6 +10,7 @@ import { makeRequestContext, withRequestContext } from '@/lib/server/observabili
 import { resolveChurchUser, orgSuspendedResponse } from '@/lib/server/church/resolve-church';
 import { allowedBranchIds, canAccessBranch } from '@/lib/server/church/branch-access';
 import { createNotification } from '@/lib/server/notifications';
+import { isChannelEnabled, readPrefs } from '@/lib/server/notifications/prefs-merge';
 import { log } from '@/lib/server/observability/log';
 import { getCurrencyLabel } from '@/lib/utils';
 
@@ -220,6 +221,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           where: { organizationId: access.church.id, role: { in: ['PASTOR', 'TREASURER'] } },
           select: { userId: true },
         });
+        const prefRows = await prisma.notificationPreferences.findMany({
+          where: { userId: { in: recipients.map((r) => r.userId) } },
+          select: { userId: true, prefs: true },
+        });
+        const prefsByUser = new Map(prefRows.map((p) => [p.userId, readPrefs(p.prefs)]));
+        const optedIn = recipients.filter((r) =>
+          isChannelEnabled(prefsByUser.get(r.userId), 'low_balance', 'inApp'),
+        );
         const dayKey = new Date().toISOString().slice(0, 10);
         const title = isUnderThreshold ? 'Alerte Solde Minimum' : 'Alerte Préventive Trésorerie';
         const bodyText = isUnderThreshold
@@ -227,7 +236,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           : `Le solde de la caisse « ${updatedBranch.name} » (${balance.toLocaleString('fr-FR')} ${churchCurrency}) approche du seuil de sécurité configuré (${threshold.toLocaleString('fr-FR')} ${churchCurrency}). Pensez à anticiper les prochains décaissements.`;
 
         await Promise.all(
-          recipients.map((r) =>
+          optedIn.map((r) =>
             createNotification(prisma, {
               userId: r.userId,
               type: 'low_balance',

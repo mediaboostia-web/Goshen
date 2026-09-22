@@ -23,7 +23,9 @@ import { withLease } from '@/lib/server/leader-lease';
 import { prisma } from '@/lib/server/prisma';
 import { redis } from '@/lib/server/redis';
 import { createNotification } from '@/lib/server/notifications';
+import { isChannelEnabled, readPrefs } from '@/lib/server/notifications/prefs-merge';
 import { createLogger } from '@/lib/server/logger';
+import { getCurrencyLabel } from '@/lib/utils';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 const log = createLogger();
@@ -47,7 +49,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         where: { status: 'PENDING', dueDate: { lte: overdue24h } },
         include: {
           recurringExpense: {
-            select: { id: true, name: true, amount: true, organizationId: true, branchId: true },
+            select: {
+              id: true,
+              name: true,
+              amount: true,
+              organizationId: true,
+              branchId: true,
+              organization: { select: { currency: true } },
+            },
           },
         },
       });
@@ -62,8 +71,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           where: { organizationId: model.organizationId, role: { in: roles } },
           select: { userId: true },
         });
+        const prefRows = await prisma.notificationPreferences.findMany({
+          where: { userId: { in: recipients.map((r) => r.userId) } },
+          select: { userId: true, prefs: true },
+        });
+        const prefsByUser = new Map(prefRows.map((p) => [p.userId, readPrefs(p.prefs)]));
+        const optedIn = recipients.filter((r) =>
+          isChannelEnabled(prefsByUser.get(r.userId), 'recurring_expense_due', 'inApp'),
+        );
 
-        for (const recipient of recipients) {
+        for (const recipient of optedIn) {
           const created = await createNotification(prisma, {
             userId: recipient.userId,
             type: 'recurring_expense_due',
@@ -71,7 +88,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               stage === '48h'
                 ? `Échéance non validée depuis 48h : ${model.name}`
                 : `Dépense récurrente à valider : ${model.name}`,
-            body: `${model.name} — ${model.amount.toLocaleString('fr-FR')} FCFA — en attente de validation depuis ${Math.floor(hoursOverdue)}h.`,
+            body: `${model.name} — ${model.amount.toLocaleString('fr-FR')} ${getCurrencyLabel(model.organization.currency)} — en attente de validation depuis ${Math.floor(hoursOverdue)}h.`,
             data: {
               executionId: execution.id,
               recurringExpenseId: model.id,

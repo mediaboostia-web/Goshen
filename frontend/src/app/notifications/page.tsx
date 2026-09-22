@@ -26,6 +26,7 @@ function actionHrefFor(notif: NotificationItem): string | null {
     case 'low_balance':
       return '/settings/branches';
     case 'recurring_expense_due':
+    case 'recurrent_expense_pending':
       return '/recurrent-expenses/validation';
     default:
       return null;

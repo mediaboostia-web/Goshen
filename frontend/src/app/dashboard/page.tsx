@@ -960,7 +960,7 @@ export default function DashboardPage() {
                         {branches
                           .reduce((acc, b) => acc + b.currentBalance, 0)
                           .toLocaleString('fr-FR')}{' '}
-                        F
+                        {currencyShort}
                       </span>
                     </button>
 
@@ -979,7 +979,7 @@ export default function DashboardPage() {
                           <span>{b.name}</span>
                         </span>
                         <span className="font-mono tabular-nums font-semibold text-stone-900">
-                          {b.currentBalance.toLocaleString('fr-FR')} F
+                          {b.currentBalance.toLocaleString('fr-FR')} {currencyShort}
                         </span>
                       </button>
                     ))}
@@ -1069,7 +1069,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="text-right">
                               <p className="text-xs font-mono tabular-nums font-bold text-emerald-950">
-                                {item.amount.toLocaleString('fr-FR')} F
+                                {item.amount.toLocaleString('fr-FR')} {currencyShort}
                               </p>
                               <div
                                 className="h-1.5 w-7 rounded-full ml-auto mt-1"
@@ -1136,7 +1136,7 @@ export default function DashboardPage() {
                             </p>
                           </div>
                           <span className="font-mono tabular-nums text-sm font-bold text-emerald-950 whitespace-nowrap">
-                            {rec.amount.toLocaleString('fr-FR')} F
+                            {rec.amount.toLocaleString('fr-FR')} {currencyShort}
                           </span>
                         </div>
 

@@ -4,6 +4,7 @@ import { useEffect, useState, use as usePromise, type FormEvent } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { getCurrencyLabel } from '@/lib/utils';
 
 interface OrgDetail {
   id: string;
@@ -39,8 +40,8 @@ const ROLE_LABEL: Record<MemberRole, string> = {
   AUDITOR: 'Commissaire',
 };
 
-function fcfa(n: number): string {
-  return `${n.toLocaleString('fr-FR')} FCFA`;
+function formatAmount(n: number, currency: string): string {
+  return `${n.toLocaleString('fr-FR')} ${getCurrencyLabel(currency)}`;
 }
 
 export default function AdminOrganizationDetailPage({
@@ -209,7 +210,7 @@ export default function AdminOrganizationDetailPage({
           </p>
           {data.last30Days.byType.map((t) => (
             <p key={t.type} className="text-xs text-stone-500">
-              {t.type === 'INCOME' ? 'Entrées' : 'Dépenses'}: {fcfa(t.total)}
+              {t.type === 'INCOME' ? 'Entrées' : 'Dépenses'}: {formatAmount(t.total, org.currency)}
             </p>
           ))}
         </div>

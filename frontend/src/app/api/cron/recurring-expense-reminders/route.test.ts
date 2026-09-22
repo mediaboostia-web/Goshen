@@ -9,12 +9,14 @@ vi.mock('@/lib/server/redis', () => ({ redis: null }));
 
 const findManyExecutions = vi.fn();
 const findManyMembers = vi.fn();
+const findManyPrefs = vi.fn();
 const notificationCreate = vi.fn();
 
 vi.mock('@/lib/server/prisma', () => ({
   prisma: {
     recurringExpenseExecution: { findMany: (...a: unknown[]) => findManyExecutions(...a) },
     organizationMember: { findMany: (...a: unknown[]) => findManyMembers(...a) },
+    notificationPreferences: { findMany: (...a: unknown[]) => findManyPrefs(...a) },
     notification: { create: (...a: unknown[]) => notificationCreate(...a) },
   },
 }));
@@ -37,6 +39,7 @@ function makeExecution(overrides: Partial<Record<string, unknown>> = {}) {
       amount: 50_000,
       organizationId: 'org-1',
       branchId: 'branch-1',
+      organization: { currency: 'XAF' },
     },
     ...overrides,
   };
@@ -46,6 +49,8 @@ beforeEach(() => {
   vi.stubEnv('CRON_SECRET', 'test-secret');
   findManyExecutions.mockReset();
   findManyMembers.mockReset();
+  findManyPrefs.mockReset();
+  findManyPrefs.mockResolvedValue([]);
   notificationCreate.mockReset();
   notificationCreate.mockResolvedValue({ id: 'notif-1' });
 });
@@ -115,6 +120,22 @@ describe('POST /api/cron/recurring-expense-reminders (PRD F19)', () => {
     expect(await res.json()).toEqual({ ok: true, remindersSent: 0, escalationsSent: 2 });
   });
 
+  it('skips a recipient who opted out of recurring_expense_due in-app notifications', async () => {
+    findManyExecutions.mockResolvedValueOnce([makeExecution()]);
+    findManyMembers.mockResolvedValueOnce([{ userId: 'treasurer-1' }, { userId: 'treasurer-2' }]);
+    findManyPrefs.mockResolvedValueOnce([
+      { userId: 'treasurer-1', prefs: { recurring_expense_due: { inApp: false } } },
+    ]);
+
+    const { POST } = await import('./route');
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(notificationCreate).toHaveBeenCalledTimes(1);
+    const createArgs = notificationCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(createArgs.data).toMatchObject({ userId: 'treasurer-2' });
+  });
+
   it('only queries executions still PENDING and at least 24h overdue', async () => {
     findManyExecutions.mockResolvedValueOnce([]);
     const { POST } = await import('./route');
@@ -123,7 +144,14 @@ describe('POST /api/cron/recurring-expense-reminders (PRD F19)', () => {
       where: { status: 'PENDING', dueDate: { lte: expect.any(Date) } },
       include: {
         recurringExpense: {
-          select: { id: true, name: true, amount: true, organizationId: true, branchId: true },
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+            organizationId: true,
+            branchId: true,
+            organization: { select: { currency: true } },
+          },
         },
       },
     });
