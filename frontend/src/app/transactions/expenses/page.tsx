@@ -228,7 +228,10 @@ export default function ExpensesPage() {
       };
       setLastSavedExpense(savedTxInfo);
 
-      toast(`Dépense de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`, 'success');
+      toast(
+        `Dépense de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`,
+        'success',
+      );
       resetForm();
       await loadData();
       await refreshBranches();
@@ -355,8 +358,8 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} {currency} enregistrée avec
-                  succès !
+                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} {currency}{' '}
+                  enregistrée avec succès !
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
                   {lastSavedExpense.categoryName} • {lastSavedExpense.branchName}

@@ -80,17 +80,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         : {}),
     };
 
-    // Clean up stale debugging/test notifications that had inaccurate text
-    await prisma.notification
-      .deleteMany({
-        where: {
-          userId: auth.user.sub,
-          type: 'low_balance',
-          body: { contains: 'descendu à 25 000 FCFA' },
-        },
-      })
-      .catch(() => null);
-
     const rows = await prisma.notification.findMany({
       where,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

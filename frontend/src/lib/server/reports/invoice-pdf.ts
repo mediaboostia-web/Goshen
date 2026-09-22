@@ -158,7 +158,10 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
       doc.moveDown();
 
       // ── Items table ─────────────────────────────────────────────────
-      const curLabel = !input.currency || input.currency === 'XAF' || input.currency === 'XOF' ? 'FCFA' : input.currency;
+      const curLabel =
+        !input.currency || input.currency === 'XAF' || input.currency === 'XOF'
+          ? 'FCFA'
+          : input.currency;
       const curShort = curLabel === 'FCFA' ? 'F' : curLabel;
 
       const tableTop = doc.y;
@@ -248,7 +251,10 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .font('Helvetica-Bold')
         .text('TOTAL', 340, totalsY + 9)
         .fontSize(11)
-        .text(formatAmount(input.total, curLabel), 330, totalsY + 8, { width: 195, align: 'right' });
+        .text(formatAmount(input.total, curLabel), 330, totalsY + 8, {
+          width: 195,
+          align: 'right',
+        });
 
       doc
         .fontSize(8)

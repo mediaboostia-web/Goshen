@@ -100,7 +100,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   const currentLabel = NAV.find((item) =>
-    item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + '/'),
+    item.exact
+      ? pathname === item.href
+      : pathname === item.href || pathname.startsWith(item.href + '/'),
   )?.label;
 
   return (

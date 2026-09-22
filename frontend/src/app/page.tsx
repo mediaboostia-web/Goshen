@@ -16,8 +16,6 @@ import {
   ChevronDownIcon,
   AlertTriangleIcon,
   ReceiptTextIcon,
-  CoinsHandIcon,
-  BuildingBranchIcon,
 } from '@/components/icons/ChurchIcons';
 
 const WHATSAPP_COMMUNITY_URL =

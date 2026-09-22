@@ -1,7 +1,6 @@
 {
   "name": "frontend",
   "version": "0.0.1",
-  "type": "module",
   "private": true,
   "scripts": {
     "dev": "concurrently -n next,drain -c blue,green \"pnpm run dev:next\" \"pnpm run dev:drain\"",

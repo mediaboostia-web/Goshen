@@ -72,7 +72,7 @@ interface RecurrentModel {
 }
 
 export default function RecurrentExpensesPage() {
-  const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
+  const { church, branches, currentBranch, isConsolidated } = useBranch();
   const { toast } = useToast();
   const currency = getCurrencyLabel(church?.currency);
   const canManage = church ? church.isPastor || church.isTreasurer : true;

@@ -244,7 +244,9 @@ export default function RecurrentValidationPage() {
                   <div className="flex flex-col sm:items-end gap-3">
                     <div className="font-mono tabular-nums text-3xl font-bold text-emerald-950">
                       {exec.amount.toLocaleString('fr-FR')}{' '}
-                      <span className="text-sm font-sans font-normal text-stone-600">{currency}</span>
+                      <span className="text-sm font-sans font-normal text-stone-600">
+                        {currency}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2">

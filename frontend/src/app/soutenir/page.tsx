@@ -87,7 +87,10 @@ export default function SoutenirPage() {
       <header className="border-b border-stone-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3.5 sm:px-6">
           <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 group">
-            <GoshenLogo className="h-7 w-7 shrink-0 transition-transform group-hover:scale-105" style={{ color: '#0F172A' }} />
+            <GoshenLogo
+              className="h-7 w-7 shrink-0 transition-transform group-hover:scale-105"
+              style={{ color: '#0F172A' }}
+            />
             <span className="font-serif text-lg font-extrabold tracking-tight text-emerald-950">
               Goshen
             </span>
@@ -96,7 +99,7 @@ export default function SoutenirPage() {
             href={user ? '/dashboard' : '/'}
             className="rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-600 shadow-2xs hover:border-emerald-300 hover:text-emerald-900 transition-all"
           >
-            {user ? '← Tableau de bord' : "← Accueil"}
+            {user ? '← Tableau de bord' : '← Accueil'}
           </Link>
         </div>
       </header>
@@ -111,14 +114,17 @@ export default function SoutenirPage() {
             Soutenir Goshen Finance
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-stone-600 leading-relaxed max-w-md mx-auto">
-            Goshen est 100% gratuit pour toutes les églises. Votre soutien libre permet de maintenir la plateforme en ligne, de l'améliorer continuellement et de créer des solutions innovantes adaptées aux communautés ecclésiastiques.
+            Goshen est 100% gratuit pour toutes les églises. Votre soutien libre permet de maintenir
+            la plateforme en ligne, de l'améliorer continuellement et de créer des solutions
+            innovantes adaptées aux communautés ecclésiastiques.
           </p>
         </div>
 
         {showStaticFallback ? (
           <div className="rounded-3xl border border-stone-200 bg-white p-7 sm:p-9 shadow-xl text-center space-y-4">
             <p className="text-xs sm:text-sm text-stone-600">
-              Le paiement direct est temporairement indisponible. Vous pouvez soutenir la plateforme via notre lien sécurisé :
+              Le paiement direct est temporairement indisponible. Vous pouvez soutenir la plateforme
+              via notre lien sécurisé :
             </p>
             <a
               href={STATIC_DONATION_URL}
@@ -165,9 +171,13 @@ export default function SoutenirPage() {
                       <span className="font-serif text-base sm:text-lg font-extrabold tracking-tight">
                         {preset.toLocaleString('fr-FR')}
                       </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
-                        isSelected ? 'text-emerald-700' : 'text-stone-400 group-hover:text-stone-500'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
+                          isSelected
+                            ? 'text-emerald-700'
+                            : 'text-stone-400 group-hover:text-stone-500'
+                        }`}
+                      >
                         FCFA
                       </span>
                     </button>

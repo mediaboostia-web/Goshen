@@ -78,10 +78,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (access) organizationId = access.church.id;
     }
 
-    const rawOrigin =
-      req.headers.get('origin') ||
-      process.env.APP_URL ||
-      'http://127.0.0.1:3000';
+    const rawOrigin = req.headers.get('origin') || process.env.APP_URL || 'http://127.0.0.1:3000';
     // Maketou strictly validates redirectURL (rejects 'localhost' without TLD, accepts '127.0.0.1' and public domains)
     const origin = rawOrigin.replace('://localhost', '://127.0.0.1').replace(/\/+$/, '');
     const nameParts = (donorName || 'Généreux').split(' ');

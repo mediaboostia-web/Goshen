@@ -168,7 +168,10 @@ export default function IncomesPage() {
       };
       setLastSavedIncome(savedTxInfo);
 
-      toast(`Entrée de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`, 'success');
+      toast(
+        `Entrée de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`,
+        'success',
+      );
       setAmount('');
       setNotes('');
       setPaymentMethod('');
@@ -264,8 +267,8 @@ export default function IncomesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} {currency} enregistrée avec
-                  succès !
+                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} {currency} enregistrée
+                  avec succès !
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
                   {lastSavedIncome.categoryName} • {lastSavedIncome.branchName}
