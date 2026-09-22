@@ -552,7 +552,7 @@ describe('/api/admin/users/[id]/status [Wave 2] — suspend / restore', () => {
     expect(mockLogAdminAction).not.toHaveBeenCalled();
   });
 
-  it('PATCH ACTIVE → SUSPENDED on a SUPERADMIN by SUPERADMIN → 200 + AdminAction user.suspend', async () => {
+  it('PATCH ACTIVE → SUSPENDED on a SUPERADMIN by SUPERADMIN → 200 + AdminAction user.suspend (2 active SUPERADMINs)', async () => {
     mockRequireAdmin.mockResolvedValueOnce(superadminCtx);
     prismaMock.user.findUnique.mockResolvedValueOnce({
       id: 'super_target_2',
@@ -561,6 +561,8 @@ describe('/api/admin/users/[id]/status [Wave 2] — suspend / restore', () => {
       name: null,
       role: 'SUPERADMIN',
     } as never);
+    // 2 active SUPERADMINs — suspending one still leaves one standing.
+    prismaMock.user.count.mockResolvedValueOnce(2);
     prismaMock.user.update.mockResolvedValueOnce({
       id: 'super_target_2',
       status: 'SUSPENDED',
@@ -574,6 +576,32 @@ describe('/api/admin/users/[id]/status [Wave 2] — suspend / restore', () => {
     expect(res.status).toBe(200);
     expect(prismaMock.user.update).toHaveBeenCalledTimes(1);
     expect(mockLogAdminAction).toHaveBeenCalledTimes(1);
+  });
+
+  // Mirrors CF-09 (last-SUPERADMIN guard on role demotion): suspending
+  // strips login exactly like a demotion would, so suspending the sole
+  // active SUPERADMIN is an equivalent lockout risk and must be refused.
+  it('PATCH ACTIVE → SUSPENDED on the last active SUPERADMIN → 409 LAST_SUPERADMIN (no update, no AdminAction)', async () => {
+    mockRequireAdmin.mockResolvedValueOnce(superadminCtx);
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      id: 'super_target_3',
+      status: 'ACTIVE',
+      email: 'super3@test.local',
+      name: null,
+      role: 'SUPERADMIN',
+    } as never);
+    prismaMock.user.count.mockResolvedValueOnce(1);
+
+    const res = await PATCH_STATUS(
+      makePatch('http://test/api/admin/users/super_target_3/status', { status: 'SUSPENDED' }),
+      paramsOf('super_target_3'),
+    );
+
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('LAST_SUPERADMIN');
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+    expect(mockLogAdminAction).not.toHaveBeenCalled();
   });
 
   it('PATCH status on missing user → 404 USER_NOT_FOUND', async () => {

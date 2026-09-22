@@ -34,6 +34,7 @@ type Discriminator =
   | { kind: 'NOT_FOUND' }
   | { kind: 'RESTORE_REQUIRES_SUPERADMIN' }
   | { kind: 'SUSPEND_REQUIRES_SUPERADMIN' }
+  | { kind: 'LAST_SUPERADMIN' }
   | { kind: 'OK'; user: { id: string; status: string } };
 
 export async function PATCH(
@@ -95,6 +96,18 @@ export async function PATCH(
           return { kind: 'SUSPEND_REQUIRES_SUPERADMIN' as const };
         }
 
+        // Mirrors the last-SUPERADMIN guard on PATCH .../role (CF-09):
+        // suspending strips login exactly like a demotion would, so
+        // suspending the last active SUPERADMIN is an equivalent lockout risk.
+        if (isSuspend && target.role === 'SUPERADMIN') {
+          const activeSuperadminCount = await tx.user.count({
+            where: { role: 'SUPERADMIN', status: 'ACTIVE' },
+          });
+          if (activeSuperadminCount <= 1) {
+            return { kind: 'LAST_SUPERADMIN' as const };
+          }
+        }
+
         const updated = await tx.user.update({
           where: { id },
           data: { status: parsed.data.status },
@@ -140,6 +153,12 @@ export async function PATCH(
           message: 'Only a SUPERADMIN can suspend a SUPERADMIN account.',
         },
         { status: 403 },
+      );
+    }
+    if (result.kind === 'LAST_SUPERADMIN') {
+      return NextResponse.json(
+        { error: 'LAST_SUPERADMIN', message: 'Refuse to suspend the last active SUPERADMIN.' },
+        { status: 409 },
       );
     }
     return NextResponse.json({ user: result.user }, { status: 200 });

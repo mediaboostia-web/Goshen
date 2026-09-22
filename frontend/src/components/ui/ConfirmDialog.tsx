@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -13,6 +13,8 @@ interface ConfirmDialogProps {
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Optional extra content rendered between the description and the button row (e.g. a reason input). */
+  children?: ReactNode;
 }
 
 export function ConfirmDialog({
@@ -25,6 +27,7 @@ export function ConfirmDialog({
   busy = false,
   onConfirm,
   onCancel,
+  children,
 }: ConfirmDialogProps) {
   useEffect(() => {
     if (!isOpen) return;
@@ -52,6 +55,8 @@ export function ConfirmDialog({
         {description && (
           <p className="mt-1.5 text-xs text-stone-500 leading-relaxed">{description}</p>
         )}
+
+        {children}
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <button

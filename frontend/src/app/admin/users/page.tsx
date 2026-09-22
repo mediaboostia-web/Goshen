@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface AdminUser {
   id: string;
@@ -36,6 +37,14 @@ export default function AdminUsersPage() {
   // that would just 403 on use.
   const [viewerIsSuperadmin, setViewerIsSuperadmin] = useState(false);
 
+  // Suspend/restore (PATCH .../status): ADMIN can suspend a USER/ADMIN
+  // target; only SUPERADMIN can restore anyone or suspend a SUPERADMIN
+  // target (mirrors the server-side asymmetric gate in the route).
+  const [statusTarget, setStatusTarget] = useState<AdminUser | null>(null);
+  const [statusReason, setStatusReason] = useState('');
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+
   async function changeRole(id: string, role: AdminUser['role']) {
     setRoleError(null);
     setRoleUpdating(id);
@@ -46,6 +55,38 @@ export default function AdminUsersPage() {
       setRoleError(err instanceof ApiError ? err.message || 'Erreur inconnue' : 'Erreur réseau');
     } finally {
       setRoleUpdating(null);
+    }
+  }
+
+  function canChangeStatus(u: AdminUser): boolean {
+    const isRestore = u.status === 'SUSPENDED';
+    if (isRestore) return viewerIsSuperadmin;
+    if (u.role === 'SUPERADMIN') return viewerIsSuperadmin;
+    return true;
+  }
+
+  async function confirmStatusChange() {
+    if (!statusTarget) return;
+    const nextStatus = statusTarget.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+    setStatusBusy(true);
+    setStatusError(null);
+    try {
+      await api(`/api/admin/users/${statusTarget.id}/status`, {
+        method: 'PATCH',
+        body: {
+          status: nextStatus,
+          ...(statusReason.trim() ? { reason: statusReason.trim() } : {}),
+        },
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === statusTarget.id ? { ...u, status: nextStatus } : u)),
+      );
+      setStatusTarget(null);
+      setStatusReason('');
+    } catch (err) {
+      setStatusError(err instanceof ApiError ? err.message || 'Erreur inconnue' : 'Erreur réseau');
+    } finally {
+      setStatusBusy(false);
     }
   }
 
@@ -154,6 +195,7 @@ export default function AdminUsersPage() {
               <th className="px-4">Statut</th>
               <th className="px-4">Vérifié</th>
               <th className="px-4">Inscrit le</th>
+              <th className="px-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -208,6 +250,29 @@ export default function AdminUsersPage() {
                 <td className="px-4 text-stone-500">
                   {new Date(u.createdAt).toLocaleDateString('fr-FR')}
                 </td>
+                <td className="px-4 text-right">
+                  <button
+                    type="button"
+                    disabled={!canChangeStatus(u)}
+                    onClick={() => {
+                      setStatusError(null);
+                      setStatusReason('');
+                      setStatusTarget(u);
+                    }}
+                    title={
+                      !canChangeStatus(u)
+                        ? 'Seul un SUPERADMIN peut effectuer cette action.'
+                        : undefined
+                    }
+                    className={`rounded-lg px-3 py-1.5 text-[11px] font-bold shadow-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                      u.status === 'SUSPENDED'
+                        ? 'bg-emerald-800 text-white hover:bg-emerald-700'
+                        : 'bg-rose-700 text-white hover:bg-rose-800'
+                    }`}
+                  >
+                    {u.status === 'SUSPENDED' ? 'Réactiver' : 'Suspendre'}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -227,6 +292,38 @@ export default function AdminUsersPage() {
           {loading ? 'Chargement…' : 'Charger plus'}
         </button>
       )}
+
+      <ConfirmDialog
+        isOpen={statusTarget !== null}
+        title={
+          statusTarget?.status === 'SUSPENDED'
+            ? `Réactiver ${statusTarget.email} ?`
+            : `Suspendre ${statusTarget?.email} ?`
+        }
+        description={
+          statusTarget?.status === 'SUSPENDED'
+            ? 'Ce compte pourra de nouveau se connecter immédiatement.'
+            : 'Ce compte ne pourra plus se connecter tant qu’il ne sera pas réactivé.'
+        }
+        confirmLabel={statusTarget?.status === 'SUSPENDED' ? 'Réactiver' : 'Suspendre'}
+        destructive={statusTarget?.status !== 'SUSPENDED'}
+        busy={statusBusy}
+        onConfirm={() => void confirmStatusChange()}
+        onCancel={() => {
+          if (!statusBusy) setStatusTarget(null);
+        }}
+      >
+        {statusTarget?.status !== 'SUSPENDED' && (
+          <input
+            type="text"
+            placeholder="Motif (optionnel)"
+            value={statusReason}
+            onChange={(e) => setStatusReason(e.target.value)}
+            className="mt-3 w-full rounded-lg border border-stone-200 px-3 py-2 text-xs focus:border-rose-500 focus:outline-hidden"
+          />
+        )}
+        {statusError && <p className="mt-2 text-xs text-rose-700">{statusError}</p>}
+      </ConfirmDialog>
     </div>
   );
 }
