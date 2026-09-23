@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 import { Reveal } from '@/components/ui/Reveal';
@@ -97,7 +98,14 @@ function FaqItem({ question, answer, defaultOpen = false }: FaqEntry & { default
           />
         </span>
       </button>
-      {open && <p className="pb-4 pr-10 text-sm text-stone-600 leading-relaxed">{answer}</p>}
+      {/* Rendered unconditionally and hidden with `hidden` rather than
+          mounted on open: a collapsed answer that never reaches the DOM is
+          invisible to crawlers (and to the AI answer engines that read the
+          raw HTML without executing JS), so the FAQPage JSON-LD below would
+          describe text no crawler can actually find on the page. */}
+      <p hidden={!open} className="pb-4 pr-10 text-sm text-stone-600 leading-relaxed">
+        {answer}
+      </p>
     </div>
   );
 }
@@ -187,10 +195,19 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#fafaf7] text-stone-900 font-sans selection:bg-emerald-100 selection:text-emerald-950">
-      {/* Structured data — SoftwareApplication (rich result eligibility) +
-          FAQPage (mirrors the visible FAQ below so Google can surface it
-          as an expandable snippet). Kept in sync manually since the FAQ
-          copy below is short and rarely changes. */}
+      {/* Page-level structured data. Site-level WebSite/Organization lives
+          in layout.tsx (a server component — this one is 'use client', where
+          Next strips non-public env vars, so absolute URLs built from
+          APP_URL would serialise as localhost here).
+
+          SoftwareApplication describes the product; note that Google only
+          renders a software rich result when aggregateRating or review is
+          present, and inventing either is a policy violation — so this block
+          earns its keep as an entity description for Google's Knowledge
+          Graph and for AI answer engines, not as a SERP widget.
+          FAQPage mirrors the visible accordion (same FAQ_ITEMS array); FAQ
+          rich results have been limited to government and health sites since
+          2023, so it is likewise there for the answer engines. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -200,13 +217,25 @@ export default function HomePage() {
               '@type': 'SoftwareApplication',
               name: 'Goshen Finance',
               applicationCategory: 'FinanceApplication',
+              applicationSubCategory: 'Gestion financière pour églises',
+              // Stays 'Web': the app is installable as a PWA on Android and
+              // iOS, but listing those here would read as native apps that
+              // do not exist.
               operatingSystem: 'Web',
+              inLanguage: 'fr',
               description:
                 'Gestion financière transparente et multi-annexes pour les églises : dîmes, offrandes, dépenses avec reçus et rapports PDF.',
+              featureList: [
+                'Saisie des dîmes et offrandes du culte',
+                'Dépenses avec justificatifs photo',
+                'Gestion multi-annexes consolidée',
+                'Rapports et bilans PDF en 1 clic',
+                'Utilisation hors connexion',
+              ],
               offers: {
                 '@type': 'Offer',
                 price: '0',
-                priceCurrency: 'XAF',
+                priceCurrency: 'XOF',
               },
             },
             {
@@ -329,159 +358,163 @@ export default function HomePage() {
         )}
       </header>
 
-      {/* Hero Section — reproduces the reference layout (badge, short bold
+      {/* <main> landmark: gives crawlers and assistive tech an explicit
+          "this is the page content" boundary distinct from the nav and the
+          footer chrome repeated on every route. */}
+      <main>
+        {/* Hero Section — reproduces the reference layout (badge, short bold
           headline with one highlighted word, plain-language description,
           dual CTA, spokesperson photo with decorative shapes behind it)
           recolored to Goshen's emerald/amber palette instead of the
           reference's teal/orange so it stays consistent with every other
           section on the page. Light background throughout — nav blends
           straight into the hero instead of sitting on a separate dark band. */}
-      <section className="relative overflow-hidden bg-[#fafaf7] pt-14 pb-16 px-6 sm:pt-20 sm:pb-20 lg:pb-24">
-        {/* Small scattered accents standing in for the reference's doodles —
+        <section className="relative overflow-hidden bg-[#fafaf7] pt-14 pb-16 px-6 sm:pt-20 sm:pb-20 lg:pb-24">
+          {/* Small scattered accents standing in for the reference's doodles —
             kept inside the section's own top padding (well above where the
             heading renders) so they never collide with the text, and given
             a gentle continuous float so the hero feels alive even before
             the visitor scrolls. */}
-        <div
-          aria-hidden
-          className="animate-float pointer-events-none absolute left-[6%] top-6 hidden h-2.5 w-2.5 rounded-full bg-amber-400 sm:block"
-        />
-        <div
-          aria-hidden
-          className="animate-float-delayed pointer-events-none absolute left-[16%] top-2 hidden select-none text-3xl font-bold text-emerald-200 sm:block"
-        >
-          +
-        </div>
-        <div
-          aria-hidden
-          className="animate-float pointer-events-none absolute right-[6%] top-8 hidden h-3 w-3 rounded-full bg-emerald-300 sm:block"
-        />
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2 lg:gap-10">
-          {/* Wide ambient glow spanning both columns' lower half, so the
-              CTA row and the photo read as one continuous, filled zone
-              instead of the CTA sitting isolated above empty space. */}
           <div
             aria-hidden
-            className="animate-float pointer-events-none absolute -z-10 bottom-[-15%] left-1/2 h-56 w-[130%] -translate-x-1/2 rounded-full bg-gradient-to-t from-emerald-100/60 via-amber-50/30 to-transparent blur-3xl sm:h-64 lg:h-72"
+            className="animate-float pointer-events-none absolute left-[6%] top-6 hidden h-2.5 w-2.5 rounded-full bg-amber-400 sm:block"
+          />
+          <div
+            aria-hidden
+            className="animate-float-delayed pointer-events-none absolute left-[16%] top-2 hidden select-none text-3xl font-bold text-emerald-200 sm:block"
+          >
+            +
+          </div>
+          <div
+            aria-hidden
+            className="animate-float pointer-events-none absolute right-[6%] top-8 hidden h-3 w-3 rounded-full bg-emerald-300 sm:block"
           />
 
-          {/* Left: pitch */}
-          <div className="relative z-10 text-center lg:text-left">
-            <Reveal>
-              <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
-                La gestion financière
-                <br />
-                <span className="relative inline-block">
-                  simple
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 200 20"
-                    preserveAspectRatio="none"
-                    className="absolute -bottom-2 left-0 h-4 w-full text-amber-400"
-                  >
-                    <path
-                      d="M2 14 Q 50 2 100 10 T 198 8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={5}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>{' '}
-                de votre église
-              </h1>
-            </Reveal>
+          <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2 lg:gap-10">
+            {/* Wide ambient glow spanning both columns' lower half, so the
+              CTA row and the photo read as one continuous, filled zone
+              instead of the CTA sitting isolated above empty space. */}
+            <div
+              aria-hidden
+              className="animate-float pointer-events-none absolute -z-10 bottom-[-15%] left-1/2 h-56 w-[130%] -translate-x-1/2 rounded-full bg-gradient-to-t from-emerald-100/60 via-amber-50/30 to-transparent blur-3xl sm:h-64 lg:h-72"
+            />
 
-            <Reveal delayMs={100}>
-              <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-stone-600 sm:text-lg lg:mx-0">
-                Suivez dîmes, offrandes et dépenses en temps réel, depuis votre téléphone — même
-                sans connexion.
-              </p>
-            </Reveal>
-
-            <Reveal delayMs={200}>
-              <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row lg:justify-start">
-                <Link
-                  href="/signup"
-                  className="w-full transform rounded-full bg-emerald-800 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 sm:w-auto"
-                >
-                  Commencer gratuitement
-                </Link>
-                <a
-                  href="#comment-ca-marche"
-                  className="group inline-flex items-center gap-3 text-sm font-bold text-stone-800"
-                >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 bg-white shadow-sm transition-all group-hover:border-emerald-300 group-hover:scale-110">
+            {/* Left: pitch */}
+            <div className="relative z-10 text-center lg:text-left">
+              <Reveal immediate>
+                <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
+                  La gestion financière
+                  <br />
+                  <span className="relative inline-block">
+                    simple
                     <svg
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="ml-0.5 h-4 w-4 text-emerald-700"
+                      aria-hidden
+                      viewBox="0 0 200 20"
+                      preserveAspectRatio="none"
+                      className="absolute -bottom-2 left-0 h-4 w-full text-amber-400"
                     >
-                      <path d="M8 5v14l11-7z" />
+                      <path
+                        d="M2 14 Q 50 2 100 10 T 198 8"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={5}
+                        strokeLinecap="round"
+                      />
                     </svg>
-                  </span>
-                  Voir comment ça marche
-                </a>
-              </div>
-            </Reveal>
+                  </span>{' '}
+                  de votre église
+                </h1>
+              </Reveal>
 
-            <Reveal delayMs={300}>
-              <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-stone-500 lg:justify-start">
-                <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
-                100% gratuit, aucune carte bancaire &bull; Prêt en moins de 2 minutes
-              </p>
-            </Reveal>
+              <Reveal immediate delayMs={100}>
+                <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-stone-600 sm:text-lg lg:mx-0">
+                  Suivez dîmes, offrandes et dépenses en temps réel, depuis votre téléphone — même
+                  sans connexion.
+                </p>
+              </Reveal>
 
-            {/* 4 Indicateurs clés épurés avec séparateurs verticaux (style référence) */}
-            <Reveal delayMs={350}>
-              <div className="mt-8 pt-7 border-t border-stone-200/80">
-                <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:divide-stone-200 text-center">
-                  {/* 1. Hors connexion & mobile */}
-                  <div className="px-2 sm:px-3">
-                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                      100%
+              <Reveal immediate delayMs={200}>
+                <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row lg:justify-start">
+                  <Link
+                    href="/signup"
+                    className="w-full transform rounded-full bg-emerald-800 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 sm:w-auto"
+                  >
+                    Commencer gratuitement
+                  </Link>
+                  <a
+                    href="#comment-ca-marche"
+                    className="group inline-flex items-center gap-3 text-sm font-bold text-stone-800"
+                  >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 bg-white shadow-sm transition-all group-hover:border-emerald-300 group-hover:scale-110">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="ml-0.5 h-4 w-4 text-emerald-700"
+                      >
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </span>
+                    Voir comment ça marche
+                  </a>
+                </div>
+              </Reveal>
+
+              <Reveal immediate delayMs={300}>
+                <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-stone-500 lg:justify-start">
+                  <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
+                  100% gratuit, aucune carte bancaire &bull; Prêt en moins de 2 minutes
+                </p>
+              </Reveal>
+
+              {/* 4 Indicateurs clés épurés avec séparateurs verticaux (style référence) */}
+              <Reveal immediate delayMs={350}>
+                <div className="mt-8 pt-7 border-t border-stone-200/80">
+                  <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:divide-stone-200 text-center">
+                    {/* 1. Hors connexion & mobile */}
+                    <div className="px-2 sm:px-3">
+                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                        100%
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                        hors connexion & mobile
+                      </p>
                     </div>
-                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                      hors connexion & mobile
-                    </p>
-                  </div>
 
-                  {/* 2. Gratuit pour toute église */}
-                  <div className="px-2 sm:px-3">
-                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                      0 FCFA
+                    {/* 2. Gratuit pour toute église */}
+                    <div className="px-2 sm:px-3">
+                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                        0 FCFA
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                        gratuit pour toute église
+                      </p>
                     </div>
-                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                      gratuit pour toute église
-                    </p>
-                  </div>
 
-                  {/* 3. Dîmes & clôture de culte */}
-                  <div className="px-2 sm:px-3">
-                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                      2 min
+                    {/* 3. Dîmes & clôture de culte */}
+                    <div className="px-2 sm:px-3">
+                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                        2 min
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                        dîmes & clôture de culte
+                      </p>
                     </div>
-                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                      dîmes & clôture de culte
-                    </p>
-                  </div>
 
-                  {/* 4. Facturation & bilans */}
-                  <div className="px-2 sm:px-3">
-                    <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                      1 clic
+                    {/* 4. Facturation & bilans */}
+                    <div className="px-2 sm:px-3">
+                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
+                        1 clic
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
+                        factures & bilans PDF
+                      </p>
                     </div>
-                    <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                      factures & bilans PDF
-                    </p>
                   </div>
                 </div>
-              </div>
-            </Reveal>
-          </div>
+              </Reveal>
+            </div>
 
-          {/* Right: official brand artwork (person + live dashboard mockup +
+            {/* Right: official brand artwork (person + live dashboard mockup +
               decorative shapes already composed by the design team), shown
               directly against the page background — no extra blur blobs
               needed since the asset already carries its own teal accent
@@ -489,35 +522,43 @@ export default function HomePage() {
               compete with it. Only one floating card remains, in the one
               spot that's genuinely open, carrying a real claim rather than
               decoration. */}
-          <Reveal delayMs={150} className="relative flex justify-center lg:justify-end">
-            <img
-              src="/photos/image-goshen.png"
-              alt="Un utilisateur de Goshen souriant, montrant le tableau de bord de son église sur son téléphone à côté d'un aperçu de l'application"
-              width={1662}
-              height={946}
-              className="relative z-10 h-auto w-full max-w-lg drop-shadow-xl sm:max-w-xl lg:max-w-2xl"
-              style={{
-                WebkitMaskImage: 'linear-gradient(to top, transparent 0%, black 16%, black 100%)',
-                maskImage: 'linear-gradient(to top, transparent 0%, black 16%, black 100%)',
-              }}
-              loading="eager"
-            />
+            <Reveal immediate delayMs={150} className="relative flex justify-center lg:justify-end">
+              {/* LCP element. next/image (not a raw <img>) so the 1.6 MB
+                source PNG is served as a resized AVIF/WebP — a visitor on a
+                phone downloads a few dozen KB instead of the full-size
+                original. `preload` emits the <link rel=preload> so the
+                request starts with the HTML rather than after the bundle
+                parses, and `sizes` stops mobile from fetching the desktop
+                width. */}
+              <Image
+                src="/photos/image-goshen.png"
+                alt="Un utilisateur de Goshen souriant, montrant le tableau de bord de son église sur son téléphone à côté d'un aperçu de l'application"
+                width={1662}
+                height={946}
+                sizes="(min-width: 1024px) 672px, (min-width: 640px) 576px, 100vw"
+                className="relative z-10 h-auto w-full max-w-lg drop-shadow-xl sm:max-w-xl lg:max-w-2xl"
+                style={{
+                  WebkitMaskImage: 'linear-gradient(to top, transparent 0%, black 16%, black 100%)',
+                  maskImage: 'linear-gradient(to top, transparent 0%, black 16%, black 100%)',
+                }}
+                preload
+              />
 
-            {/* Floating proof card — bottom-left, in the artwork's one
+              {/* Floating proof card — bottom-left, in the artwork's one
                 clearly open patch, carrying a real claim instead of
                 decoration */}
-            <div className="absolute bottom-6 left-0 z-30 flex items-center gap-2.5 rounded-2xl border border-stone-100 bg-white px-4 py-3 shadow-xl transition-transform duration-300 hover:-translate-y-1 sm:left-2">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                <CheckCircleIcon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-xs font-bold text-stone-900">0 trou de caisse</p>
-                <p className="text-[10px] text-stone-500">Depuis l’adoption de Goshen</p>
+              <div className="absolute bottom-6 left-0 z-30 flex items-center gap-2.5 rounded-2xl border border-stone-100 bg-white px-4 py-3 shadow-xl transition-transform duration-300 hover:-translate-y-1 sm:left-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                  <CheckCircleIcon className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-xs font-bold text-stone-900">0 trou de caisse</p>
+                  <p className="text-[10px] text-stone-500">Depuis l’adoption de Goshen</p>
+                </div>
               </div>
-            </div>
-          </Reveal>
+            </Reveal>
 
-          {/* Full-width close — the photo itself now dissolves via its own
+            {/* Full-width close — the photo itself now dissolves via its own
               mask (above), so this is purely a soft colour continuation
               across the whole section width, sitting in the row's own
               bottom padding (top-full, no upward overlap) so it can never
@@ -525,620 +566,647 @@ export default function HomePage() {
               old stats strip can't stay legible under a fade, so it was
               dropped; the floating proof cards keep the real claims and
               stay crisp (z-30) above this band (z-20). */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-full z-20 h-16 bg-gradient-to-b from-transparent via-[#fafaf7]/70 to-[#fafaf7] blur-2xl sm:h-20 lg:h-24"
-          />
-        </div>
-      </section>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-full z-20 h-16 bg-gradient-to-b from-transparent via-[#fafaf7]/70 to-[#fafaf7] blur-2xl sm:h-20 lg:h-24"
+            />
+          </div>
+        </section>
 
-      {/* Video presentation — right after the hero, so the "Voir comment ça
+        {/* Video presentation — right after the hero, so the "Voir comment ça
           marche" pitch has an actual walkthrough to back it up instead of
           only a link further down the page. */}
-      <section className="bg-white py-16 px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <Reveal>
-            <span className="inline-block rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-800 mb-3 border border-emerald-100">
-              Présentation vidéo
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
-              Goshen en 2 minutes
-            </h2>
-            <p className="mt-3 text-stone-600 text-sm sm:text-base">
-              Un tour rapide du tableau de bord, de la saisie du culte et des rapports PDF.
-            </p>
-          </Reveal>
-
-          <Reveal delayMs={150}>
-            <div className="group relative mt-9 overflow-hidden rounded-3xl border border-stone-200 bg-stone-950 shadow-2xl transition-transform duration-500 hover:scale-[1.01]">
-              <video
-                controls
-                preload="metadata"
-                poster="/photos/dashboard-preview.png"
-                className="aspect-video w-full"
-              >
-                <source src="/videos/presentation-goshen.mp4" type="video/mp4" />
-              </video>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* Problem Section — 3 concrete pains (time / trust / proof), each
-          card revealing on scroll with a staggered delay so the section
-          feels sequenced rather than dumped on the visitor all at once. */}
-      <section
-        id="fonctionnalites"
-        className="relative overflow-hidden bg-gradient-to-b from-rose-50/50 via-white to-white py-20 px-6"
-      >
-        <div className="relative mx-auto max-w-7xl">
-          <Reveal>
-            <div className="text-center max-w-3xl mx-auto">
-              <span className="inline-block rounded-full bg-rose-50 px-3.5 py-1 text-xs font-semibold text-rose-800 mb-3 border border-rose-100">
-                Le vrai coût du cahier papier
+        <section className="bg-white py-16 px-6">
+          <div className="mx-auto max-w-4xl text-center">
+            <Reveal>
+              <span className="inline-block rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-800 mb-3 border border-emerald-100">
+                Présentation vidéo
               </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
-                Combien de dimanches votre trésorier a-t-il déjà perdus ?
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
+                Goshen en 2 minutes
               </h2>
-              <p className="mt-4 text-stone-600 text-base leading-relaxed">
-                Un chiffre qui ne tombe pas juste, et c’est tout le dimanche qui recommence. Le
-                papier ne pardonne aucune erreur — et chaque erreur coûte du temps, de l’argent ou
-                la confiance de l’église.
+              <p className="mt-3 text-stone-600 text-sm sm:text-base">
+                Un tour rapide du tableau de bord, de la saisie du culte et des rapports PDF.
               </p>
-            </div>
-          </Reveal>
+            </Reveal>
 
-          <div className="mt-14 grid md:grid-cols-3 gap-8">
-            <Reveal delayMs={0}>
-              <PainCard
-                icon={<CalendarClockIcon className="h-6 w-6" />}
-                title="Plus d’une heure perdue chaque dimanche"
-                description="Pendant que la communauté rentre chez elle, le trésorier recompte encore la corbeille à la main — et recommence dès qu’un chiffre ne tombe pas juste."
-              />
-            </Reveal>
             <Reveal delayMs={150}>
-              <PainCard
-                icon={<AlertTriangleIcon className="h-6 w-6" />}
-                title="Des écarts de caisse jamais expliqués"
-                description="Un billet manquant, une dépense oubliée : personne ne sait où est parti l’argent, et le doute s’installe dans l’équipe."
-              />
-            </Reveal>
-            <Reveal delayMs={300}>
-              <PainCard
-                icon={<ReceiptTextIcon className="h-6 w-6" />}
-                title="Des reçus égarés, aucune preuve à montrer"
-                description="Sans justificatif retrouvable, impossible de prouver une dépense devant le comité ou l’assemblée."
-              />
+              <div className="group relative mt-9 overflow-hidden rounded-3xl border border-stone-200 bg-stone-950 shadow-2xl transition-transform duration-500 hover:scale-[1.01]">
+                <video
+                  controls
+                  preload="metadata"
+                  poster="/photos/dashboard-preview.png"
+                  className="aspect-video w-full"
+                >
+                  <source src="/videos/presentation-goshen.mp4" type="video/mp4" />
+                </video>
+              </div>
             </Reveal>
           </div>
+        </section>
 
-          <Reveal delayMs={400}>
-            <div className="mt-10 flex justify-center">
-              <a
-                href="#comment-ca-marche"
-                className="group inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
-              >
-                Voir la solution en 3 étapes
-                <ChevronDownIcon className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
-              </a>
+        {/* Problem Section — 3 concrete pains (time / trust / proof), each
+          card revealing on scroll with a staggered delay so the section
+          feels sequenced rather than dumped on the visitor all at once. */}
+        <section
+          id="fonctionnalites"
+          className="relative overflow-hidden bg-gradient-to-b from-rose-50/50 via-white to-white py-20 px-6"
+        >
+          <div className="relative mx-auto max-w-7xl">
+            <Reveal>
+              <div className="text-center max-w-3xl mx-auto">
+                <span className="inline-block rounded-full bg-rose-50 px-3.5 py-1 text-xs font-semibold text-rose-800 mb-3 border border-rose-100">
+                  Le vrai coût du cahier papier
+                </span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
+                  Combien de dimanches votre trésorier a-t-il déjà perdus ?
+                </h2>
+                <p className="mt-4 text-stone-600 text-base leading-relaxed">
+                  Un chiffre qui ne tombe pas juste, et c’est tout le dimanche qui recommence. Le
+                  papier ne pardonne aucune erreur — et chaque erreur coûte du temps, de l’argent ou
+                  la confiance de l’église.
+                </p>
+              </div>
+            </Reveal>
+
+            <div className="mt-14 grid md:grid-cols-3 gap-8">
+              <Reveal delayMs={0}>
+                <PainCard
+                  icon={<CalendarClockIcon className="h-6 w-6" />}
+                  title="Plus d’une heure perdue chaque dimanche"
+                  description="Pendant que la communauté rentre chez elle, le trésorier recompte encore la corbeille à la main — et recommence dès qu’un chiffre ne tombe pas juste."
+                />
+              </Reveal>
+              <Reveal delayMs={150}>
+                <PainCard
+                  icon={<AlertTriangleIcon className="h-6 w-6" />}
+                  title="Des écarts de caisse jamais expliqués"
+                  description="Un billet manquant, une dépense oubliée : personne ne sait où est parti l’argent, et le doute s’installe dans l’équipe."
+                />
+              </Reveal>
+              <Reveal delayMs={300}>
+                <PainCard
+                  icon={<ReceiptTextIcon className="h-6 w-6" />}
+                  title="Des reçus égarés, aucune preuve à montrer"
+                  description="Sans justificatif retrouvable, impossible de prouver une dépense devant le comité ou l’assemblée."
+                />
+              </Reveal>
             </div>
-          </Reveal>
-        </div>
-      </section>
 
-      {/* ========================================================= */}
-      {/* SECTION COMMENT ÇA MARCHE (Placée juste après le problème) */}
-      {/* ========================================================= */}
-      <section
-        id="comment-ca-marche"
-        className="relative overflow-hidden bg-gradient-to-br from-emerald-50/70 via-white to-white py-20 px-6"
-      >
-        <div className="relative mx-auto max-w-7xl grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          {/* Left Column: 3 Stepped floating cards on organic gradient circle
+            <Reveal delayMs={400}>
+              <div className="mt-10 flex justify-center">
+                <a
+                  href="#comment-ca-marche"
+                  className="group inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+                >
+                  Voir la solution en 3 étapes
+                  <ChevronDownIcon className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
+                </a>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ========================================================= */}
+        {/* SECTION COMMENT ÇA MARCHE (Placée juste après le problème) */}
+        {/* ========================================================= */}
+        <section
+          id="comment-ca-marche"
+          className="relative overflow-hidden bg-gradient-to-br from-emerald-50/70 via-white to-white py-20 px-6"
+        >
+          <div className="relative mx-auto max-w-7xl grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Left Column: 3 Stepped floating cards on organic gradient circle
               (Inspiré de la maquette de référence 1). Ordered after the
               text column on mobile (order-2) so the "Comment ça marche"
               intro reads before the steps illustration, matching desktop's
               left-visual/right-text layout only from lg up. */}
-          <div className="order-2 lg:order-1 lg:col-span-6 relative flex justify-center items-center py-6">
-            {/* Organic backdrop circle with soft emerald glow */}
-            <div
-              aria-hidden
-              className="absolute h-80 w-80 sm:h-96 sm:w-96 rounded-full bg-gradient-to-tr from-emerald-100 via-emerald-200/50 to-teal-50/30 blur-xl opacity-90"
-            />
-            <div
-              aria-hidden
-              className="absolute -left-6 top-1/2 -translate-y-1/2 h-72 w-72 sm:h-80 sm:w-80 rounded-full bg-emerald-100/70 pointer-events-none"
-            />
+            <div className="order-2 lg:order-1 lg:col-span-6 relative flex justify-center items-center py-6">
+              {/* Organic backdrop circle with soft emerald glow */}
+              <div
+                aria-hidden
+                className="absolute h-80 w-80 sm:h-96 sm:w-96 rounded-full bg-gradient-to-tr from-emerald-100 via-emerald-200/50 to-teal-50/30 blur-xl opacity-90"
+              />
+              <div
+                aria-hidden
+                className="absolute -left-6 top-1/2 -translate-y-1/2 h-72 w-72 sm:h-80 sm:w-80 rounded-full bg-emerald-100/70 pointer-events-none"
+              />
 
-            {/* Stepped cards container */}
-            <div className="relative w-full max-w-md space-y-6 z-10">
-              {/* Step 1 */}
-              <Reveal delayMs={0} className="-ml-2 sm:-ml-4">
-                <div className="relative transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg rounded-2xl border border-stone-200/90 bg-white/95 backdrop-blur-sm p-6 shadow-md">
-                  <div className="flex items-start gap-4">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 font-serif text-lg font-extrabold text-emerald-800 shadow-xs">
-                      1
-                    </span>
-                    <div>
-                      <h3 className="font-serif text-base font-bold text-emerald-950">
-                        Saisie numérique du culte
-                      </h3>
-                      <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                        Dîmes, offrandes ordinaires et dons spéciaux : le trésorier enregistre les
-                        montants en 3 minutes sur son smartphone le dimanche.
-                      </p>
+              {/* Stepped cards container */}
+              <div className="relative w-full max-w-md space-y-6 z-10">
+                {/* Step 1 */}
+                <Reveal delayMs={0} className="-ml-2 sm:-ml-4">
+                  <div className="relative transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg rounded-2xl border border-stone-200/90 bg-white/95 backdrop-blur-sm p-6 shadow-md">
+                    <div className="flex items-start gap-4">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 font-serif text-lg font-extrabold text-emerald-800 shadow-xs">
+                        1
+                      </span>
+                      <div>
+                        <h3 className="font-serif text-base font-bold text-emerald-950">
+                          Saisie numérique du culte
+                        </h3>
+                        <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
+                          Dîmes, offrandes ordinaires et dons spéciaux : le trésorier enregistre les
+                          montants en 3 minutes sur son smartphone le dimanche.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Reveal>
+                </Reveal>
 
-              {/* Step 2 (indented to the right) */}
-              <Reveal delayMs={150} className="ml-4 sm:ml-8">
-                <div className="relative transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg rounded-2xl border border-stone-200/90 bg-white/95 backdrop-blur-sm p-6 shadow-md">
-                  <div className="flex items-start gap-4">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 font-serif text-lg font-extrabold text-emerald-800 shadow-xs">
-                      2
-                    </span>
-                    <div>
-                      <h3 className="font-serif text-base font-bold text-emerald-950">
-                        Justification & Reçus photos
-                      </h3>
-                      <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                        Pour chaque achat ou dépense, prenez le justificatif en photo et validez les
-                        sorties récurrentes en 1 clic. Zéro justificatif égaré.
-                      </p>
+                {/* Step 2 (indented to the right) */}
+                <Reveal delayMs={150} className="ml-4 sm:ml-8">
+                  <div className="relative transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg rounded-2xl border border-stone-200/90 bg-white/95 backdrop-blur-sm p-6 shadow-md">
+                    <div className="flex items-start gap-4">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 font-serif text-lg font-extrabold text-emerald-800 shadow-xs">
+                        2
+                      </span>
+                      <div>
+                        <h3 className="font-serif text-base font-bold text-emerald-950">
+                          Justification & Reçus photos
+                        </h3>
+                        <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
+                          Pour chaque achat ou dépense, prenez le justificatif en photo et validez
+                          les sorties récurrentes en 1 clic. Zéro justificatif égaré.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Reveal>
+                </Reveal>
 
-              {/* Step 3 */}
-              <Reveal delayMs={300} className="-ml-1 sm:ml-0">
-                <div className="relative transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg rounded-2xl border border-stone-200/90 bg-white/95 backdrop-blur-sm p-6 shadow-md">
-                  <div className="flex items-start gap-4">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 font-serif text-lg font-extrabold text-emerald-800 shadow-xs">
-                      3
-                    </span>
-                    <div>
-                      <h3 className="font-serif text-base font-bold text-emerald-950">
-                        Clôture & Bilan instantané
-                      </h3>
-                      <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                        Le solde consolidé est calculé automatiquement. Le rapport dominical PDF est
-                        généré et transmis au pasteur et au comité sans délai.
-                      </p>
+                {/* Step 3 */}
+                <Reveal delayMs={300} className="-ml-1 sm:ml-0">
+                  <div className="relative transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg rounded-2xl border border-stone-200/90 bg-white/95 backdrop-blur-sm p-6 shadow-md">
+                    <div className="flex items-start gap-4">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 font-serif text-lg font-extrabold text-emerald-800 shadow-xs">
+                        3
+                      </span>
+                      <div>
+                        <h3 className="font-serif text-base font-bold text-emerald-950">
+                          Clôture & Bilan instantané
+                        </h3>
+                        <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
+                          Le solde consolidé est calculé automatiquement. Le rapport dominical PDF
+                          est généré et transmis au pasteur et au comité sans délai.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Reveal>
-            </div>
-          </div>
-
-          {/* Right Column: Title, Explanations, Key Metrics & Orbit visual */}
-          <Reveal delayMs={150} className="order-1 lg:order-2 lg:col-span-6 relative">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800 mb-4 border border-emerald-200/60">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-              Comment ça marche
-            </div>
-
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-stone-900 tracking-tight leading-tight">
-              La clarté financière de votre église{' '}
-              <span className="text-emerald-700">en 3 étapes simples</span>
-            </h2>
-
-            <p className="mt-5 text-stone-600 text-base sm:text-lg leading-relaxed font-light">
-              Fini les heures de calculs tard le dimanche soir, les cahiers introuvables et les
-              erreurs de caisse. Goshen structure chaque flux financier de façon limpide, de
-              l’encaissement de la corbeille jusqu’à la consolidation multi-annexes.
-            </p>
-
-            {/* Key Metrics / Stats */}
-            <div className="mt-10 grid grid-cols-3 gap-6 pt-8 border-t border-stone-200">
-              <div className="transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">
-                  3 min
-                </p>
-                <p className="text-xs text-stone-500 mt-1 font-medium">Saisie moyenne d'un culte</p>
-              </div>
-              <div className="transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">
-                  100%
-                </p>
-                <p className="text-xs text-stone-500 mt-1 font-medium">Dépenses avec reçus</p>
-              </div>
-              <div className="transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">0</p>
-                <p className="text-xs text-stone-500 mt-1 font-medium">Écart de caisse</p>
+                </Reveal>
               </div>
             </div>
 
-            {/* Reassurance pill — visible at every breakpoint since most
+            {/* Right Column: Title, Explanations, Key Metrics & Orbit visual */}
+            <Reveal delayMs={150} className="order-1 lg:order-2 lg:col-span-6 relative">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800 mb-4 border border-emerald-200/60">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                Comment ça marche
+              </div>
+
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-stone-900 tracking-tight leading-tight">
+                La clarté financière de votre église{' '}
+                <span className="text-emerald-700">en 3 étapes simples</span>
+              </h2>
+
+              <p className="mt-5 text-stone-600 text-base sm:text-lg leading-relaxed font-light">
+                Fini les heures de calculs tard le dimanche soir, les cahiers introuvables et les
+                erreurs de caisse. Goshen structure chaque flux financier de façon limpide, de
+                l’encaissement de la corbeille jusqu’à la consolidation multi-annexes.
+              </p>
+
+              {/* Key Metrics / Stats */}
+              <div className="mt-10 grid grid-cols-3 gap-6 pt-8 border-t border-stone-200">
+                <div className="transition-transform duration-300 hover:-translate-y-1">
+                  <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">
+                    3 min
+                  </p>
+                  <p className="text-xs text-stone-500 mt-1 font-medium">
+                    Saisie moyenne d'un culte
+                  </p>
+                </div>
+                <div className="transition-transform duration-300 hover:-translate-y-1">
+                  <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">
+                    100%
+                  </p>
+                  <p className="text-xs text-stone-500 mt-1 font-medium">Dépenses avec reçus</p>
+                </div>
+                <div className="transition-transform duration-300 hover:-translate-y-1">
+                  <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">
+                    0
+                  </p>
+                  <p className="text-xs text-stone-500 mt-1 font-medium">Écart de caisse</p>
+                </div>
+              </div>
+
+              {/* Reassurance pill — visible at every breakpoint since most
                 treasurers use Goshen from a phone, exactly where a shaky
                 connection is most likely. */}
-            <div className="flex items-center gap-3 mt-8 text-xs font-medium text-emerald-900 bg-emerald-50/80 rounded-xl p-3.5 border border-emerald-200/70">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-700 text-white shadow-xs">
-                ✓
+              <div className="flex items-center gap-3 mt-8 text-xs font-medium text-emerald-900 bg-emerald-50/80 rounded-xl p-3.5 border border-emerald-200/70">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-700 text-white shadow-xs">
+                  ✓
+                </div>
+                <span>
+                  Fonctionne même sans connexion internet : la saisie continue hors ligne et se
+                  synchronise automatiquement dès que le réseau revient.
+                </span>
               </div>
-              <span>
-                Fonctionne même sans connexion internet : la saisie continue hors ligne et se
-                synchronise automatiquement dès que le réseau revient.
-              </span>
-            </div>
 
-            <Link
-              href="/signup"
-              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg sm:w-auto"
-            >
-              Essayer gratuitement &rarr;
-            </Link>
-          </Reveal>
-        </div>
-      </section>
+              <Link
+                href="/signup"
+                className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg sm:w-auto"
+              >
+                Essayer gratuitement &rarr;
+              </Link>
+            </Reveal>
+          </div>
+        </section>
 
-      {/* Trust & Security Section — right after "Comment ça marche" so the
+        {/* Trust & Security Section — right after "Comment ça marche" so the
           reassurance follows immediately after the pitch. Each card carries
           its own large numeral watermark; hovering (or focusing) a card is
           what "activates" it, so nothing here is a static, faked highlight. */}
-      <section id="securite" className="bg-gradient-to-b from-white to-stone-50 py-20 px-6">
-        <div className="mx-auto max-w-7xl">
-          <Reveal>
-            <div className="text-center max-w-3xl mx-auto">
-              <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 mb-3 border border-emerald-100">
-                Sécurité & Confiance
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
-                L’argent de votre église mérite plus qu’un cahier
-              </h2>
-              <p className="mt-4 text-stone-600 text-base">
-                Goshen est conçu pour que chaque franc encaissé ou décaissé reste traçable, réservé
-                aux bonnes personnes, et jamais enfermé chez nous.
-              </p>
-            </div>
-          </Reveal>
+        <section id="securite" className="bg-gradient-to-b from-white to-stone-50 py-20 px-6">
+          <div className="mx-auto max-w-7xl">
+            <Reveal>
+              <div className="text-center max-w-3xl mx-auto">
+                <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 mb-3 border border-emerald-100">
+                  Sécurité & Confiance
+                </span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
+                  L’argent de votre église mérite plus qu’un cahier
+                </h2>
+                <p className="mt-4 text-stone-600 text-base">
+                  Goshen est conçu pour que chaque franc encaissé ou décaissé reste traçable,
+                  réservé aux bonnes personnes, et jamais enfermé chez nous.
+                </p>
+              </div>
+            </Reveal>
 
-          <div className="relative mt-16">
-            {/* Dashed connector — decorative flow line echoing the
+            <div className="relative mt-16">
+              {/* Dashed connector — decorative flow line echoing the
                 reference infographic, hidden below lg since the grid
                 stacks to one column there. */}
-            <svg
-              aria-hidden
-              viewBox="0 0 800 260"
-              preserveAspectRatio="none"
-              className="pointer-events-none absolute inset-0 hidden h-full w-full text-emerald-200 lg:block"
-            >
-              <path
-                d="M400 0 V50 M400 210 V260 M50 130 H750"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeDasharray="6 8"
-              />
-            </svg>
-
-            <div className="relative grid gap-6 sm:grid-cols-2">
-              <Reveal delayMs={0}>
-                <SecurityCard
-                  index={1}
-                  accent="emerald"
-                  icon={<LockIcon className="h-6 w-6" />}
-                  title="Chiffrement & hébergement sécurisé"
-                  description="Vos données sont chiffrées et hébergées sur une infrastructure sécurisée, jour et nuit."
-                />
-              </Reveal>
-              <Reveal delayMs={100}>
-                <SecurityCard
-                  index={2}
-                  accent="amber"
-                  icon={<UsersGroupIcon className="h-6 w-6" />}
-                  title="Rôles stricts par utilisateur"
-                  description="Pasteur, Trésorier, Secrétaire, Auditeur : chacun ne voit et n’agit que sur ce qui le concerne."
-                />
-              </Reveal>
-              <Reveal delayMs={200}>
-                <SecurityCard
-                  index={3}
-                  accent="amber"
-                  icon={<DownloadIcon className="h-6 w-6" />}
-                  title="Vos données vous appartiennent"
-                  description="Exportez l’intégralité de vos écritures à tout moment. Aucun verrouillage, aucune otage."
-                />
-              </Reveal>
-              <Reveal delayMs={300}>
-                <SecurityCard
-                  index={4}
-                  accent="emerald"
-                  icon={<DocumentReportIcon className="h-6 w-6" />}
-                  title="Piste d’audit complète"
-                  description="Chaque entrée et sortie reste horodatée et attribuée à son auteur, consultable à tout moment."
-                />
-              </Reveal>
-            </div>
-          </div>
-
-          <Reveal delayMs={100}>
-            <div className="mt-12 flex justify-center">
-              <a
-                href="#multi-annexes"
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
+              <svg
+                aria-hidden
+                viewBox="0 0 800 260"
+                preserveAspectRatio="none"
+                className="pointer-events-none absolute inset-0 hidden h-full w-full text-emerald-200 lg:block"
               >
-                Découvrir la supervision multi-annexes &rarr;
-              </a>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+                <path
+                  d="M400 0 V50 M400 210 V260 M50 130 H750"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeDasharray="6 8"
+                />
+              </svg>
 
-      {/* Multi-branches section */}
-      <section id="multi-annexes" className="bg-stone-100 py-20 px-6 border-y border-stone-200">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <Reveal>
-            <div>
-              <span className="inline-block rounded-md bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 mb-4">
-                Supervision de Réseau
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 leading-tight">
-                L’église mère supervise ses 2 à 5 annexes sans jamais se déconnecter
-              </h2>
-              <p className="mt-4 text-stone-600 text-base leading-relaxed">
-                Le pasteur principal ou l’auditeur régional bascule d’une annexe à l’autre en un
-                tap. Chaque annexe conserve sa caisse propre, son historique et son trésorier dédié,
-                tandis que le siège dispose d’une <strong>Vue Consolidée</strong> pour la
-                coordination nationale.
-              </p>
-              <ul className="mt-6 space-y-3 text-sm text-stone-700">
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Soldes indépendants pour
-                  chaque lieu de culte
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Rôles stricts : Pasteur,
-                  Trésorier, Secrétaire, Auditeur
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold">✓</span> Alerte automatique si le
-                  solde descend sous le seuil configuré
-                </li>
-              </ul>
-              <Link
-                href="/signup"
-                className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
-              >
-                Ajouter mes annexes &rarr;
-              </Link>
-            </div>
-          </Reveal>
-
-          {/* Real product screenshot, right next to the pitch — replaces
-              the earlier hand-built mockup card with the actual multi-
-              annexes dashboard. */}
-          <Reveal delayMs={150}>
-            <div className="rounded-3xl border border-stone-300/80 bg-emerald-950 p-2 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
-              <img
-                src="/photos/goshen-desktop.jpg"
-                alt="Vue consolidée des annexes de l'église affichée sur le tableau de bord Goshen"
-                className="w-full rounded-2xl"
-                loading="lazy"
-              />
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ========================================================= */}
-      {/* SECTION COMMUNAUTÉ WHATSAPP & CONTACT (Inspirée image 3) */}
-      {/* ========================================================= */}
-      <section id="communaute" className="py-20 px-6 max-w-7xl mx-auto">
-        <div className="relative overflow-hidden rounded-3xl border border-stone-200/90 bg-[#faf9f5] shadow-lg">
-          {/* Subtle warm background glow */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-amber-100/60 blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-emerald-100/50 blur-3xl"
-          />
-
-          <div className="relative p-6 sm:p-10 lg:p-14">
-            <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              {/* Left Column: Heading & Feature Points */}
-              <Reveal className="lg:col-span-7">
-                <div className="space-y-2">
-                  <p className="font-serif text-lg sm:text-xl text-stone-700">Rejoignez la</p>
-                  <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-emerald-950 tracking-tight leading-tight">
-                    Communauté <br />
-                    <span className="text-emerald-800">WhatsApp Goshen</span>
-                  </h2>
-                </div>
-
-                {/* Triangle bullet list matching Image 3 */}
-                <div className="mt-8 space-y-4">
-                  <div className="flex items-start gap-3.5">
-                    <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
-                    <div>
-                      <p className="text-base sm:text-lg font-semibold text-stone-900">
-                        Posez vos questions
-                      </p>
-                      <p className="text-xs sm:text-sm text-stone-600">
-                        Échangez directement avec notre équipe et d'autres trésoriers d'églises.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3.5">
-                    <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
-                    <div>
-                      <p className="text-base sm:text-lg font-semibold text-stone-900">
-                        Partagez vos idées
-                      </p>
-                      <p className="text-xs sm:text-sm text-stone-600">
-                        Proposez des améliorations pour adapter Goshen à vos besoins réels.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3.5">
-                    <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
-                    <div>
-                      <p className="text-base sm:text-lg font-semibold text-stone-900">
-                        Envoyez vos captures d’écran
-                      </p>
-                      <p className="text-xs sm:text-sm text-stone-600">
-                        En cas d'interrogation sur un rapport ou une saisie, obtenez un guidage
-                        direct.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3.5">
-                    <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
-                    <div>
-                      <p className="text-base sm:text-lg font-semibold text-stone-900">
-                        Recevez de l’aide rapidement
-                      </p>
-                      <p className="text-xs sm:text-sm text-stone-600">
-                        Une assistance réactive en français, par une équipe dédiée aux ministères.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-
-              {/* Right Column: Community Visual with Photo */}
-              <Reveal delayMs={150} className="lg:col-span-5 relative flex justify-center">
-                <div className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-emerald-950 transition-transform duration-500 hover:-translate-y-1">
-                  <img
-                    src="/photos/goshen-app.jpg"
-                    alt="Membre de la communauté Goshen utilisant l'application pendant le culte"
-                    className="w-full h-80 sm:h-96 object-cover object-center filter brightness-105"
+              <div className="relative grid gap-6 sm:grid-cols-2">
+                <Reveal delayMs={0}>
+                  <SecurityCard
+                    index={1}
+                    accent="emerald"
+                    icon={<LockIcon className="h-6 w-6" />}
+                    title="Chiffrement & hébergement sécurisé"
+                    description="Vos données sont chiffrées et hébergées sur une infrastructure sécurisée, jour et nuit."
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Floating badge over photo */}
-                  <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/95 backdrop-blur-md p-3 shadow-lg border border-stone-100 flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white">
-                      <MessageCircleIcon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-emerald-950 truncate">
-                        Communauté Active WhatsApp
-                      </p>
-                      <p className="text-[11px] text-stone-500 truncate">
-                        {SUPPORT_WHATSAPP_DISPLAY} &bull; Réponse rapide
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
+                </Reveal>
+                <Reveal delayMs={100}>
+                  <SecurityCard
+                    index={2}
+                    accent="amber"
+                    icon={<UsersGroupIcon className="h-6 w-6" />}
+                    title="Rôles stricts par utilisateur"
+                    description="Pasteur, Trésorier, Secrétaire, Auditeur : chacun ne voit et n’agit que sur ce qui le concerne."
+                  />
+                </Reveal>
+                <Reveal delayMs={200}>
+                  <SecurityCard
+                    index={3}
+                    accent="amber"
+                    icon={<DownloadIcon className="h-6 w-6" />}
+                    title="Vos données vous appartiennent"
+                    description="Exportez l’intégralité de vos écritures à tout moment. Aucun verrouillage, aucune otage."
+                  />
+                </Reveal>
+                <Reveal delayMs={300}>
+                  <SecurityCard
+                    index={4}
+                    accent="emerald"
+                    icon={<DocumentReportIcon className="h-6 w-6" />}
+                    title="Piste d’audit complète"
+                    description="Chaque entrée et sortie reste horodatée et attribuée à son auteur, consultable à tout moment."
+                  />
+                </Reveal>
+              </div>
             </div>
 
-            {/* Bottom Dark Banner Bar (matching Image 3) */}
-            <Reveal delayMs={200}>
-              <div className="mt-10 rounded-2xl bg-gradient-to-r from-[#21142a] via-[#1a2e2b] to-[#0c2420] p-4 sm:p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
-                <div className="flex items-center gap-3 text-center sm:text-left">
-                  <span className="text-amber-400 font-bold text-lg select-none hidden sm:inline">
-                    ▲
-                  </span>
-                  <p className="text-sm sm:text-base font-medium text-emerald-50">
-                    Échangez directement avec{' '}
-                    <strong className="text-white font-semibold">l’équipe Goshen</strong> et les
-                    autres utilisateurs.
-                  </p>
-                </div>
-
+            <Reveal delayMs={100}>
+              <div className="mt-12 flex justify-center">
                 <a
-                  href={WHATSAPP_COMMUNITY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold px-6 py-3 text-sm transition-all shadow-md shrink-0 transform hover:scale-[1.02]"
+                  href="#multi-annexes"
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
                 >
-                  <MessageCircleIcon className="h-4 w-4" />
-                  <span>Rejoindre sur WhatsApp &rarr;</span>
+                  Découvrir la supervision multi-annexes &rarr;
                 </a>
               </div>
             </Reveal>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ Section — scattered photo collage (all previously unused on
+        {/* Multi-branches section */}
+        <section id="multi-annexes" className="bg-stone-100 py-20 px-6 border-y border-stone-200">
+          <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+            <Reveal>
+              <div>
+                <span className="inline-block rounded-md bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 mb-4">
+                  Supervision de Réseau
+                </span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 leading-tight">
+                  L’église mère supervise ses 2 à 5 annexes sans jamais se déconnecter
+                </h2>
+                <p className="mt-4 text-stone-600 text-base leading-relaxed">
+                  Le pasteur principal ou l’auditeur régional bascule d’une annexe à l’autre en un
+                  tap. Chaque annexe conserve sa caisse propre, son historique et son trésorier
+                  dédié, tandis que le siège dispose d’une <strong>Vue Consolidée</strong> pour la
+                  coordination nationale.
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-stone-700">
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-700 font-bold">✓</span> Soldes indépendants pour
+                    chaque lieu de culte
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-700 font-bold">✓</span> Rôles stricts : Pasteur,
+                    Trésorier, Secrétaire, Auditeur
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-700 font-bold">✓</span> Alerte automatique si le
+                    solde descend sous le seuil configuré
+                  </li>
+                </ul>
+                <Link
+                  href="/signup"
+                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
+                >
+                  Ajouter mes annexes &rarr;
+                </Link>
+              </div>
+            </Reveal>
+
+            {/* Real product screenshot, right next to the pitch — replaces
+              the earlier hand-built mockup card with the actual multi-
+              annexes dashboard. */}
+            <Reveal delayMs={150}>
+              <div className="rounded-3xl border border-stone-300/80 bg-emerald-950 p-2 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
+                <Image
+                  src="/photos/goshen-desktop.jpg"
+                  alt="Vue consolidée des annexes de l'église affichée sur le tableau de bord Goshen"
+                  width={1536}
+                  height={1024}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="w-full h-auto rounded-2xl"
+                />
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ========================================================= */}
+        {/* SECTION COMMUNAUTÉ WHATSAPP & CONTACT (Inspirée image 3) */}
+        {/* ========================================================= */}
+        <section id="communaute" className="py-20 px-6 max-w-7xl mx-auto">
+          <div className="relative overflow-hidden rounded-3xl border border-stone-200/90 bg-[#faf9f5] shadow-lg">
+            {/* Subtle warm background glow */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-amber-100/60 blur-3xl"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-emerald-100/50 blur-3xl"
+            />
+
+            <div className="relative p-6 sm:p-10 lg:p-14">
+              <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+                {/* Left Column: Heading & Feature Points */}
+                <Reveal className="lg:col-span-7">
+                  <div className="space-y-2">
+                    <p className="font-serif text-lg sm:text-xl text-stone-700">Rejoignez la</p>
+                    <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-emerald-950 tracking-tight leading-tight">
+                      Communauté <br />
+                      <span className="text-emerald-800">WhatsApp Goshen</span>
+                    </h2>
+                  </div>
+
+                  {/* Triangle bullet list matching Image 3 */}
+                  <div className="mt-8 space-y-4">
+                    <div className="flex items-start gap-3.5">
+                      <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
+                      <div>
+                        <p className="text-base sm:text-lg font-semibold text-stone-900">
+                          Posez vos questions
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-600">
+                          Échangez directement avec notre équipe et d'autres trésoriers d'églises.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5">
+                      <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
+                      <div>
+                        <p className="text-base sm:text-lg font-semibold text-stone-900">
+                          Partagez vos idées
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-600">
+                          Proposez des améliorations pour adapter Goshen à vos besoins réels.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5">
+                      <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
+                      <div>
+                        <p className="text-base sm:text-lg font-semibold text-stone-900">
+                          Envoyez vos captures d’écran
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-600">
+                          En cas d'interrogation sur un rapport ou une saisie, obtenez un guidage
+                          direct.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5">
+                      <span className="text-sm font-bold text-amber-600 mt-0.5 select-none">▲</span>
+                      <div>
+                        <p className="text-base sm:text-lg font-semibold text-stone-900">
+                          Recevez de l’aide rapidement
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-600">
+                          Une assistance réactive en français, par une équipe dédiée aux ministères.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+
+                {/* Right Column: Community Visual with Photo */}
+                <Reveal delayMs={150} className="lg:col-span-5 relative flex justify-center">
+                  <div className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-emerald-950 transition-transform duration-500 hover:-translate-y-1">
+                    <Image
+                      src="/photos/goshen-app.jpg"
+                      alt="Membre de la communauté Goshen utilisant l'application pendant le culte"
+                      width={1200}
+                      height={1200}
+                      sizes="(min-width: 640px) 448px, 384px"
+                      className="w-full h-80 sm:h-96 object-cover object-center filter brightness-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-transparent pointer-events-none" />
+
+                    {/* Floating badge over photo */}
+                    <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/95 backdrop-blur-md p-3 shadow-lg border border-stone-100 flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white">
+                        <MessageCircleIcon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-emerald-950 truncate">
+                          Communauté Active WhatsApp
+                        </p>
+                        <p className="text-[11px] text-stone-500 truncate">
+                          {SUPPORT_WHATSAPP_DISPLAY} &bull; Réponse rapide
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              </div>
+
+              {/* Bottom Dark Banner Bar (matching Image 3) */}
+              <Reveal delayMs={200}>
+                <div className="mt-10 rounded-2xl bg-gradient-to-r from-[#21142a] via-[#1a2e2b] to-[#0c2420] p-4 sm:p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+                  <div className="flex items-center gap-3 text-center sm:text-left">
+                    <span className="text-amber-400 font-bold text-lg select-none hidden sm:inline">
+                      ▲
+                    </span>
+                    <p className="text-sm sm:text-base font-medium text-emerald-50">
+                      Échangez directement avec{' '}
+                      <strong className="text-white font-semibold">l’équipe Goshen</strong> et les
+                      autres utilisateurs.
+                    </p>
+                  </div>
+
+                  <a
+                    href={WHATSAPP_COMMUNITY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold px-6 py-3 text-sm transition-all shadow-md shrink-0 transform hover:scale-[1.02]"
+                  >
+                    <MessageCircleIcon className="h-4 w-4" />
+                    <span>Rejoindre sur WhatsApp &rarr;</span>
+                  </a>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section — scattered photo collage (all previously unused on
           this page) beside a flat accordion, first question open by
           default. Matches the reference layout more than the old
           category-grid + separate help card. */}
-      <section
-        id="faq"
-        className="bg-gradient-to-b from-stone-50 via-white to-[#fafaf7] py-20 px-6"
-      >
-        <div className="mx-auto max-w-7xl">
-          <Reveal>
-            <div className="text-center max-w-2xl mx-auto">
-              <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-3 border border-emerald-100">
-                FAQ
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
-                Questions fréquentes
-              </h2>
-            </div>
-          </Reveal>
-
-          <div className="mt-14 grid lg:grid-cols-2 gap-12 items-start">
-            {/* Photo collage — hidden below lg, the accordion carries mobile */}
-            <Reveal className="relative hidden lg:block h-[480px]">
-              <img
-                src="/photos/photo-5.jpg"
-                alt="Membre de la communauté Goshen à l'église"
-                className="absolute left-6 top-0 h-40 w-40 -rotate-6 rounded-2xl border-4 border-white object-cover shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
-              />
-              <img
-                src="/photos/goshen-community.jpg"
-                alt="Équipe de trésoriers d'église utilisant Goshen"
-                className="absolute right-0 top-4 h-52 w-44 rotate-3 rounded-2xl border-4 border-white object-cover shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
-              />
-              <img
-                src="/photos/goshen-family.jpg"
-                alt="Comité paroissial en réunion avec Goshen"
-                className="absolute left-16 top-44 z-10 h-64 w-72 -rotate-2 rounded-2xl border-4 border-white object-cover shadow-2xl transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
-              />
-              <img
-                src="/photos/photo-2.jpg"
-                alt="Collecte de la corbeille pendant le culte"
-                className="absolute bottom-0 left-0 z-20 h-36 w-36 rotate-6 rounded-2xl border-4 border-white object-cover shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
-              />
+        <section
+          id="faq"
+          className="bg-gradient-to-b from-stone-50 via-white to-[#fafaf7] py-20 px-6"
+        >
+          <div className="mx-auto max-w-7xl">
+            <Reveal>
+              <div className="text-center max-w-2xl mx-auto">
+                <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-3 border border-emerald-100">
+                  FAQ
+                </span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
+                  Questions fréquentes
+                </h2>
+              </div>
             </Reveal>
 
-            {/* Accordion + contact card */}
-            <Reveal delayMs={150}>
-              <div>
-                {FAQ_ITEMS.map((item, i) => (
-                  <FaqItem key={item.question} {...item} defaultOpen={i === 0} />
-                ))}
-              </div>
+            <div className="mt-14 grid lg:grid-cols-2 gap-12 items-start">
+              {/* Photo collage — hidden below lg, the accordion carries mobile */}
+              <Reveal className="relative hidden lg:block h-[480px]">
+                {/* next/image: these four are `hidden` below lg, but a raw
+                  <img> is fetched by the browser even inside a
+                  display:none parent — every phone visitor was paying for
+                  a collage it never sees. next/image lazy-loads by default,
+                  and `sizes` pins each one to its rendered width. */}
+                <Image
+                  src="/photos/photo-5.jpg"
+                  alt="Membre de la communauté Goshen à l'église"
+                  width={735}
+                  height={919}
+                  sizes="160px"
+                  className="absolute left-6 top-0 h-40 w-40 -rotate-6 rounded-2xl border-4 border-white object-cover shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
+                />
+                <Image
+                  src="/photos/goshen-community.jpg"
+                  alt="Équipe de trésoriers d'église utilisant Goshen"
+                  width={900}
+                  height={600}
+                  sizes="176px"
+                  className="absolute right-0 top-4 h-52 w-44 rotate-3 rounded-2xl border-4 border-white object-cover shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
+                />
+                <Image
+                  src="/photos/goshen-family.jpg"
+                  alt="Comité paroissial en réunion avec Goshen"
+                  width={900}
+                  height={450}
+                  sizes="288px"
+                  className="absolute left-16 top-44 z-10 h-64 w-72 -rotate-2 rounded-2xl border-4 border-white object-cover shadow-2xl transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
+                />
+                <Image
+                  src="/photos/photo-2.jpg"
+                  alt="Collecte de la corbeille pendant le culte"
+                  width={735}
+                  height={490}
+                  sizes="144px"
+                  className="absolute bottom-0 left-0 z-20 h-36 w-36 rotate-6 rounded-2xl border-4 border-white object-cover shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:rotate-0"
+                />
+              </Reveal>
 
-              <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-emerald-800 bg-emerald-950 p-6 text-white shadow-lg sm:flex-row sm:items-center">
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-800/80">
-                    <MessageCircleIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-base font-bold">Une autre question ?</h3>
-                    <p className="text-xs text-emerald-100/80">
-                      Notre équipe répond en français, sur WhatsApp.
-                    </p>
-                  </div>
+              {/* Accordion + contact card */}
+              <Reveal delayMs={150}>
+                <div>
+                  {FAQ_ITEMS.map((item, i) => (
+                    <FaqItem key={item.question} {...item} defaultOpen={i === 0} />
+                  ))}
                 </div>
-                <a
-                  href={WHATSAPP_COMMUNITY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-emerald-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-amber-400"
-                >
-                  Écrire sur WhatsApp &rarr;
-                </a>
-              </div>
-            </Reveal>
+
+                <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-emerald-800 bg-emerald-950 p-6 text-white shadow-lg sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-800/80">
+                      <MessageCircleIcon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-base font-bold">Une autre question ?</h3>
+                      <p className="text-xs text-emerald-100/80">
+                        Notre équipe répond en français, sur WhatsApp.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={WHATSAPP_COMMUNITY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-emerald-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-amber-400"
+                  >
+                    Écrire sur WhatsApp &rarr;
+                  </a>
+                </div>
+              </Reveal>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
       <footer className="relative overflow-hidden border-t border-stone-200 bg-stone-900 text-stone-400 py-16 px-6">
@@ -1211,6 +1279,14 @@ export default function HomePage() {
                   <a href="#faq" className="hover:text-white transition-colors">
                     FAQ
                   </a>
+                </li>
+                {/* /soutenir was reachable only from inside the app (header,
+                    dashboard, settings), so no crawler could ever discover
+                    it — an orphan page cannot be indexed. */}
+                <li>
+                  <Link href="/soutenir" className="hover:text-white transition-colors">
+                    Soutenir Goshen
+                  </Link>
                 </li>
               </ul>
             </div>

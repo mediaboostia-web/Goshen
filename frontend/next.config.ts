@@ -9,6 +9,31 @@ import { withSentryConfig } from '@sentry/nextjs/config';
 // nonce (server-rendered) for inline scripts; ship CSP via middleware.ts when
 // the first frontend page lands. For now, the API-only surface doesn't render
 // HTML and doesn't need CSP.
+// Route prefixes that must never appear in a search index: the authenticated
+// app, the back-office, and the one-shot transactional pages whose URLs carry
+// tokens. Intentionally duplicated from src/lib/seo.ts (NON_INDEXABLE_PREFIXES)
+// rather than imported: next.config.ts can be loaded by Node's native TypeScript
+// loader, which resolves neither the `@/…` alias nor extensionless relative
+// imports. src/lib/seo.test.ts fails the build if the two lists drift apart.
+const NON_INDEXABLE_PREFIXES = [
+  '/admin',
+  '/dashboard',
+  '/settings',
+  '/transactions',
+  '/recurrent-expenses',
+  '/reports',
+  '/notifications',
+  '/onboarding',
+  '/subscription',
+  '/checkout',
+  '/verify-email',
+  '/forgot-password',
+  '/reset-password',
+  '/auth',
+  '/offline',
+  '/soutenir/merci',
+];
+
 const securityHeaders = [
   {
     key: 'Strict-Transport-Security',
@@ -40,6 +65,19 @@ const config: NextConfig = {
         source: '/:path*',
         headers: securityHeaders,
       },
+      // Keep the authenticated app, the back-office and the token-carrying
+      // transactional pages out of every index. robots.ts disallows the same
+      // prefixes, but a disallow only stops the crawl — a URL linked from
+      // elsewhere can still be indexed URL-only. These pages are client
+      // components, so they cannot `export const metadata` with a robots
+      // field; an HTTP header carries the same directive and costs nothing
+      // (served straight from the CDN, no function invocation).
+      ...NON_INDEXABLE_PREFIXES.flatMap((prefix) =>
+        [prefix, `${prefix}/:path*`].map((source) => ({
+          source,
+          headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+        })),
+      ),
     ];
   },
 };

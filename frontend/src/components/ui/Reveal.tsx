@@ -11,15 +11,29 @@ export function Reveal({
   children,
   delayMs = 0,
   className = '',
+  immediate = false,
 }: {
   children: ReactNode;
   delayMs?: number;
   className?: string;
+  /**
+   * Render visible from the very first paint, skipping the observer.
+   *
+   * Use it for everything above the fold. The animated path ships
+   * `opacity-0` in the server HTML and only clears it once the bundle has
+   * hydrated and IntersectionObserver has fired — on the hero that makes
+   * the <h1> and the hero image invisible until then, so the browser
+   * cannot record them as the Largest Contentful Paint. On the 3G
+   * connections this app is built for, that pushes LCP seconds past the
+   * 2.5s threshold for a paint the server had already delivered.
+   */
+  immediate?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(immediate);
 
   useEffect(() => {
+    if (immediate) return;
     const node = ref.current;
     if (!node) return;
 
@@ -39,7 +53,7 @@ export function Reveal({
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [immediate]);
 
   return (
     <div

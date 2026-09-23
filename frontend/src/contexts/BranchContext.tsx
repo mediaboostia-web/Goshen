@@ -22,6 +22,16 @@ const PUBLIC_PATHS = new Set([
   // supporting the platform must not require an account).
   '/soutenir',
   '/soutenir/merci',
+  // Legal pages: linked from the public footer, and indexable. Missing from
+  // this set they were bounced to /login for every logged-out visitor — and
+  // for Googlebot, which executes this redirect while rendering, so both
+  // pages were dropped from the index. A privacy policy must also be
+  // reachable without an account to be compliant at all.
+  '/confidentialite',
+  '/protection-des-donnees',
+  // Served by the service worker when the network is down — redirecting it
+  // to /login (a page that cannot load offline) defeats its only purpose.
+  '/offline',
 ]);
 
 export interface Branch {

@@ -147,12 +147,13 @@ export default function SignupPage() {
           <div>
             {/* Header */}
             <div className="mb-6">
-              <h1 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+              {/* Eyebrow label, not the heading — see login/page.tsx. */}
+              <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
                 Création de Compte
-              </h1>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 mt-1">
+              </p>
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 mt-1">
                 Inscrire votre Église
-              </h2>
+              </h1>
               <p className="text-xs text-stone-500 mt-1">
                 Démarrez en moins de 2 minutes pour configurer votre première paroisse
               </p>

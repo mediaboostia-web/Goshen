@@ -105,12 +105,14 @@ export default function LoginPage() {
           <div>
             {/* Header */}
             <div className="mb-6">
-              <h1 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                Connexion
-              </h1>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 mt-1">
+              {/* The eyebrow is a label, not the page's heading — it used to
+                  be the <h1> while the real title sat in an <h2>, which
+                  inverts the document outline for crawlers and screen
+                  readers alike. */}
+              <p className="text-xs font-bold uppercase tracking-wider text-stone-500">Connexion</p>
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 mt-1">
                 Bon retour parmi nous
-              </h2>
+              </h1>
               <p className="text-xs text-stone-500 mt-1">
                 Connectez-vous pour accéder à votre tableau de bord
               </p>
