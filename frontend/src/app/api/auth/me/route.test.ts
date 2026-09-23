@@ -12,12 +12,13 @@ vi.mock('@/lib/server/auth', async () => {
   return {
     ...actual,
     verifyToken: vi.fn(),
+    verifyCsrf: vi.fn(),
   };
 });
 
-import { verifyToken } from '@/lib/server/auth';
-import { GET } from './route';
-import { NextRequest } from 'next/server';
+import { verifyToken, verifyCsrf } from '@/lib/server/auth';
+import { GET, PATCH } from './route';
+import { NextRequest, NextResponse } from 'next/server';
 
 function makeReq(opts: { tokenCookie?: string; bearer?: string } = {}): NextRequest {
   const headers: Record<string, string> = {};
@@ -28,9 +29,21 @@ function makeReq(opts: { tokenCookie?: string; bearer?: string } = {}): NextRequ
   });
 }
 
+function makePatchReq(body: unknown, opts: { bearer?: string } = {}): NextRequest {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (opts.bearer) headers.authorization = `Bearer ${opts.bearer}`;
+  return new NextRequest('https://test/api/auth/me', {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(body),
+  });
+}
+
 beforeEach(() => {
   __cookieStore.clear();
   vi.mocked(verifyToken).mockReset();
+  vi.mocked(verifyCsrf).mockReset();
+  vi.mocked(verifyCsrf).mockReturnValue(null);
 });
 
 describe('GET /api/auth/me', () => {
@@ -91,5 +104,58 @@ describe('GET /api/auth/me', () => {
 
     const res = await GET(makeReq({ bearer: 'orphan-jwt' }));
     expect(res.status).toBe(401);
+  });
+});
+
+describe('PATCH /api/auth/me', () => {
+  it('updates the display name and returns the trimmed value', async () => {
+    vi.mocked(verifyToken).mockResolvedValue({ sub: 'u1', email: 'a@b.com', tokenVersion: 0 });
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.com',
+      tokenVersion: 0,
+    } as never);
+    prismaMock.user.update.mockResolvedValue({ id: 'u1', name: 'Pasteur Jean-Marc' } as never);
+
+    const res = await PATCH(
+      makePatchReq({ name: '  Pasteur Jean-Marc  ' }, { bearer: 'valid-access-token' }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { name: 'Pasteur Jean-Marc' },
+      select: { id: true, name: true },
+    });
+    const body = (await res.json()) as { user: { name: string } };
+    expect(body.user.name).toBe('Pasteur Jean-Marc');
+  });
+
+  it('rejects an empty name with 400 VALIDATION_FAILED', async () => {
+    vi.mocked(verifyToken).mockResolvedValue({ sub: 'u1', email: 'a@b.com', tokenVersion: 0 });
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.com',
+      tokenVersion: 0,
+    } as never);
+
+    const res = await PATCH(makePatchReq({ name: '   ' }, { bearer: 'valid-access-token' }));
+    expect(res.status).toBe(400);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects when unauthenticated — 401, no DB write', async () => {
+    const res = await PATCH(makePatchReq({ name: 'Someone' }));
+    expect(res.status).toBe(401);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects when CSRF fails — 403 short-circuits before auth', async () => {
+    vi.mocked(verifyCsrf).mockReturnValueOnce(
+      NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 }),
+    );
+    const res = await PATCH(makePatchReq({ name: 'Someone' }, { bearer: 'valid-access-token' }));
+    expect(res.status).toBe(403);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 });

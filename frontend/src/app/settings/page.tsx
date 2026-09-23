@@ -60,6 +60,36 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState<TabKey>(tabParam || 'compte');
 
   // ── FORM STATES ─────────────────────────────────────────────────────
+  // Tab: Compte (Nom complet)
+  const [fullName, setFullName] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) setFullName(user.name || '');
+  }, [user]);
+
+  async function handleSaveProfile() {
+    setProfileError(null);
+    const trimmed = fullName.trim();
+    if (!trimmed) {
+      setProfileError('Le nom est requis.');
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      await api('/api/auth/me', { method: 'PATCH', body: { name: trimmed } });
+      await refresh();
+      toast('Profil mis à jour.', 'success');
+    } catch (err) {
+      setProfileError(
+        err instanceof ApiError ? err.message || 'Erreur inconnue.' : 'Erreur réseau.',
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   // Tab: Sécurité (Mot de passe)
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -454,12 +484,19 @@ function SettingsContent() {
                   </div>
                 </div>
 
+                {profileError && (
+                  <p className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-xs text-rose-700">
+                    {profileError}
+                  </p>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">Nom complet</label>
                     <input
                       type="text"
-                      defaultValue={user?.email?.split('@')[0] || ''}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
                       placeholder="Pasteur Jean-Marc"
                       className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
                     />
@@ -488,10 +525,11 @@ function SettingsContent() {
                 <div className="pt-2 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => toast('Profil mis à jour.', 'success')}
-                    className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-xs"
+                    onClick={() => void handleSaveProfile()}
+                    disabled={savingProfile}
+                    className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-xs disabled:opacity-50"
                   >
-                    Enregistrer les modifications
+                    {savingProfile ? 'Enregistrement…' : 'Enregistrer les modifications'}
                   </button>
                 </div>
               </div>

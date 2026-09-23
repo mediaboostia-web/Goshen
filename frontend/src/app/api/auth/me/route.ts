@@ -16,13 +16,25 @@
 // already wired (e.g. ['google']).
 //
 // No CSRF: GET is a safe method; verifyCsrf is a no-op for GET anyway.
+//
+// PATCH /api/auth/me — the "(future)" display-name update mentioned in the
+// Prisma schema comment on User.name. Email/password users have no other
+// way to ever set a name (OAuth users get theirs from the provider profile
+// on first sign-in) — without this, every author/member list falls back to
+// the email's local-part forever.
 export const runtime = 'nodejs';
 
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
+import { z } from 'zod';
+import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+
+const PatchBody = z.object({
+  name: z.string().trim().min(1, 'Le nom est requis').max(120, 'Le nom est trop long'),
+});
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
@@ -83,5 +95,38 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json({ user }, { status: 200, headers: { 'x-request-id': ctx.requestId } });
+  });
+}
+
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const ctx = makeRequestContext(req.headers);
+  return withRequestContext(ctx, async () => {
+    const csrfFail = verifyCsrf(req);
+    if (csrfFail) return csrfFail;
+
+    const auth = await requireAuth(req.headers.get('authorization'));
+    if (auth instanceof NextResponse) {
+      auth.headers.set('x-request-id', ctx.requestId);
+      return auth;
+    }
+
+    const parsed = PatchBody.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'VALIDATION_FAILED', details: parsed.error.issues },
+        { status: 400, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: auth.user.sub },
+      data: { name: parsed.data.name },
+      select: { id: true, name: true },
+    });
+
+    return NextResponse.json(
+      { user: updated },
+      { status: 200, headers: { 'x-request-id': ctx.requestId } },
+    );
   });
 }
