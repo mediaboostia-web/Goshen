@@ -13,6 +13,11 @@ export default function BranchesPage() {
   const { toast } = useToast();
   const currency = getCurrencyLabel(church?.currency);
   const canManage = church ? church.isPastor : true;
+  // Threshold adjustment is broader than branch creation: Pastor OR
+  // Treasurer (mirrors PATCH /api/church/branches/[id]'s server-side gate) —
+  // the Treasurer watches cash flow day-to-day and is the natural owner of
+  // "when should this annexe's alert fire".
+  const canEditThreshold = church ? church.isPastor || church.isTreasurer : true;
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
@@ -20,6 +25,35 @@ export default function BranchesPage() {
   const [threshold, setThreshold] = useState<number>(25000);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<number>(0);
+  const [savingEdit, setSavingEdit] = useState<boolean>(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  function startEdit(id: string, currentThreshold: number) {
+    setEditError(null);
+    setEditValue(currentThreshold);
+    setEditingId(id);
+  }
+
+  async function saveEdit(id: string) {
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      await api(`/api/church/branches/${id}`, {
+        method: 'PATCH',
+        body: { lowBalanceThreshold: Number(editValue) || 0 },
+      });
+      toast('Seuil d’alerte mis à jour.', 'success');
+      setEditingId(null);
+      await refreshBranches();
+    } catch (err) {
+      setEditError(err instanceof ApiError ? err.message || 'Erreur inconnue' : 'Erreur réseau.');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   async function handleCreateBranch(e: FormEvent) {
     e.preventDefault();
@@ -196,12 +230,59 @@ export default function BranchesPage() {
                   </p>
                 </div>
 
-                <p className="mt-3 text-[11px] text-stone-500">
-                  Seuil d’alerte :{' '}
-                  <strong className="font-mono tabular-nums text-stone-700">
-                    {b.lowBalanceThreshold.toLocaleString('fr-FR')} {currency}
-                  </strong>
-                </p>
+                {editingId === b.id ? (
+                  <div className="mt-3">
+                    <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                      Seuil d’alerte ({currency})
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="5000"
+                        value={editValue}
+                        onChange={(e) => setEditValue(Number(e.target.value))}
+                        className="w-full rounded-lg border border-stone-300 p-1.5 font-mono text-xs text-stone-900 focus:outline-hidden"
+                        autoFocus
+                      />
+                    </div>
+                    {editError && <p className="mt-1 text-[11px] text-rose-700">{editError}</p>}
+                    <div className="mt-2 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        disabled={savingEdit}
+                        className="rounded-md border border-stone-200 px-2.5 py-1 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void saveEdit(b.id)}
+                        disabled={savingEdit}
+                        className="rounded-md bg-emerald-800 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        {savingEdit ? '…' : 'Enregistrer'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[11px] text-stone-500 flex items-center gap-1.5">
+                    Seuil d’alerte :{' '}
+                    <strong className="font-mono tabular-nums text-stone-700">
+                      {b.lowBalanceThreshold.toLocaleString('fr-FR')} {currency}
+                    </strong>
+                    {canEditThreshold && (
+                      <button
+                        type="button"
+                        onClick={() => startEdit(b.id, b.lowBalanceThreshold)}
+                        className="text-emerald-700 hover:text-emerald-900 font-semibold underline underline-offset-2"
+                      >
+                        Modifier
+                      </button>
+                    )}
+                  </p>
+                )}
               </div>
 
               <div className="mt-6 pt-3 border-t border-stone-100 text-right">
