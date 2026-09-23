@@ -136,9 +136,9 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 p-2 sm:p-4 overflow-y-auto backdrop-blur-none">
+    <div className="print-escape fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 p-2 sm:p-4 overflow-y-auto backdrop-blur-none">
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-stone-200 overflow-hidden flex flex-col my-4 max-h-[92vh]">
+      <div className="print-escape relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-stone-200 overflow-hidden flex flex-col my-4 max-h-[92vh]">
         {/* Top Actions Bar (Hidden on Print) */}
         <div className="print:hidden flex items-center justify-between border-b border-stone-200 bg-stone-50 px-6 py-4">
           <div className="flex items-center gap-2.5">
@@ -211,7 +211,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
         </div>
 
         {/* ── PRINTABLE INVOICE SHEET (EXACT REPRODUCTION OF USER IMAGE) ── */}
-        <div className="overflow-y-auto p-4 sm:p-10 bg-stone-100 flex justify-center">
+        <div className="print-escape overflow-y-auto p-4 sm:p-10 bg-stone-100 flex justify-center">
           <div
             ref={printRef}
             id="printable-invoice"

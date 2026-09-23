@@ -157,10 +157,13 @@ export default function ReportsPage() {
     if (!preview) return;
     setSaving(true);
     try {
+      // Real "•" character, not the HTML entity: this string is sent as-is
+      // to the PDF (pdfkit doesn't decode HTML entities — JSX text content
+      // does, which is why this bug never showed up on-screen).
       const title =
         periodType === 'SUNDAY_SERVICE'
-          ? `Bilan du Culte &bull; ${new Date(startDate).toLocaleDateString('fr-FR')}`
-          : `Rapport Financier &bull; ${startDate} au ${endDate}`;
+          ? `Bilan du Culte • ${new Date(startDate).toLocaleDateString('fr-FR')}`
+          : `Rapport Financier • ${startDate} au ${endDate}`;
 
       await api('/api/reports', {
         method: 'POST',

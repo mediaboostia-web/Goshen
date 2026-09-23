@@ -196,4 +196,20 @@ body {
     box-shadow: none !important;
     overflow: visible !important;
   }
+
+  /* `.print-area`'s `position: absolute` is contained/clipped by the
+     nearest positioned ancestor — fine when that ancestor is the page
+     body, but InvoiceModal wraps its print-area in a `relative` +
+     `overflow-hidden` modal shell (needed on-screen so the modal scrolls
+     instead of growing past the viewport). That combination silently
+     clipped everything below the invoice header when printed: only the
+     content visible inside the modal's own box survived. `.print-escape`
+     neutralises any such ancestor for print without touching `.print-area`
+     itself, so a taller invoice can still paginate onto a 2nd sheet
+     exactly as it does for the non-modal caller (reports/page.tsx). */
+  .print-escape {
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
 }
