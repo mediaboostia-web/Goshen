@@ -561,3 +561,21 @@ export function GoogleIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function CloudSyncIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="butt"
+      strokeLinejoin="miter"
+      {...props}
+    >
+      <path d="M7 18a4.5 4.5 0 0 1-.5-8.97A5.5 5.5 0 0 1 17.2 8.06 4 4 0 0 1 16.5 16" />
+      <path d="M9.5 15.5 12 13l2.5 2.5" />
+      <path d="M12 13v7" />
+    </svg>
+  );
+}

@@ -8,6 +8,10 @@
 import { api, ApiError } from '@/lib/api';
 
 const STORAGE_KEY = 'goshen-offline-queue';
+// Same-tab UI (the header badge) can't rely on the native `storage` event —
+// that only fires in OTHER tabs. Dispatching this ourselves after every
+// write lets any component re-read getQueuedCount() without polling.
+const QUEUE_CHANGED_EVENT = 'goshen-offline-queue-changed';
 
 export interface QueuedMutation {
   id: string;
@@ -36,6 +40,18 @@ function writeQueue(queue: QueuedMutation[]): void {
     // Storage full/unavailable — the mutation already submitted this tick
     // stays queued in memory only; nothing further to do here.
   }
+  window.dispatchEvent(new Event(QUEUE_CHANGED_EVENT));
+}
+
+/**
+ * Subscribes to queue changes (push or flush) in the current tab. Returns an
+ * unsubscribe function. Used by the header's pending-sync badge instead of
+ * polling `getQueuedCount()` on an interval.
+ */
+export function onQueueChange(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener(QUEUE_CHANGED_EVENT, listener);
+  return () => window.removeEventListener(QUEUE_CHANGED_EVENT, listener);
 }
 
 export function queueMutation(entry: Omit<QueuedMutation, 'id' | 'createdAt'>): QueuedMutation {

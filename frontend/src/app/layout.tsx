@@ -5,6 +5,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { BranchProvider } from '@/contexts/BranchContext';
 import { PwaRegister } from '@/components/pwa/PwaRegister';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import {
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -146,6 +147,7 @@ export default function RootLayout({
               <BranchProvider>{children}</BranchProvider>
             </AuthProvider>
             <PwaRegister />
+            <InstallPrompt />
           </ToastProvider>
         </LanguageProvider>
       </body>

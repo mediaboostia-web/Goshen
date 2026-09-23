@@ -11,6 +11,7 @@ import { GoshenLogo } from '@/components/icons/GoshenLogo';
 import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OfflineQueueBadge } from '@/components/pwa/OfflineQueueBadge';
 
 const INK = '#0F172A';
 const LINE = '#D6D6CB';
@@ -135,6 +136,8 @@ export function AppHeader() {
                 EN
               </span>
             </button>
+
+            <OfflineQueueBadge />
 
             {branches.length > 0 && (
               <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5">
