@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DownloadIcon } from '@/components/icons/ChurchIcons';
+import Image from 'next/image';
 import { useToast } from '@/contexts/ToastContext';
 
 // Chrome/Edge/Android fire `beforeinstallprompt`; the type isn't in lib.dom.
@@ -94,8 +94,14 @@ export function InstallPrompt() {
     <div className="fixed inset-x-4 bottom-4 z-50 sm:left-auto sm:right-4 sm:w-full sm:max-w-sm">
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-white">
-            <DownloadIcon className="h-5 w-5" />
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+            <Image
+              src="/icons/icon-192.png"
+              alt="Goshen"
+              width={40}
+              height={40}
+              className="h-full w-full object-cover"
+            />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-stone-900">Installer Goshen</p>
