@@ -360,13 +360,13 @@ export default function HomePage() {
           "this is the page content" boundary distinct from the nav and the
           footer chrome repeated on every route. */}
       <main>
-        {/* Hero Section — reproduces the reference layout (badge, short bold
-          headline with one highlighted word, plain-language description,
-          dual CTA, spokesperson photo with decorative shapes behind it)
-          recolored to Goshen's emerald/amber palette instead of the
-          reference's teal/orange so it stays consistent with every other
-          section on the page. Light background throughout — nav blends
-          straight into the hero instead of sitting on a separate dark band. */}
+        {/* Hero Section — short bold headline with one highlighted word,
+          plain-language description, a single short CTA, and the official
+          mockup artwork floating on a continuous gentle bob so the hero
+          feels alive before the visitor scrolls. No eyebrow badge or stats
+          strip — kept deliberately minimal so the mockup and headline carry
+          the section. Light background throughout — nav blends straight
+          into the hero instead of sitting on a separate dark band. */}
         <section className="relative overflow-hidden bg-[#fafaf7] pt-14 pb-16 px-6 sm:pt-20 sm:pb-20 lg:pb-24">
           {/* Small scattered accents standing in for the reference's doodles —
             kept inside the section's own top padding (well above where the
@@ -388,7 +388,7 @@ export default function HomePage() {
             className="animate-float pointer-events-none absolute right-[6%] top-8 hidden h-3 w-3 rounded-full bg-emerald-300 sm:block"
           />
 
-          <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2 lg:gap-10">
+          <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1fr_1.15fr] lg:gap-8">
             {/* Wide ambient glow spanning both columns' lower half, so the
               CTA row and the photo read as one continuous, filled zone
               instead of the CTA sitting isolated above empty space. */}
@@ -400,14 +400,7 @@ export default function HomePage() {
             {/* Left: pitch */}
             <div className="relative z-10 text-center lg:text-left">
               <Reveal immediate>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  Logiciel 100% gratuit pour églises & ministères
-                </span>
-              </Reveal>
-
-              <Reveal immediate delayMs={50}>
-                <h1 className="mt-5 font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
+                <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
                   Sachez, à tout instant,
                   <br />
                   combien votre église a{' '}
@@ -445,7 +438,7 @@ export default function HomePage() {
                     href="/signup"
                     className="w-full transform rounded-full bg-emerald-800 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 sm:w-auto"
                   >
-                    Créer le compte de mon église — gratuit
+                    Créer mon église
                   </Link>
                   <a
                     href="#comment-ca-marche"
@@ -472,53 +465,6 @@ export default function HomePage() {
                 </p>
               </Reveal>
 
-              {/* 4 Indicateurs clés épurés avec séparateurs verticaux (style référence) */}
-              <Reveal immediate delayMs={350}>
-                <div className="mt-8 pt-7 border-t border-stone-200/80">
-                  <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:divide-stone-200 text-center">
-                    {/* 1. Hors connexion & mobile */}
-                    <div className="px-2 sm:px-3">
-                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                        100%
-                      </div>
-                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                        hors connexion & mobile
-                      </p>
-                    </div>
-
-                    {/* 2. Gratuit pour toute église */}
-                    <div className="px-2 sm:px-3">
-                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                        0 FCFA
-                      </div>
-                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                        gratuit pour toute église
-                      </p>
-                    </div>
-
-                    {/* 3. Dîmes & clôture de culte */}
-                    <div className="px-2 sm:px-3">
-                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                        2 min
-                      </div>
-                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                        dîmes & clôture de culte
-                      </p>
-                    </div>
-
-                    {/* 4. Facturation & bilans */}
-                    <div className="px-2 sm:px-3">
-                      <div className="font-serif text-2xl sm:text-3xl lg:text-[2.1rem] font-extrabold tracking-tight text-stone-900">
-                        1 clic
-                      </div>
-                      <p className="mt-1.5 text-xs text-stone-500 leading-snug">
-                        factures & bilans PDF
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-
               {/* Scroll amorce — a quiet curiosity nudge, distinct from the two
                 action CTAs above, hinting at what the next section proves. */}
               <Reveal immediate delayMs={400}>
@@ -534,16 +480,14 @@ export default function HomePage() {
               </Reveal>
             </div>
 
-            {/* Right: official brand artwork (person + live dashboard mockup +
-              decorative shapes already composed by the design team), shown
-              directly against the page background — no extra blur blobs
-              needed since the asset already carries its own teal accent
-              and swoosh, so layering more decoration on top would only
-              compete with it. Only one floating card remains, in the one
-              spot that's genuinely open, carrying a real claim rather than
-              decoration. */}
+            {/* Right: product-only mockup (two phones + the floating balance/
+              chart/action cards already composed into the artwork itself),
+              shown directly against the page background — genuinely
+              transparent PNG, so no mask trick is needed to blend its
+              edges. It carries its own continuous float so it reads as
+              alive rather than a static screenshot. */}
             <Reveal immediate delayMs={150} className="relative flex justify-center lg:justify-end">
-              {/* LCP element. next/image (not a raw <img>) so the 1.6 MB
+              {/* LCP element. next/image (not a raw <img>) so the ~1.7 MB
                 source PNG is served as a resized AVIF/WebP — a visitor on a
                 phone downloads a few dozen KB instead of the full-size
                 original. `preload` emits the <link rel=preload> so the
@@ -551,41 +495,20 @@ export default function HomePage() {
                 parses, and `sizes` stops mobile from fetching the desktop
                 width. */}
               <Image
-                src="/photos/image-goshen.png"
-                alt="Un utilisateur de Goshen souriant, montrant le tableau de bord de son église sur son téléphone à côté d'un aperçu de l'application"
-                width={1662}
-                height={946}
-                sizes="(min-width: 1024px) 672px, (min-width: 640px) 576px, 100vw"
-                className="relative z-10 h-auto w-full max-w-lg drop-shadow-xl sm:max-w-xl lg:max-w-2xl"
-                style={{
-                  WebkitMaskImage: 'linear-gradient(to top, transparent 0%, black 16%, black 100%)',
-                  maskImage: 'linear-gradient(to top, transparent 0%, black 16%, black 100%)',
-                }}
+                src="/photos/hero-mockup.png"
+                alt="Aperçu du tableau de bord Goshen sur smartphone : solde de trésorerie, entrées et sorties du culte, et les actions rapides de saisie"
+                width={1536}
+                height={1024}
+                sizes="(min-width: 1024px) 820px, (min-width: 640px) 640px, 100vw"
+                className="animate-float relative z-10 h-auto w-full max-w-xl drop-shadow-2xl sm:max-w-2xl lg:max-w-3xl"
                 preload
               />
-
-              {/* Floating proof card — bottom-left, in the artwork's one
-                clearly open patch, carrying a real claim instead of
-                decoration */}
-              <div className="absolute bottom-6 left-0 z-30 flex items-center gap-2.5 rounded-2xl border border-stone-100 bg-white px-4 py-3 shadow-xl transition-transform duration-300 hover:-translate-y-1 sm:left-2">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                  <CheckCircleIcon className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-xs font-bold text-stone-900">0 trou de caisse</p>
-                  <p className="text-[10px] text-stone-500">Depuis l’adoption de Goshen</p>
-                </div>
-              </div>
             </Reveal>
 
-            {/* Full-width close — the photo itself now dissolves via its own
-              mask (above), so this is purely a soft colour continuation
-              across the whole section width, sitting in the row's own
-              bottom padding (top-full, no upward overlap) so it can never
-              wash out the CTA or the trust line in the text column. The
-              old stats strip can't stay legible under a fade, so it was
-              dropped; the floating proof cards keep the real claims and
-              stay crisp (z-30) above this band (z-20). */}
+            {/* Full-width close — a soft colour continuation across the
+              whole section width, sitting in the row's own bottom padding
+              (top-full, no upward overlap) so it can never wash out the CTA
+              or the trust line in the text column. */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 top-full z-20 h-16 bg-gradient-to-b from-transparent via-[#fafaf7]/70 to-[#fafaf7] blur-2xl sm:h-20 lg:h-24"
