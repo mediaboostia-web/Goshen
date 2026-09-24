@@ -737,76 +737,87 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Card Bottom: 4 Quick Action Buttons (Rich Themed Gradients, Elevation & Shadow Effects) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-emerald-800/80">
+              {/* Card Bottom: 4 Quick Action Buttons — compact icon+label only
+                  on mobile (no subtitle, smaller icon/padding) so all 4 stay
+                  a uniform height and read in ~3s; the fuller icon+subtitle
+                  treatment only kicks in from sm up where there's room. */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-4 border-t border-emerald-800/80">
                 {/* Action 1: Saisie Culte — vibrant emerald (brand primary / inflow) */}
                 <Link
                   href="/transactions/incomes"
-                  className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-3.5 border border-emerald-300/40 hover:from-emerald-400 hover:to-emerald-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-emerald-950/20"
+                  className="group flex items-center gap-2 sm:gap-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-2.5 sm:p-3.5 border border-emerald-300/40 hover:from-emerald-400 hover:to-emerald-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-emerald-950/20"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
-                    <CoinsHandIcon className="h-5 w-5 text-white" />
+                  <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                    <CoinsHandIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-white">
+                  <div className="min-w-0 text-left">
+                    <p className="truncate text-[11px] sm:text-xs font-bold text-white">
                       + {t('dashboard.action.new_income', 'Saisie Culte')}
                     </p>
-                    <p className="text-[10px] text-emerald-50/90">Dîmes & Offrandes</p>
+                    <p className="hidden truncate text-[10px] text-emerald-50/90 sm:block">
+                      Dîmes & Offrandes
+                    </p>
                   </div>
                 </Link>
 
                 {/* Action 2: Décaissement — rose/red (outflow signal) */}
                 <Link
                   href="/transactions/expenses"
-                  className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-3.5 border border-rose-300/40 hover:from-rose-400 hover:to-red-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-rose-950/20"
+                  className="group flex items-center gap-2 sm:gap-3 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-2.5 sm:p-3.5 border border-rose-300/40 hover:from-rose-400 hover:to-red-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-rose-950/20"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
-                    <ReceiptTextIcon className="h-5 w-5 text-white" />
+                  <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                    <ReceiptTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-white">
+                  <div className="min-w-0 text-left">
+                    <p className="truncate text-[11px] sm:text-xs font-bold text-white">
                       - {t('dashboard.action.new_expense', 'Décaissement')}
                     </p>
-                    <p className="text-[10px] text-rose-50/90">Dépense avec Reçu</p>
+                    <p className="hidden truncate text-[10px] text-rose-50/90 sm:block">
+                      Dépense avec Reçu
+                    </p>
                   </div>
                 </Link>
 
                 {/* Action 3: Charges Fixes — blue/indigo (scheduled/structural) */}
                 <Link
                   href="/recurrent-expenses/validation"
-                  className="group relative flex items-center gap-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3.5 border border-blue-300/40 hover:from-blue-400 hover:to-indigo-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-indigo-950/20"
+                  className="group relative flex items-center gap-2 sm:gap-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 sm:p-3.5 border border-blue-300/40 hover:from-blue-400 hover:to-indigo-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-indigo-950/20"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
-                    <LightningBoltIcon className="h-5 w-5 text-white" />
+                  <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                    <LightningBoltIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
-                  <div className="text-left">
+                  <div className="min-w-0 text-left">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-bold text-white">
+                      <p className="truncate text-[11px] sm:text-xs font-bold text-white">
                         {t('dashboard.action.recurrent', 'Charges Fixes')}
                       </p>
                       {activePendingRecurrents.length > 0 && (
-                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-indigo-700 shadow-xs">
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-bold text-indigo-700 shadow-xs">
                           {activePendingRecurrents.length}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-blue-50/90">Loyer, Électricité, Eau</p>
+                    <p className="hidden truncate text-[10px] text-blue-50/90 sm:block">
+                      Loyer, Électricité, Eau
+                    </p>
                   </div>
                 </Link>
 
                 {/* Action 4: Rapport A4 — neutral slate (documents, not a transaction) */}
                 <Link
                   href="/reports"
-                  className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 p-3.5 border border-slate-400/40 hover:from-slate-500 hover:to-slate-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-slate-950/20"
+                  className="group flex items-center gap-2 sm:gap-3 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 p-2.5 sm:p-3.5 border border-slate-400/40 hover:from-slate-500 hover:to-slate-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-slate-950/20"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
-                    <DocumentReportIcon className="h-5 w-5 text-white" />
+                  <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white font-bold ring-1 ring-white/30 group-hover:scale-105 group-hover:bg-white/25 transition-all">
+                    <DocumentReportIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-white">
+                  <div className="min-w-0 text-left">
+                    <p className="truncate text-[11px] sm:text-xs font-bold text-white">
                       {t('dashboard.action.report_a4', 'Rapport A4')}
                     </p>
-                    <p className="text-[10px] text-slate-50/80">Homologué Culte</p>
+                    <p className="hidden truncate text-[10px] text-slate-50/80 sm:block">
+                      Homologué Culte
+                    </p>
                   </div>
                 </Link>
               </div>

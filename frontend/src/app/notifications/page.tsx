@@ -99,8 +99,8 @@ export default function NotificationsPage() {
       <AppNav />
 
       <main className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
               Notifications
             </h1>
@@ -113,7 +113,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={handleMarkAllRead}
-              className="rounded-lg border border-stone-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
+              className="shrink-0 self-start rounded-lg border border-stone-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer sm:self-auto"
             >
               Tout marquer comme lu
             </button>
