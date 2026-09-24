@@ -23,10 +23,7 @@ export function PwaRegister() {
 
   useEffect(() => {
     function handleOffline() {
-      toast(
-        'Vous êtes hors connexion. L’application reste utilisable — vos saisies se synchroniseront dès le retour du réseau.',
-        'info',
-      );
+      toast('Vous êtes hors connexion.', 'info');
     }
     function handleOnline() {
       toast('Connexion rétablie — synchronisation…', 'success');

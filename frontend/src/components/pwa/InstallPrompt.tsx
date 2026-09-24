@@ -112,8 +112,8 @@ export function InstallPrompt() {
               </p>
             ) : (
               <p className="mt-1 text-xs text-stone-600 leading-relaxed">
-                Ajoutez l’application à votre écran d’accueil pour un accès rapide, même hors
-                connexion.
+                Ajoutez l’application à votre écran d’accueil pour y accéder plus rapidement, comme
+                une application installée.
               </p>
             )}
           </div>
