@@ -745,7 +745,7 @@ export default function HomePage() {
           feels sequenced rather than dumped on the visitor all at once. */}
         <section
           id="probleme"
-          className="relative overflow-hidden bg-gradient-to-b from-rose-50/50 via-white to-white py-20 px-6"
+          className="relative overflow-hidden bg-gradient-to-b from-rose-50 via-rose-50/40 to-white py-20 px-6"
         >
           <div className="relative mx-auto max-w-7xl">
             <Reveal>
@@ -807,7 +807,7 @@ export default function HomePage() {
         {/* ========================================================= */}
         <section
           id="comment-ca-marche"
-          className="relative overflow-hidden bg-gradient-to-br from-emerald-50/70 via-white to-white py-20 px-6"
+          className="relative overflow-hidden bg-gradient-to-br from-emerald-100/80 via-emerald-50/30 to-white py-20 px-6"
         >
           <div className="relative mx-auto max-w-7xl grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Column: 3 Stepped floating cards on organic gradient circle
@@ -986,7 +986,7 @@ export default function HomePage() {
           for each. */}
         <section
           id="fonctionnalites"
-          className="bg-gradient-to-b from-white to-stone-50 py-20 px-6"
+          className="bg-gradient-to-b from-white via-white to-stone-100 py-20 px-6"
         >
           <div className="mx-auto max-w-7xl">
             <Reveal>
@@ -1076,8 +1076,11 @@ export default function HomePage() {
         {/* ========================================================= */}
         {/* SECTION COMMUNAUTÉ WHATSAPP & CONTACT (Inspirée image 3) */}
         {/* ========================================================= */}
-        <section id="communaute" className="py-20 px-6 max-w-7xl mx-auto">
-          <div className="relative overflow-hidden rounded-3xl border border-stone-200/90 bg-[#faf9f5] shadow-lg">
+        <section
+          id="communaute"
+          className="bg-gradient-to-b from-stone-100 via-amber-50/40 to-white py-20 px-6"
+        >
+          <div className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl border border-stone-200/90 bg-[#faf9f5] shadow-lg">
             {/* Subtle warm background glow */}
             <div
               aria-hidden
@@ -1160,12 +1163,12 @@ export default function HomePage() {
                 <Reveal delayMs={150} className="lg:col-span-5 relative flex justify-center">
                   <div className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-emerald-950 transition-transform duration-500 hover:-translate-y-1">
                     <Image
-                      src="/photos/goshen-app.jpg"
-                      alt="Membre de la communauté Goshen utilisant l'application pendant le culte"
-                      width={1200}
-                      height={1200}
+                      src="/photos/community-woman.jpg"
+                      alt="Membre de la communauté Goshen assise dans son église, Bible à la main"
+                      width={736}
+                      height={1288}
                       sizes="(min-width: 640px) 448px, 384px"
-                      className="w-full h-80 sm:h-96 object-cover object-center filter brightness-105"
+                      className="w-full h-80 sm:h-96 object-cover object-top filter brightness-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-transparent pointer-events-none" />
 
