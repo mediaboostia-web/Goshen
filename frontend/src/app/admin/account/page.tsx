@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 // api() already retries a 401 once after a silent token refresh (see
 // lib/api.ts). If it still throws 401 here, both the access AND refresh
@@ -187,38 +188,32 @@ export default function AdminAccountPage() {
           {me?.hasPassword && (
             <div>
               <label className="block font-bold text-stone-700 mb-1">Mot de passe actuel</label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 autoComplete="current-password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-xl border border-stone-200 p-3 text-xs shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+                onChange={setCurrentPassword}
               />
             </div>
           )}
           <div>
             <label className="block font-bold text-stone-700 mb-1">Nouveau mot de passe</label>
-            <input
-              type="password"
+            <PasswordInput
               required
               minLength={10}
               autoComplete="new-password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full rounded-xl border border-stone-200 p-3 text-xs shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              onChange={setNewPassword}
             />
           </div>
           <div>
             <label className="block font-bold text-stone-700 mb-1">Confirmer le mot de passe</label>
-            <input
-              type="password"
+            <PasswordInput
               required
               minLength={10}
               autoComplete="new-password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-xl border border-stone-200 p-3 text-xs shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              onChange={setConfirmPassword}
             />
           </div>
           <button

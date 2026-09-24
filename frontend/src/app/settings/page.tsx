@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { Select } from '@/components/ui/Select';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import {
   ChurchIcon,
   ShieldCheckIcon,
@@ -639,13 +640,12 @@ function SettingsContent() {
                         <label className="block font-bold text-stone-700 mb-1">
                           {t('settings.security.current_password_label')}
                         </label>
-                        <input
-                          type="password"
+                        <PasswordInput
                           required
+                          autoComplete="current-password"
                           value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          onChange={setCurrentPassword}
                           placeholder="••••••••••••"
-                          className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
                         />
                       </div>
                     )}
@@ -655,13 +655,12 @@ function SettingsContent() {
                         <label className="block font-bold text-stone-700 mb-1">
                           {t('settings.security.new_password_label')}
                         </label>
-                        <input
-                          type="password"
+                        <PasswordInput
                           required
+                          autoComplete="new-password"
                           value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
+                          onChange={setNewPassword}
                           placeholder={t('settings.security.new_password_placeholder')}
-                          className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
                         />
                       </div>
 
@@ -669,13 +668,12 @@ function SettingsContent() {
                         <label className="block font-bold text-stone-700 mb-1">
                           {t('settings.security.confirm_password_label')}
                         </label>
-                        <input
-                          type="password"
+                        <PasswordInput
                           required
+                          autoComplete="new-password"
                           value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          onChange={setConfirmPassword}
                           placeholder={t('settings.security.confirm_password_placeholder')}
-                          className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
                         />
                       </div>
                     </div>

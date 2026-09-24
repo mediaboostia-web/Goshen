@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { ShieldCheckIcon } from '@/components/icons/ChurchIcons';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 const REASON_MESSAGES: Record<string, string> = {
   forbidden: 'Ce compte est connecté mais n’a pas les droits administrateur.',
@@ -98,14 +99,12 @@ function AdminLoginForm() {
           </div>
           <div>
             <label className="block font-bold text-stone-700 mb-1">Mot de passe</label>
-            <input
-              type="password"
+            <PasswordInput
               required
               autoComplete="current-password"
               placeholder="••••••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-stone-200 p-3 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
+              onChange={setPassword}
             />
           </div>
           <button
