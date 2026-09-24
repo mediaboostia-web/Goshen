@@ -389,9 +389,19 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
       doc.moveTo(left, tableY).lineTo(right, tableY).strokeColor(LINE).stroke();
 
       // ── Footer + page numbers on every page ────────────────────────
+      // Drawing this close to the bottom edge is deliberate (it's a footer),
+      // but pdfkit's `.text()` auto-paginates when a write position falls
+      // below `page.height - margins.bottom` and the call isn't height-
+      // bounded — silently appending a near-blank extra page per footer
+      // line (2 extra pages per report). Zeroing the bottom margin for the
+      // duration of these two calls is pdfkit's documented workaround: it
+      // moves the "printable area" threshold down to the page edge so the
+      // footer's own position no longer reads as an overflow.
       const pageRange = doc.bufferedPageRange();
       for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
         doc.switchToPage(i);
+        const originalBottomMargin = doc.page.margins.bottom;
+        doc.page.margins.bottom = 0;
         const footerY = doc.page.height - 32;
         doc
           .fontSize(7.5)
@@ -401,7 +411,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
             `${L.generatedOn} ${date(new Date())} — Goshen Finance · ${L.amountsIn} ${currencyLabel}`,
             left,
             footerY,
-            { width: contentWidth * 0.7 },
+            { width: contentWidth * 0.7, lineBreak: false },
           );
         doc
           .fontSize(7.5)
@@ -410,7 +420,9 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
           .text(`${L.page} ${i - pageRange.start + 1} / ${pageRange.count}`, left, footerY, {
             width: contentWidth,
             align: 'right',
+            lineBreak: false,
           });
+        doc.page.margins.bottom = originalBottomMargin;
       }
 
       doc.end();
