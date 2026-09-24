@@ -7,6 +7,7 @@ import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
 import { Select } from '@/components/ui/Select';
@@ -23,21 +24,21 @@ import {
 
 type TabKey = 'compte' | 'securite' | 'membres' | 'eglise' | 'soutenir';
 
-const NOTIFICATION_EVENT_TYPES: { key: string; label: string; description: string }[] = [
+const NOTIFICATION_EVENT_TYPES: { key: string; labelKey: string; descKey: string }[] = [
   {
     key: 'low_balance',
-    label: 'Solde de caisse bas',
-    description: 'Alerte lorsque le solde d’une annexe passe sous le seuil défini.',
+    labelKey: 'settings.notif.low_balance_label',
+    descKey: 'settings.notif.low_balance_desc',
   },
   {
     key: 'recurring_expense_due',
-    label: 'Charge fixe à échéance',
-    description: 'Rappel lorsqu’une charge récurrente (loyer, salaire…) arrive à échéance.',
+    labelKey: 'settings.notif.recurring_due_label',
+    descKey: 'settings.notif.recurring_due_desc',
   },
   {
     key: 'recurrent_expense_pending',
-    label: 'Charge fixe à valider',
-    description: 'Alerte dès qu’une nouvelle charge fixe planifiée requiert votre validation.',
+    labelKey: 'settings.notif.recurring_pending_label',
+    descKey: 'settings.notif.recurring_pending_desc',
   },
 ];
 
@@ -55,6 +56,7 @@ function SettingsContent() {
   const { user, refresh } = useAuth();
   const { church, branches, currentBranch, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const tabParam = searchParams?.get('tab') as TabKey | null;
   const [activeTab, setActiveTab] = useState<TabKey>(tabParam || 'compte');
@@ -73,17 +75,19 @@ function SettingsContent() {
     setProfileError(null);
     const trimmed = fullName.trim();
     if (!trimmed) {
-      setProfileError('Le nom est requis.');
+      setProfileError(t('settings.account.name_required_error'));
       return;
     }
     setSavingProfile(true);
     try {
       await api('/api/auth/me', { method: 'PATCH', body: { name: trimmed } });
       await refresh();
-      toast('Profil mis à jour.', 'success');
+      toast(t('settings.account.profile_updated_toast'), 'success');
     } catch (err) {
       setProfileError(
-        err instanceof ApiError ? err.message || 'Erreur inconnue.' : 'Erreur réseau.',
+        err instanceof ApiError
+          ? err.message || t('settings.account.unknown_error')
+          : t('settings.account.network_error'),
       );
     } finally {
       setSavingProfile(false);
@@ -158,7 +162,7 @@ function SettingsContent() {
           branchName:
             m.branchAccess.length > 0
               ? m.branchAccess.map((ba) => ba.branch.name).join(', ')
-              : 'Toutes les paroisses',
+              : t('settings.members.all_parishes_label'),
           status: 'ACTIVE',
         })),
       );
@@ -221,11 +225,11 @@ function SettingsContent() {
     setPasswordSuccess(false);
 
     if (newPassword.length < 8) {
-      setPasswordError('Le nouveau mot de passe doit contenir au moins 8 caractères.');
+      setPasswordError(t('settings.security.min_length_error'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('La confirmation ne correspond pas au nouveau mot de passe.');
+      setPasswordError(t('settings.security.mismatch_error'));
       return;
     }
 
@@ -236,7 +240,7 @@ function SettingsContent() {
           method: 'PUT',
           body: { currentPassword, newPassword },
         });
-        toast('Mot de passe mis à jour avec succès.', 'success');
+        toast(t('settings.security.toast_password_updated'), 'success');
       } else {
         // OAuth-only account (e.g. signed up with Google) — no current
         // password exists yet, so this is the dedicated first-time-set path.
@@ -244,7 +248,7 @@ function SettingsContent() {
           method: 'POST',
           body: { newPassword },
         });
-        toast('Mot de passe créé avec succès.', 'success');
+        toast(t('settings.security.toast_password_created'), 'success');
       }
       setPasswordSuccess(true);
       setCurrentPassword('');
@@ -252,9 +256,7 @@ function SettingsContent() {
       setConfirmPassword('');
       await refresh();
     } catch (err) {
-      setPasswordError(
-        err instanceof ApiError ? err.message : 'Erreur lors de l’enregistrement du mot de passe.',
-      );
+      setPasswordError(err instanceof ApiError ? err.message : t('settings.security.save_error'));
     } finally {
       setSavingPassword(false);
     }
@@ -282,9 +284,9 @@ function SettingsContent() {
       await loadMembers();
       setNewMemberName('');
       setNewMemberEmail('');
-      toast(`Rôle ${newMemberRole} attribué à ${memberName}.`, 'success');
+      toast(t('settings.members.toast_added'), 'success');
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Erreur lors de l’ajout du membre.', 'error');
+      toast(err instanceof ApiError ? err.message : t('settings.members.add_error'), 'error');
     } finally {
       setInvitingMember(false);
     }
@@ -305,15 +307,15 @@ function SettingsContent() {
       });
       if (res?.converted) {
         toast(
-          `Conversion monétaire effectuée avec succès (${res.previousCurrency} ➔ ${currency}) ! Les soldes et montants ont été recalculés.`,
+          `${t('settings.church.conversion_success_prefix')} (${res.previousCurrency} ➔ ${currency})! ${t('settings.church.conversion_success_suffix')}`,
           'success',
         );
       } else {
-        toast('Informations et devise de la communauté enregistrées avec succès !', 'success');
+        toast(t('settings.church.save_success_toast'), 'success');
       }
       await refreshBranches();
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Erreur lors de la sauvegarde.', 'error');
+      toast(err instanceof ApiError ? err.message : t('settings.church.save_error'), 'error');
     } finally {
       setSavingChurch(false);
     }
@@ -329,15 +331,12 @@ function SettingsContent() {
         <div className="border-b border-stone-200 bg-white/60 p-6 rounded-2xl shadow-2xs mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Paramètres
+              {t('settings.title')}
             </h1>
-            <p className="text-xs sm:text-sm text-stone-600 mt-1">
-              Gérez votre profil pastoral, vos équipes (trésoriers, secrétaires), les paroisses et
-              la sécurité.
-            </p>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1">{t('settings.subtitle')}</p>
           </div>
           <span className="self-start sm:self-auto rounded-lg bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-            {church?.name || 'Communauté Chrétienne'}
+            {church?.name || t('settings.default_church_badge')}
           </span>
         </div>
 
@@ -363,7 +362,7 @@ function SettingsContent() {
                 >
                   👤
                 </div>
-                <span>Compte & Profil</span>
+                <span>{t('settings.tab.account')}</span>
               </button>
 
               <button
@@ -383,7 +382,7 @@ function SettingsContent() {
                 >
                   <ShieldCheckIcon className="h-4 w-4" />
                 </div>
-                <span>Sécurité & Accès</span>
+                <span>{t('settings.tab.security')}</span>
               </button>
 
               <button
@@ -403,7 +402,7 @@ function SettingsContent() {
                 >
                   <UsersGroupIcon className="h-4 w-4" />
                 </div>
-                <span>Membres & Rôles</span>
+                <span>{t('settings.tab.members')}</span>
               </button>
 
               <button
@@ -423,7 +422,7 @@ function SettingsContent() {
                 >
                   <ChurchIcon className="h-4 w-4" />
                 </div>
-                <span>Église & Paroisses</span>
+                <span>{t('settings.tab.church')}</span>
               </button>
 
               <button
@@ -443,7 +442,7 @@ function SettingsContent() {
                 >
                   <HeartHandIcon className="h-4 w-4" />
                 </div>
-                <span>Soutenir</span>
+                <span>{t('settings.tab.support')}</span>
               </button>
             </nav>
           </div>
@@ -455,10 +454,10 @@ function SettingsContent() {
               <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
                 <div className="border-b border-stone-100 pb-4">
                   <h2 className="font-serif text-xl font-bold text-stone-900">
-                    Informations Personnelles
+                    {t('settings.account.personal_info_title')}
                   </h2>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    Coordonnées du compte utilisateur servant aux signatures des états de culte
+                    {t('settings.account.personal_info_desc')}
                   </p>
                 </div>
 
@@ -478,8 +477,8 @@ function SettingsContent() {
                     <p className="font-bold text-stone-900 text-sm">{user?.email}</p>
                     <span className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200 mt-1">
                       {church?.role === 'PASTOR' || !church
-                        ? 'Pasteur Titulaire & Administrateur'
-                        : 'Trésorier de Paroisse'}
+                        ? t('settings.account.role_pastor')
+                        : t('settings.account.role_treasurer')}
                     </span>
                   </div>
                 </div>
@@ -492,7 +491,9 @@ function SettingsContent() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
                   <div>
-                    <label className="block font-bold text-stone-700 mb-1">Nom complet</label>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      {t('settings.account.full_name_label')}
+                    </label>
                     <input
                       type="text"
                       value={fullName}
@@ -504,7 +505,7 @@ function SettingsContent() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Adresse email officielle
+                      {t('settings.account.email_label')}
                     </label>
                     <input
                       type="email"
@@ -517,9 +518,11 @@ function SettingsContent() {
 
                 <div className="rounded-xl border border-stone-100 bg-stone-50 p-4 text-xs text-stone-600 leading-relaxed">
                   🏛️{' '}
-                  <strong className="text-stone-800">Paroisse de rattachement principale :</strong>{' '}
-                  {currentBranch?.name || 'Paroisse Centrale de Libreville'}. Toutes les écritures
-                  enregistrées seront automatiquement signées sous votre identité.
+                  <strong className="text-stone-800">
+                    {t('settings.account.branch_note_prefix')}
+                  </strong>{' '}
+                  {currentBranch?.name || t('settings.account.default_branch')}.{' '}
+                  {t('settings.account.branch_note_suffix')}
                 </div>
 
                 <div className="pt-2 flex justify-end">
@@ -529,7 +532,7 @@ function SettingsContent() {
                     disabled={savingProfile}
                     className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-xs disabled:opacity-50"
                   >
-                    {savingProfile ? 'Enregistrement…' : 'Enregistrer les modifications'}
+                    {savingProfile ? t('settings.account.saving') : t('settings.account.save')}
                   </button>
                 </div>
               </div>
@@ -539,51 +542,56 @@ function SettingsContent() {
               <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6 mt-6">
                 <div className="border-b border-stone-100 pb-4">
                   <h2 className="font-serif text-xl font-bold text-stone-900">
-                    Préférences de Notification
+                    {t('settings.notif.title')}
                   </h2>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Choisissez comment vous souhaitez être averti pour chaque type d’événement.
-                  </p>
+                  <p className="text-xs text-stone-500 mt-0.5">{t('settings.notif.desc')}</p>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-left text-stone-500 border-b border-stone-100">
-                        <th className="font-bold py-2 pr-4">Événement</th>
-                        <th className="font-bold py-2 px-4 text-center">Email</th>
-                        <th className="font-bold py-2 pl-4 text-center">Dans l’application</th>
+                        <th className="font-bold py-2 pr-4">{t('settings.notif.col_event')}</th>
+                        <th className="font-bold py-2 px-4 text-center">
+                          {t('settings.notif.col_email')}
+                        </th>
+                        <th className="font-bold py-2 pl-4 text-center">
+                          {t('settings.notif.col_inapp')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {NOTIFICATION_EVENT_TYPES.map((evt) => (
-                        <tr key={evt.key} className="border-b border-stone-50 last:border-0">
-                          <td className="py-3 pr-4">
-                            <p className="font-bold text-stone-800">{evt.label}</p>
-                            <p className="text-stone-500 mt-0.5">{evt.description}</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <input
-                              type="checkbox"
-                              aria-label={`${evt.label} — Email`}
-                              checked={isNotifChannelEnabled(evt.key, 'email')}
-                              disabled={savingNotifPref === `${evt.key}:email`}
-                              onChange={() => toggleNotifPref(evt.key, 'email')}
-                              className="accent-emerald-800 h-4 w-4"
-                            />
-                          </td>
-                          <td className="py-3 pl-4 text-center">
-                            <input
-                              type="checkbox"
-                              aria-label={`${evt.label} — Dans l’application`}
-                              checked={isNotifChannelEnabled(evt.key, 'inApp')}
-                              disabled={savingNotifPref === `${evt.key}:inApp`}
-                              onChange={() => toggleNotifPref(evt.key, 'inApp')}
-                              className="accent-emerald-800 h-4 w-4"
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      {NOTIFICATION_EVENT_TYPES.map((evt) => {
+                        const label = t(evt.labelKey);
+                        return (
+                          <tr key={evt.key} className="border-b border-stone-50 last:border-0">
+                            <td className="py-3 pr-4">
+                              <p className="font-bold text-stone-800">{label}</p>
+                              <p className="text-stone-500 mt-0.5">{t(evt.descKey)}</p>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <input
+                                type="checkbox"
+                                aria-label={`${label} — ${t('settings.notif.col_email')}`}
+                                checked={isNotifChannelEnabled(evt.key, 'email')}
+                                disabled={savingNotifPref === `${evt.key}:email`}
+                                onChange={() => toggleNotifPref(evt.key, 'email')}
+                                className="accent-emerald-800 h-4 w-4"
+                              />
+                            </td>
+                            <td className="py-3 pl-4 text-center">
+                              <input
+                                type="checkbox"
+                                aria-label={`${label} — ${t('settings.notif.col_inapp')}`}
+                                checked={isNotifChannelEnabled(evt.key, 'inApp')}
+                                disabled={savingNotifPref === `${evt.key}:inApp`}
+                                onChange={() => toggleNotifPref(evt.key, 'inApp')}
+                                className="accent-emerald-800 h-4 w-4"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -597,12 +605,14 @@ function SettingsContent() {
                 <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
                   <div className="border-b border-stone-100 pb-4 mb-6">
                     <h2 className="font-serif text-xl font-bold text-stone-900">
-                      {user?.hasPassword ? 'Mot de Passe de Connexion' : 'Créer un Mot de Passe'}
+                      {user?.hasPassword
+                        ? t('settings.security.password_title_change')
+                        : t('settings.security.password_title_create')}
                     </h2>
                     <p className="text-xs text-stone-500 mt-0.5">
                       {user?.hasPassword
-                        ? "Changez votre mot de passe pour protéger l'accès à la comptabilité de l'église"
-                        : 'Votre compte utilise la connexion Google. Créez un mot de passe pour pouvoir aussi vous connecter avec votre email.'}
+                        ? t('settings.security.password_desc_change')
+                        : t('settings.security.password_desc_create')}
                     </p>
                   </div>
 
@@ -617,8 +627,8 @@ function SettingsContent() {
                       <CheckCircleIcon className="h-4 w-4 text-emerald-700" />
                       <span>
                         {user?.hasPassword
-                          ? 'Votre mot de passe a été modifié avec succès.'
-                          : 'Votre mot de passe a été créé avec succès.'}
+                          ? t('settings.security.password_updated')
+                          : t('settings.security.password_created')}
                       </span>
                     </div>
                   )}
@@ -627,7 +637,7 @@ function SettingsContent() {
                     {user?.hasPassword && (
                       <div>
                         <label className="block font-bold text-stone-700 mb-1">
-                          Mot de passe actuel
+                          {t('settings.security.current_password_label')}
                         </label>
                         <input
                           type="password"
@@ -643,28 +653,28 @@ function SettingsContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block font-bold text-stone-700 mb-1">
-                          Nouveau mot de passe
+                          {t('settings.security.new_password_label')}
                         </label>
                         <input
                           type="password"
                           required
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Min. 8 caractères"
+                          placeholder={t('settings.security.new_password_placeholder')}
                           className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
                         />
                       </div>
 
                       <div>
                         <label className="block font-bold text-stone-700 mb-1">
-                          Confirmer le mot de passe
+                          {t('settings.security.confirm_password_label')}
                         </label>
                         <input
                           type="password"
                           required
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Répétez le mot de passe"
+                          placeholder={t('settings.security.confirm_password_placeholder')}
                           className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
                         />
                       </div>
@@ -676,10 +686,10 @@ function SettingsContent() {
                       className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
                     >
                       {savingPassword
-                        ? 'Enregistrement…'
+                        ? t('settings.account.saving')
                         : user?.hasPassword
-                          ? 'Mettre à jour'
-                          : 'Créer le mot de passe'}
+                          ? t('settings.security.update_button')
+                          : t('settings.security.create_button')}
                     </button>
                   </form>
                 </div>
@@ -692,12 +702,10 @@ function SettingsContent() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-stone-900">
-                        Protection et Confidentialité des Comptes
+                        {t('settings.security.protection_title')}
                       </h3>
                       <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                        Chaque responsable paroissial dispose de ses propres identifiants sécurisés.
-                        Les connexions sont chiffrées de bout en bout et les actions comptables sont
-                        tracées pour garantir l'intégrité des finances de l'église.
+                        {t('settings.security.protection_desc')}
                       </p>
                     </div>
                   </div>
@@ -713,11 +721,10 @@ function SettingsContent() {
                   <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
                     <div className="border-b border-stone-100 pb-4 mb-6">
                       <h2 className="font-serif text-xl font-bold text-stone-900">
-                        Ajouter une Personne & Attribuer un Rôle
+                        {t('settings.members.add_title')}
                       </h2>
                       <p className="text-xs text-stone-500 mt-0.5">
-                        Déléguez la gestion financière à vos trésoriers, secrétaires et commissaires
-                        aux comptes
+                        {t('settings.members.add_desc')}
                       </p>
                     </div>
 
@@ -725,21 +732,21 @@ function SettingsContent() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block font-bold text-stone-700 mb-1">
-                            Nom et prénom du responsable
+                            {t('settings.members.name_label')}
                           </label>
                           <input
                             type="text"
                             required
                             value={newMemberName}
                             onChange={(e) => setNewMemberName(e.target.value)}
-                            placeholder="Ex: Diacre Pierre Ndong"
+                            placeholder={t('settings.members.name_placeholder')}
                             className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
                           />
                         </div>
 
                         <div>
                           <label className="block font-bold text-stone-700 mb-1">
-                            Adresse email de connexion
+                            {t('settings.members.email_label')}
                           </label>
                           <input
                             type="email"
@@ -755,10 +762,10 @@ function SettingsContent() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block font-bold text-stone-700 mb-1">
-                            Rôle ecclésiastique attribué
+                            {t('settings.members.role_label')}
                           </label>
                           <Select
-                            aria-label="Rôle ecclésiastique attribué"
+                            aria-label={t('settings.members.role_label')}
                             value={newMemberRole}
                             onChange={(v) =>
                               setNewMemberRole(
@@ -768,19 +775,19 @@ function SettingsContent() {
                             options={[
                               {
                                 value: 'TREASURER',
-                                label: 'Trésorier de Paroisse (Saisie & Décaissements)',
+                                label: t('settings.members.role_treasurer'),
                               },
                               {
                                 value: 'PASTOR',
-                                label: 'Pasteur Titulaire / Adjoint (Supervision Totale)',
+                                label: t('settings.members.role_pastor'),
                               },
                               {
                                 value: 'SECRETARY',
-                                label: 'Secrétaire de Séance (PV de Culte & Registres)',
+                                label: t('settings.members.role_secretary'),
                               },
                               {
                                 value: 'AUDITOR',
-                                label: 'Commissaire aux Comptes / Auditeur (Contrôle)',
+                                label: t('settings.members.role_auditor'),
                               },
                             ]}
                           />
@@ -788,14 +795,14 @@ function SettingsContent() {
 
                         <div>
                           <label className="block font-bold text-stone-700 mb-1">
-                            Affectation Paroisse / Annexe
+                            {t('settings.members.branch_assignment_label')}
                           </label>
                           <Select
-                            aria-label="Affectation Paroisse / Annexe"
+                            aria-label={t('settings.members.branch_assignment_label')}
                             value={newMemberBranch}
                             onChange={setNewMemberBranch}
                             options={[
-                              { value: 'ALL', label: 'Toutes les paroisses (Vue Consolidée)' },
+                              { value: 'ALL', label: t('settings.members.all_branches') },
                               ...branches.map((b) => ({ value: b.id, label: b.name })),
                             ]}
                           />
@@ -809,7 +816,11 @@ function SettingsContent() {
                           className="rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs flex items-center gap-1.5"
                         >
                           <PlusIcon className="h-4 w-4" />
-                          <span>{invitingMember ? 'Enregistrement…' : 'Ajouter'}</span>
+                          <span>
+                            {invitingMember
+                              ? t('settings.members.saving')
+                              : t('settings.members.add_button')}
+                          </span>
                         </button>
                       </div>
                     </form>
@@ -821,25 +832,23 @@ function SettingsContent() {
                   <div className="border-b border-stone-100 pb-4 mb-4 flex items-center justify-between">
                     <div>
                       <h3 className="font-serif text-lg font-bold text-stone-900">
-                        Équipe Pastorale & Trésorerie ({members.length})
+                        {t('settings.members.team_title')} ({members.length})
                       </h3>
-                      <p className="text-xs text-stone-500">
-                        Personnes autorisées à opérer sur la comptabilité de l'église
-                      </p>
+                      <p className="text-xs text-stone-500">{t('settings.members.team_desc')}</p>
                     </div>
                     <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700">
-                      Rôles Actifs
+                      {t('settings.members.active_roles_badge')}
                     </span>
                   </div>
 
                   <div className="divide-y divide-stone-100">
                     {loadingMembers ? (
                       <p className="py-6 text-center text-xs text-stone-500">
-                        Chargement des membres…
+                        {t('settings.members.loading')}
                       </p>
                     ) : members.length === 0 ? (
                       <p className="py-6 text-center text-xs text-stone-500">
-                        Aucun membre pour l’instant.
+                        {t('settings.members.empty')}
                       </p>
                     ) : (
                       members.map((m) => (
@@ -866,12 +875,12 @@ function SettingsContent() {
                                   }`}
                                 >
                                   {m.role === 'PASTOR'
-                                    ? 'PASTEUR'
+                                    ? t('settings.members.role_pastor_badge')
                                     : m.role === 'TREASURER'
-                                      ? 'TRÉSORIER'
+                                      ? t('settings.members.role_treasurer_badge')
                                       : m.role === 'AUDITOR'
-                                        ? 'COMMISSAIRE'
-                                        : 'SECRÉTAIRE'}
+                                        ? t('settings.members.role_auditor_badge')
+                                        : t('settings.members.role_secretary_badge')}
                                 </span>
                               </div>
                               <p className="text-[11px] text-stone-500 mt-0.5">{m.email}</p>
@@ -884,7 +893,7 @@ function SettingsContent() {
                             </span>
                             <span
                               className="rounded-full bg-emerald-100 h-2 w-2"
-                              title="Compte actif"
+                              title={t('settings.members.active_account_title')}
                             />
                           </div>
                         </div>
@@ -910,17 +919,17 @@ function SettingsContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="font-serif text-base font-bold text-stone-900">
-                          Annexes & Paroisses
+                          {t('settings.church.branches_title')}
                         </h3>
                         <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-bold text-stone-600 shrink-0">
                           {branches.length}
                         </span>
                       </div>
                       <p className="text-xs text-stone-500 mt-1">
-                        Ajoutez vos paroisses et annexes, réglez leur seuil d’alerte de trésorerie.
+                        {t('settings.church.branches_desc')}
                       </p>
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 mt-3 group-hover:underline">
-                        Gérer les annexes &rarr;
+                        {t('settings.church.manage_branches')} &rarr;
                       </span>
                     </div>
                   </Link>
@@ -934,14 +943,13 @@ function SettingsContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-serif text-base font-bold text-stone-900">
-                        Catégories Financières
+                        {t('settings.church.categories_title')}
                       </h3>
                       <p className="text-xs text-stone-500 mt-1">
-                        Personnalisez vos motifs de dîmes, offrandes et dépenses, et les moyens de
-                        paiement acceptés.
+                        {t('settings.church.categories_desc')}
                       </p>
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 mt-3 group-hover:underline">
-                        Gérer les catégories &rarr;
+                        {t('settings.church.manage_categories')} &rarr;
                       </span>
                     </div>
                   </Link>
@@ -950,10 +958,10 @@ function SettingsContent() {
                 <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
                   <div className="border-b border-stone-100 pb-4">
                     <h2 className="font-serif text-xl font-bold text-stone-900">
-                      Configuration de la Communauté
+                      {t('settings.church.config_title')}
                     </h2>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      Paramètres canoniques et légaux figurant sur les rapports officiels imprimés
+                      {t('settings.church.config_desc')}
                     </p>
                   </div>
 
@@ -961,27 +969,27 @@ function SettingsContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block font-bold text-stone-700 mb-1">
-                          Nom officiel de l'église
+                          {t('settings.church.name_label')}
                         </label>
                         <input
                           type="text"
                           required
                           value={churchName}
                           onChange={(e) => setChurchName(e.target.value)}
-                          placeholder="Ex: Communauté Évangélique de la Grâce"
+                          placeholder={t('settings.church.name_placeholder')}
                           className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
                         />
                       </div>
 
                       <div>
                         <label className="block font-bold text-stone-700 mb-1">
-                          Dénomination / Fédération chrétienne
+                          {t('settings.church.denomination_label')}
                         </label>
                         <input
                           type="text"
                           value={denomination}
                           onChange={(e) => setDenomination(e.target.value)}
-                          placeholder="Ex: Assemblées de Dieu, Alliance Chrétienne, Baptiste"
+                          placeholder={t('settings.church.denomination_placeholder')}
                           className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
                         />
                       </div>
@@ -989,26 +997,25 @@ function SettingsContent() {
 
                     <div>
                       <label className="block font-bold text-stone-700 mb-1">
-                        Devise monétaire paritaire
+                        {t('settings.church.currency_label')}
                       </label>
                       <Select
-                        aria-label="Devise monétaire paritaire"
+                        aria-label={t('settings.church.currency_label')}
                         value={currency}
                         onChange={setCurrency}
                         options={[
-                          { value: 'FCFA', label: 'FCFA — Franc CFA (Afrique Centrale & Ouest)' },
-                          { value: 'EUR', label: 'EUR (€) — Euro (France, Europe)' },
-                          { value: 'USD', label: 'USD ($) — Dollar américain (International)' },
-                          { value: 'CAD', label: 'CAD ($) — Dollar canadien' },
-                          { value: 'GBP', label: 'GBP (£) — Livre sterling' },
-                          { value: 'CDF', label: 'CDF — Franc congolais (RDC)' },
-                          { value: 'GNF', label: 'GNF — Franc guinéen' },
-                          { value: 'MGA', label: 'MGA (Ar) — Ariary malgache' },
+                          { value: 'FCFA', label: t('settings.church.currency_fcfa') },
+                          { value: 'EUR', label: t('settings.church.currency_eur') },
+                          { value: 'USD', label: t('settings.church.currency_usd') },
+                          { value: 'CAD', label: t('settings.church.currency_cad') },
+                          { value: 'GBP', label: t('settings.church.currency_gbp') },
+                          { value: 'CDF', label: t('settings.church.currency_cdf') },
+                          { value: 'GNF', label: t('settings.church.currency_gnf') },
+                          { value: 'MGA', label: t('settings.church.currency_mga') },
                         ]}
                       />
                       <p className="mt-1 text-[11px] text-stone-400">
-                        Cette devise s’applique sur tout le tableau de bord, les entrées, sorties et
-                        rapports.
+                        {t('settings.church.currency_note')}
                       </p>
                     </div>
 
@@ -1018,7 +1025,7 @@ function SettingsContent() {
                         disabled={savingChurch}
                         className="rounded-lg bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
                       >
-                        {savingChurch ? 'Enregistrement…' : 'Enregistrer'}
+                        {savingChurch ? t('settings.church.saving') : t('settings.church.save')}
                       </button>
                     </div>
                   </form>
@@ -1031,25 +1038,22 @@ function SettingsContent() {
               <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
                 <div className="border-b border-stone-100 pb-4">
                   <h2 className="font-serif text-xl font-bold text-stone-900">
-                    Soutenir Goshen Finance
+                    {t('settings.support.title')}
                   </h2>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Goshen Finance est gratuit pour votre église. Un don libre nous aide à maintenir
-                    et améliorer la plateforme.
-                  </p>
+                  <p className="text-xs text-stone-500 mt-0.5">{t('settings.support.desc')}</p>
                 </div>
 
                 <div className="rounded-xl border border-stone-200 bg-stone-900 p-6 text-white shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <p className="text-xs text-rose-200 uppercase tracking-wider font-semibold">
-                        Don libre
+                        {t('settings.support.free_donation_label')}
                       </p>
                       <p className="font-serif text-2xl font-bold text-white mt-1">
-                        Chaque contribution compte
+                        {t('settings.support.every_contribution')}
                       </p>
                       <p className="text-xs text-emerald-100/80 mt-1">
-                        Choisissez le montant qui vous convient — aucun engagement, aucun plan.
+                        {t('settings.support.choose_amount')}
                       </p>
                     </div>
 
@@ -1057,7 +1061,7 @@ function SettingsContent() {
                       href="/soutenir"
                       className="rounded-lg bg-rose-400 px-4 py-2.5 text-xs font-bold text-stone-950 hover:bg-rose-300 transition-colors self-start sm:self-auto shrink-0 shadow-xs"
                     >
-                      Faire un don &rarr;
+                      {t('settings.support.donate_button')} &rarr;
                     </Link>
                   </div>
                 </div>
