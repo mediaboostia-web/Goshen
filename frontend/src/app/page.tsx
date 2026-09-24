@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ import {
   AlertTriangleIcon,
   ReceiptTextIcon,
   CloudSyncIcon,
+  PhoneIcon,
 } from '@/components/icons/ChurchIcons';
 
 const WHATSAPP_COMMUNITY_URL =
@@ -23,6 +24,8 @@ const WHATSAPP_COMMUNITY_URL =
   'https://chat.whatsapp.com/KeEnHtrfc422rHDiHWXHEb?s=cl&p=a&mlu=4&ilr=4';
 const SUPPORT_WHATSAPP_DISPLAY = '+229 01 95 83 11 26';
 const SUPPORT_EMAIL = 'goshenstartup@gmail.com';
+const SUPPORT_PHONE_DISPLAY = '+241 62 45 15 22';
+const SUPPORT_PHONE_E164 = '+24162451522';
 
 interface FaqEntry {
   question: string;
@@ -109,41 +112,205 @@ function FaqItem({ question, answer, defaultOpen = false }: FaqEntry & { default
   );
 }
 
-// Feature card — infographic capsule (reference: numbered pill cards with
-// a colored icon-half connected by dashed flow lines) instead of a plain
-// feature card, recolored to alternate Goshen's emerald/amber instead of
-// the reference's teal/purple/blue/pink so it stays on-brand.
-function FeatureCard({
-  index,
-  icon,
-  title,
-  description,
-  accent,
-}: {
-  index: number;
+// Feature showcase — scroll-spy list + sticky photo panel (reference:
+// fintech "Financial Solutions" section — numbered list on the left, the
+// active item's photo pinned on the right with a floating stat badge).
+// IntersectionObserver drives which item is "active" as the list scrolls
+// through the vertical center band of the viewport, so the photo panel
+// changes hands-free while scrolling — clicking an item also jumps to it
+// directly, so the interaction isn't scroll-only. Below `lg` there's no
+// room for a two-column sticky layout, so mobile gets its own simpler
+// stacked rendering: same photo + copy per feature, no observer.
+interface ShowcaseFeature {
   icon: ReactNode;
   title: string;
   description: string;
-  accent: 'emerald' | 'amber';
-}) {
-  const accentClasses =
-    accent === 'emerald'
-      ? 'bg-gradient-to-br from-emerald-600 to-emerald-800 text-white'
-      : 'bg-gradient-to-br from-amber-400 to-amber-600 text-emerald-950';
+  image: string;
+  imageAlt: string;
+  fit: 'contain' | 'cover';
+  statValue: string;
+  statLabel: string;
+}
+
+const SHOWCASE_FEATURES: ShowcaseFeature[] = [
+  {
+    icon: <CloudSyncIcon className="h-5 w-5" />,
+    title: 'Mode hors-ligne à 100 %',
+    description:
+      'Continuez la saisie même si le réseau coupe. Tout se synchronise automatiquement dès que la connexion revient — aucune écriture perdue.',
+    image: '/photos/hero-section.png',
+    imageAlt:
+      'Une utilisatrice de Goshen consultant le solde de trésorerie de son église sur son téléphone',
+    fit: 'contain',
+    statValue: '100 %',
+    statLabel: 'Disponible hors-ligne',
+  },
+  {
+    icon: <UsersGroupIcon className="h-5 w-5" />,
+    title: 'Des rôles et des accès stricts',
+    description:
+      'Pasteur, trésorier, auditeur : chacun voit et fait uniquement ce qui le concerne. Zéro confusion, zéro accès superflu.',
+    image: '/photos/photo-3.jpg',
+    imageAlt: 'Une équipe paroissiale répartissant les responsabilités autour de la trésorerie',
+    fit: 'cover',
+    statValue: '3',
+    statLabel: 'Rôles distincts',
+  },
+  {
+    icon: <DownloadIcon className="h-5 w-5" />,
+    title: 'Vos données, exportables à tout moment',
+    description:
+      'Un rapport PDF prêt à imprimer en un clic. Chaque écriture reste tracée — vos données vous appartiennent, sans verrouillage.',
+    image: '/photos/image-goshen.png',
+    imageAlt: 'Un trésorier présentant le rapport PDF généré automatiquement par Goshen',
+    fit: 'contain',
+    statValue: '1 clic',
+    statLabel: 'Rapport PDF',
+  },
+];
+
+function FeatureShowcase() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    const items = itemRefs.current.filter((el): el is HTMLButtonElement => el !== null);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const idx = itemRefs.current.findIndex((el) => el === entry.target);
+          if (idx !== -1) setActiveIndex(idx);
+        }
+      },
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 },
+    );
+    items.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="group relative flex items-stretch overflow-hidden rounded-[2.5rem] border border-stone-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <span className="absolute -left-3 -top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-stone-100 bg-white font-serif text-sm font-extrabold text-stone-700 shadow-md">
-        {index}
-      </span>
-      <div
-        className={`flex w-20 shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105 sm:w-24 ${accentClasses}`}
-      >
-        {icon}
+    <div className="mt-16">
+      {/* Desktop — interactive scroll-spy: list left, sticky photo right */}
+      <div className="hidden lg:grid lg:grid-cols-[0.85fr_1fr] lg:gap-16">
+        <div className="space-y-2">
+          {SHOWCASE_FEATURES.map((feature, i) => (
+            <button
+              key={feature.title}
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
+              type="button"
+              onClick={() => setActiveIndex(i)}
+              aria-pressed={activeIndex === i}
+              className={`flex min-h-[172px] w-full cursor-pointer flex-col justify-center rounded-3xl px-7 py-6 text-left transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 ${
+                activeIndex === i ? 'bg-emerald-950 shadow-xl' : 'hover:bg-white hover:shadow-md'
+              }`}
+            >
+              <span
+                className={`font-serif text-xs font-bold tracking-widest transition-colors duration-500 ${
+                  activeIndex === i ? 'text-amber-400' : 'text-stone-400'
+                }`}
+              >
+                0{i + 1}
+              </span>
+              <h3
+                className={`mt-2 font-serif text-lg font-bold transition-colors duration-500 sm:text-xl ${
+                  activeIndex === i ? 'text-white' : 'text-emerald-950'
+                }`}
+              >
+                {feature.title}
+              </h3>
+              <p
+                className={`mt-2 text-sm leading-relaxed transition-colors duration-500 ${
+                  activeIndex === i ? 'text-emerald-100/80' : 'text-stone-500'
+                }`}
+              >
+                {feature.description}
+              </p>
+            </button>
+          ))}
+        </div>
+
+        <div className="sticky top-28 self-start">
+          <div className="relative aspect-4/5 overflow-hidden rounded-[2.5rem] border border-stone-200/70 bg-gradient-to-br from-emerald-50 via-white to-amber-50/50 shadow-xl">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-amber-200/30 blur-3xl"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-emerald-200/40 blur-3xl"
+            />
+
+            {SHOWCASE_FEATURES.map((feature, i) => (
+              <Image
+                key={feature.image}
+                src={feature.image}
+                alt={feature.imageAlt}
+                fill
+                sizes="(min-width: 1024px) 480px, 0px"
+                className={`transition-opacity duration-700 ease-out ${
+                  feature.fit === 'contain' ? 'object-contain p-8' : 'object-cover'
+                } ${activeIndex === i ? 'opacity-100' : 'opacity-0'}`}
+              />
+            ))}
+
+            {SHOWCASE_FEATURES.map((feature, i) => (
+              <div
+                key={feature.title}
+                className={`absolute inset-x-5 bottom-5 flex items-center gap-3 rounded-2xl border border-stone-100 bg-white/95 p-3.5 shadow-lg backdrop-blur-md transition-opacity duration-500 ${
+                  activeIndex === i ? 'opacity-100' : 'pointer-events-none opacity-0'
+                }`}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-white">
+                  {feature.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-serif text-lg font-extrabold leading-none text-emerald-950">
+                    {feature.statValue}
+                  </p>
+                  <p className="mt-1 truncate text-[11px] font-semibold text-stone-500">
+                    {feature.statLabel}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="flex-1 py-5 pl-5 pr-6">
-        <h3 className="font-serif text-base font-bold text-emerald-950 sm:text-lg">{title}</h3>
-        <p className="mt-1.5 text-xs text-stone-600 leading-relaxed sm:text-sm">{description}</p>
+
+      {/* Mobile — stacked cards, each with its own photo, no observer */}
+      <div className="grid gap-6 lg:hidden">
+        {SHOWCASE_FEATURES.map((feature, i) => (
+          <Reveal key={feature.title} delayMs={i * 100}>
+            <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
+              <div className="relative aspect-16/10 overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-amber-50/50">
+                <Image
+                  src={feature.image}
+                  alt={feature.imageAlt}
+                  fill
+                  sizes="(min-width: 640px) 480px, 100vw"
+                  className={feature.fit === 'contain' ? 'object-contain p-6' : 'object-cover'}
+                />
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-xl border border-stone-100 bg-white/95 px-3 py-2 shadow-md backdrop-blur-md">
+                  <span className="text-emerald-800">{feature.icon}</span>
+                  <span className="text-xs font-bold text-emerald-950">{feature.statValue}</span>
+                  <span className="text-[10px] text-stone-500">{feature.statLabel}</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <span className="font-serif text-xs font-bold tracking-widest text-amber-600">
+                  0{i + 1}
+                </span>
+                <h3 className="mt-1 font-serif text-lg font-bold text-emerald-950">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-stone-600">{feature.description}</p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </div>
   );
@@ -770,8 +937,9 @@ export default function HomePage() {
         {/* Fonctionnalités clés — consolidates what used to be two separate
           sections (Sécurité, Multi-Annexes) into one, per the copy pass:
           the multi-annexes showcase (real screenshot) leads as the richest
-          proof, then 3 compact feature cards cover offline, roles and
-          export/audit without repeating a whole section for each. */}
+          proof, then an interactive photo showcase (FeatureShowcase) covers
+          offline, roles and export/audit without repeating a whole section
+          for each. */}
         <section
           id="fonctionnalites"
           className="bg-gradient-to-b from-white to-stone-50 py-20 px-6"
@@ -836,36 +1004,8 @@ export default function HomePage() {
               </Reveal>
             </div>
 
-            {/* 3 compact feature cards — offline, roles, export/audit */}
-            <div className="mt-16 grid gap-6 sm:grid-cols-3">
-              <Reveal delayMs={0}>
-                <FeatureCard
-                  index={1}
-                  accent="emerald"
-                  icon={<CloudSyncIcon className="h-6 w-6" />}
-                  title="Mode hors-ligne à 100 %"
-                  description="Continuez la saisie même si le réseau coupe. Tout se synchronise dès que la connexion revient."
-                />
-              </Reveal>
-              <Reveal delayMs={100}>
-                <FeatureCard
-                  index={2}
-                  accent="amber"
-                  icon={<UsersGroupIcon className="h-6 w-6" />}
-                  title="Des rôles et des accès stricts"
-                  description="Pasteur, trésorier, auditeur : chacun voit et fait uniquement ce qui le concerne."
-                />
-              </Reveal>
-              <Reveal delayMs={200}>
-                <FeatureCard
-                  index={3}
-                  accent="emerald"
-                  icon={<DownloadIcon className="h-6 w-6" />}
-                  title="Vos données, exportables à tout moment"
-                  description="PDF ou Excel, en un clic. Chaque écriture reste tracée — vos données vous appartiennent, sans verrouillage."
-                />
-              </Reveal>
-            </div>
+            {/* Interactive feature showcase — offline, roles, export/audit */}
+            <FeatureShowcase />
 
             <Reveal delayMs={100}>
               <div className="mt-12 flex justify-center">
@@ -1115,41 +1255,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
-        {/* Final CTA — the last conversion opportunity before the footer,
-          echoing the hero's offer now that every objection has been
-          answered (problem, solution, features, community, FAQ). */}
-        <section className="relative overflow-hidden bg-emerald-950 py-20 px-6">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[130%] -translate-x-1/2 rounded-full bg-gradient-to-b from-emerald-800/40 to-transparent blur-3xl"
-          />
-          <Reveal className="relative mx-auto max-w-2xl text-center">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-white tracking-tight">
-              Donnez à votre église la clarté financière qu’elle mérite, dès ce dimanche.
-            </h2>
-            <p className="mt-4 text-emerald-100/80 text-base">
-              Configurez votre espace en moins de 2 minutes. Sans carte, sans engagement.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/signup"
-                className="w-full transform rounded-full bg-white px-8 py-4 text-base font-bold text-emerald-950 shadow-lg transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-50 sm:w-auto"
-              >
-                Créer le compte de mon église — gratuit
-              </Link>
-              <a
-                href={WHATSAPP_COMMUNITY_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-bold text-emerald-100 hover:text-white transition-colors"
-              >
-                <MessageCircleIcon className="h-4 w-4" />
-                Discuter avec nous sur WhatsApp
-              </a>
-            </div>
-          </Reveal>
-        </section>
       </main>
 
       {/* Footer */}
@@ -1252,6 +1357,15 @@ export default function HomePage() {
                     className="hover:text-white transition-colors"
                   >
                     {SUPPORT_EMAIL}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={`tel:${SUPPORT_PHONE_E164}`}
+                    className="hover:text-white transition-colors flex items-center gap-1.5"
+                  >
+                    <PhoneIcon className="h-3.5 w-3.5 text-emerald-400" />
+                    {SUPPORT_PHONE_DISPLAY}
                   </a>
                 </li>
                 <li className="text-stone-500 mt-2">Support en français 7j/7</li>
