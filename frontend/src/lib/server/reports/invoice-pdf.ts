@@ -36,9 +36,42 @@ export interface InvoicePdfInput {
   phone?: string | undefined;
   email?: string | undefined;
   currency?: string | null;
+  /** Sent by InvoiceModal at archive time (the value current in the header
+   * language toggle) so the archived PDF matches the on-screen preview the
+   * user was actually looking at when they clicked "Télécharger". */
+  locale?: 'fr' | 'en' | undefined;
 }
 
 const ACCENT = '#e11d48';
+
+const LABELS = {
+  fr: {
+    docTitle: 'FACTURE',
+    billedTo: 'FACTURÉ À',
+    date: 'DATE',
+    description: 'DESCRIPTION',
+    amount: 'MONTANT',
+    paymentMethod: 'MOYEN DE PAIEMENT',
+    terms: 'CONDITIONS',
+    total: 'TOTAL',
+    phonePrefix: 'Tél :',
+    emailPrefix: 'Courriel :',
+    thanks: 'Merci pour votre confiance.',
+  },
+  en: {
+    docTitle: 'INVOICE',
+    billedTo: 'BILLED TO',
+    date: 'DATE',
+    description: 'DESCRIPTION',
+    amount: 'AMOUNT',
+    paymentMethod: 'PAYMENT METHOD',
+    terms: 'TERMS',
+    total: 'TOTAL',
+    phonePrefix: 'Phone:',
+    emailPrefix: 'Email:',
+    thanks: 'Thank you for your trust.',
+  },
+} as const;
 
 // PDFKit's standard Helvetica font can't render the narrow no-break space
 // (U+202F) that `Number.toLocaleString('fr-FR')` uses as a thousands
@@ -75,6 +108,7 @@ async function fetchLogoBuffer(url: string): Promise<Buffer | null> {
  */
 export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer> {
   const logoBuffer = input.churchLogoUrl ? await fetchLogoBuffer(input.churchLogoUrl) : null;
+  const L = LABELS[input.locale === 'en' ? 'en' : 'fr'];
 
   return new Promise((resolve, reject) => {
     try {
@@ -120,7 +154,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .fontSize(22)
         .font('Helvetica-Bold')
         .fillColor('#0c0a09')
-        .text('FACTURE', 0, 50, { align: 'right' });
+        .text(L.docTitle, 0, 50, { align: 'right' });
       doc
         .fontSize(9)
         .font('Helvetica')
@@ -133,7 +167,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
 
       // ── Recipient + date box ────────────────────────────────────────
       const infoTop = doc.y;
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#78716c').text('FACTURÉ À', 50, infoTop);
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#78716c').text(L.billedTo, 50, infoTop);
       doc
         .fontSize(11)
         .font('Helvetica-Bold')
@@ -146,7 +180,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         doc.fontSize(9).font('Helvetica').fillColor('#78716c').text(input.recipientContact, 50);
       }
 
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#78716c').text('DATE', 350, infoTop);
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#78716c').text(L.date, 350, infoTop);
       doc
         .fontSize(10)
         .font('Helvetica')
@@ -170,8 +204,8 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .fillColor('#ffffff')
         .fontSize(9)
         .font('Helvetica-Bold')
-        .text('DESCRIPTION', 60, tableTop + 6)
-        .text('MONTANT', 400, tableTop + 6, { width: 135, align: 'right' });
+        .text(L.description, 60, tableTop + 6)
+        .text(L.amount, 400, tableTop + 6, { width: 135, align: 'right' });
 
       let rowY = tableTop + 22;
       input.items.forEach((row, idx) => {
@@ -210,7 +244,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .fontSize(9)
         .font('Helvetica-Bold')
         .fillColor('#0c0a09')
-        .text('MOYEN DE PAIEMENT', 50, footerTop);
+        .text(L.paymentMethod, 50, footerTop);
       doc
         .fontSize(9)
         .font('Helvetica')
@@ -227,7 +261,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
 
       if (input.terms) {
         doc.moveDown(0.6);
-        doc.fontSize(9).font('Helvetica-Bold').fillColor('#0c0a09').text('CONDITIONS', 50);
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#0c0a09').text(L.terms, 50);
         doc
           .fontSize(8)
           .font('Helvetica')
@@ -249,7 +283,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .fillColor('#ffffff')
         .fontSize(9)
         .font('Helvetica-Bold')
-        .text('TOTAL', 340, totalsY + 9)
+        .text(L.total, 340, totalsY + 9)
         .fontSize(11)
         .text(formatAmount(input.total, curLabel), 330, totalsY + 8, {
           width: 195,
@@ -261,9 +295,9 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .font('Helvetica')
         .fillColor('#a8a29e')
         .text(
-          `${input.phone ? `Tél : ${input.phone}` : ''}${
+          `${input.phone ? `${L.phonePrefix} ${input.phone}` : ''}${
             input.phone && input.email ? '  •  ' : ''
-          }${input.email ? `Courriel : ${input.email}` : ''}`,
+          }${input.email ? `${L.emailPrefix} ${input.email}` : ''}`,
           330,
           totalsY + 40,
           { width: 205, align: 'right' },
@@ -274,7 +308,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput): Promise<Buffer
         .fontSize(9)
         .font('Helvetica-Bold')
         .fillColor(ACCENT)
-        .text('Merci pour votre confiance.', 50, Math.max(doc.y, totalsY + 60), {
+        .text(L.thanks, 50, Math.max(doc.y, totalsY + 60), {
           align: 'center',
         });
 

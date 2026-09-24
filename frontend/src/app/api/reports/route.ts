@@ -19,6 +19,7 @@ const GenerateReportBody = z.object({
   branchId: z.string().optional(), // empty or 'CONSOLIDATED' for all
   startDate: z.string(),
   endDate: z.string(),
+  locale: z.enum(['fr', 'en']).optional(),
 });
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -174,7 +175,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { title, periodType, branchId, startDate: startStr, endDate: endStr } = parsed.data;
+    const {
+      title,
+      periodType,
+      branchId,
+      startDate: startStr,
+      endDate: endStr,
+      locale,
+    } = parsed.data;
     const startDate = new Date(startStr);
     const endDate = new Date(endStr);
 
@@ -314,6 +322,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         expensesByCategory,
         transactions: transactionRows,
         currency: access.church.currency,
+        locale,
       });
 
       // No .pdf suffix on the public_id — Cloudinary appends the detected

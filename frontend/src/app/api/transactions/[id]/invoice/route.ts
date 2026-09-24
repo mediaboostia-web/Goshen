@@ -43,6 +43,7 @@ const ArchiveInvoiceBody = z.object({
   signatoryRole: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
+  locale: z.enum(['fr', 'en']).optional(),
 });
 
 export async function POST(

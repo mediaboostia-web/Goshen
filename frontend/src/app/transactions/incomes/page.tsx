@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api, ApiError } from '@/lib/api';
 import { queueMutation } from '@/lib/offlineQueue';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -34,6 +35,8 @@ interface IncomeTransaction {
 export default function IncomesPage() {
   const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const { locale, t } = useLanguage();
+  const localeCode = locale === 'en' ? 'en-US' : 'fr-FR';
   const currency = getCurrencyLabel(church?.currency);
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -214,19 +217,19 @@ export default function IncomesPage() {
     setActiveInvoiceData({
       transactionId: tx.id,
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
-      date: new Date(tx.date).toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'Votre Église',
+      date: new Date(tx.date).toLocaleDateString(localeCode),
+      churchName: church?.name || t('invoice.default_church_name'),
       ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
-      churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      churchDenomination: t('invoice.default_denomination'),
       churchAddress: tx.branchName,
-      recipientName: 'Culte Dominical & Assemblée Locale',
+      recipientName: t('invoice.sunday_worship_assembly'),
       recipientAddress: '',
       recipientContact: '',
       items: [
         {
           no: '01',
           description: tx.categoryName,
-          subDescription: tx.notes || 'Collecte et offrandes enregistrées au grand livre',
+          subDescription: tx.notes || t('invoice.income_ledger_note'),
           amount: tx.amount,
         },
       ],
@@ -235,7 +238,7 @@ export default function IncomesPage() {
         ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
         : formatPaymentMethods(church?.paymentMethods),
       ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
-      terms: 'Récépissé officiel de culte certifié conforme aux registres paroissiaux.',
+      terms: t('invoice.sunday_receipt_terms'),
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
       currency: church?.currency,

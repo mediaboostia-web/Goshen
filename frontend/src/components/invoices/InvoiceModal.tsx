@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { DocumentReportIcon } from '@/components/icons/ChurchIcons';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getCurrencyLabel, getCurrencyShort } from '@/lib/utils';
 
 export interface InvoiceItemRow {
@@ -52,6 +53,7 @@ interface InvoiceModalProps {
 export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { locale, t } = useLanguage();
   const [downloading, setDownloading] = useState(false);
 
   if (!isOpen || !data) return null;
@@ -87,6 +89,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
           signatoryRole: data.signatoryRole,
           phone: data.phone,
           email: data.email,
+          locale,
         },
       },
     );
@@ -146,11 +149,9 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               <DocumentReportIcon className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-stone-900">
-                Prévisualisation de la Facture / Reçu Officiel
-              </h3>
+              <h3 className="text-sm font-bold text-stone-900">{t('invoice.preview_title')}</h3>
               <p className="text-[11px] text-stone-500 font-mono">
-                Réf : {data.invoiceNumber} • Conforme aux écritures paroissiales
+                {t('invoice.preview_ref')} {data.invoiceNumber} • {t('invoice.preview_ref_suffix')}
               </p>
             </div>
           </div>
@@ -162,7 +163,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               onClick={() => void handleDownload()}
               disabled={downloading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 disabled:opacity-60 transition-all shadow-xs cursor-pointer"
-              title="Télécharger la facture en PDF"
+              title={t('invoice.download_title')}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -175,7 +176,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span>{downloading ? 'Génération…' : 'Télécharger PDF'}</span>
+              <span>{downloading ? t('invoice.generating') : t('invoice.download_pdf')}</span>
             </button>
 
             {/* Print Button */}
@@ -183,7 +184,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               type="button"
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-md cursor-pointer"
-              title="Imprimer directement sur imprimante"
+              title={t('invoice.print_title')}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -196,7 +197,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
                 <rect x="6" y="14" width="12" height="8" />
               </svg>
-              <span>Imprimer</span>
+              <span>{t('invoice.print')}</span>
             </button>
 
             {/* Close Modal Button */}
@@ -235,10 +236,10 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold tracking-tight text-stone-900 uppercase">
-                    {data.churchName || 'Votre Église'}
+                    {data.churchName || t('invoice.default_church_name')}
                   </h1>
                   <p className="text-[11px] font-bold text-stone-500 tracking-wider uppercase">
-                    {data.churchDenomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE'}
+                    {data.churchDenomination || t('invoice.default_denomination')}
                   </p>
                   {data.churchAddress && (
                     <p className="text-xs text-stone-500 mt-1">{data.churchAddress}</p>
@@ -249,7 +250,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               {/* Right: Big Bold "FACTURE" Title & Number */}
               <div className="text-right">
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-stone-900 uppercase">
-                  FACTURE
+                  {t('invoice.doc_title')}
                 </h2>
                 <p className="text-xs font-bold text-stone-400 mt-1 font-mono tracking-wider">
                   #{data.invoiceNumber}
@@ -262,10 +263,10 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               {/* Left: Invoice To */}
               <div>
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-500">
-                  FACTURÉ À
+                  {t('invoice.billed_to')}
                 </span>
                 <h3 className="text-sm font-bold text-stone-900 mt-1">
-                  {data.recipientName || 'Paroisse Locale / Bénéficiaire'}
+                  {data.recipientName || t('invoice.default_recipient')}
                 </h3>
                 {data.recipientAddress && (
                   <p className="text-xs text-stone-600 mt-0.5 whitespace-pre-line leading-relaxed">
@@ -281,13 +282,15 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               <div className="relative rounded-lg bg-[#f1f5f9] p-5 border-l-4 border-[#e11d48] shadow-2xs">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="block font-bold text-stone-700">N° de facture</span>
+                    <span className="block font-bold text-stone-700">
+                      {t('invoice.invoice_number')}
+                    </span>
                     <span className="block text-stone-600 font-mono mt-1 text-[11px] font-semibold truncate">
                       {data.invoiceNumber}
                     </span>
                   </div>
                   <div>
-                    <span className="block font-bold text-stone-700">Date</span>
+                    <span className="block font-bold text-stone-700">{t('invoice.date')}</span>
                     <span className="block text-stone-600 font-mono mt-1 text-[11px] font-semibold">
                       {data.date}
                     </span>
@@ -301,9 +304,9 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#e11d48] text-white font-extrabold tracking-wider text-[11px] uppercase">
-                    <th className="py-3 px-4 w-12 text-center">N°</th>
-                    <th className="py-3 px-4">DESCRIPTION</th>
-                    <th className="py-3 px-4 text-right w-36">MONTANT</th>
+                    <th className="py-3 px-4 w-12 text-center">{t('invoice.col_no')}</th>
+                    <th className="py-3 px-4">{t('invoice.col_description')}</th>
+                    <th className="py-3 px-4 text-right w-36">{t('invoice.col_amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -343,10 +346,10 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               <div className="space-y-4 text-xs">
                 <div>
                   <h4 className="font-bold text-stone-900 uppercase text-[11px]">
-                    Moyen de paiement
+                    {t('invoice.payment_method')}
                   </h4>
                   <p className="text-stone-600 mt-0.5 font-medium leading-relaxed">
-                    {data.paymentMethod || 'Airtel Money / Caisse Espèces Libreville'}
+                    {data.paymentMethod || t('invoice.default_payment')}
                   </p>
                   {data.paymentDetails && (
                     <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
@@ -356,10 +359,11 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-stone-900 uppercase text-[11px]">Conditions</h4>
+                  <h4 className="font-bold text-stone-900 uppercase text-[11px]">
+                    {t('invoice.terms')}
+                  </h4>
                   <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
-                    {data.terms ||
-                      'Cette pièce comptable atteste la régularité des écritures inscrites dans le grand livre de l’église conformément aux normes comptables en vigueur.'}
+                    {data.terms || t('invoice.default_terms')}
                   </p>
                 </div>
 
@@ -385,7 +389,9 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                 <div className="space-y-2 text-xs">
                   {/* Total Box (Full Red Bar with White Text) */}
                   <div className="rounded-lg bg-[#e11d48] px-5 py-3 text-white flex items-center justify-between shadow-xs">
-                    <span className="font-bold text-xs uppercase tracking-wider">Total :</span>
+                    <span className="font-bold text-xs uppercase tracking-wider">
+                      {t('invoice.total')}
+                    </span>
                     <span className="font-mono tabular-nums font-black text-lg tracking-tight">
                       {data.total.toLocaleString('fr-FR')} {currency}
                     </span>
@@ -396,7 +402,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                     only; a field with nothing configured simply doesn't
                     render, rather than showing a fabricated placeholder. */}
                 <div className="pt-8 print:pt-4 text-center sm:text-right">
-                  <p className="font-bold text-sm text-[#e11d48]">Merci pour votre confiance.</p>
+                  <p className="font-bold text-sm text-[#e11d48]">{t('invoice.thanks')}</p>
                   {(data.phone || data.email) && (
                     <div className="flex items-center justify-center sm:justify-end gap-4 text-[11px] text-stone-500 mt-1">
                       {data.phone && <span>📞 {data.phone}</span>}

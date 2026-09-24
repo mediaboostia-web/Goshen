@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api, ApiError } from '@/lib/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppNav } from '@/components/layout/AppNav';
@@ -67,6 +68,11 @@ interface ArchivedReport {
 export default function ReportsPage() {
   const { church, branches, currentBranch } = useBranch();
   const { toast } = useToast();
+  const { locale, t } = useLanguage();
+  // Drives both date AND number formatting (toLocaleString accepts the same
+  // BCP-47 tag for either), so switching language also switches "40 000" ->
+  // "40,000" grouping, not just month names.
+  const localeCode = locale === 'en' ? 'en-US' : 'fr-FR';
   const currency = getCurrencyLabel(church?.currency);
 
   const [periodType, setPeriodType] = useState<
@@ -162,8 +168,8 @@ export default function ReportsPage() {
       // does, which is why this bug never showed up on-screen).
       const title =
         periodType === 'SUNDAY_SERVICE'
-          ? `Bilan du Culte • ${new Date(startDate).toLocaleDateString('fr-FR')}`
-          : `Rapport Financier • ${startDate} au ${endDate}`;
+          ? `${t('report.sunday_service_title')} • ${new Date(startDate).toLocaleDateString(localeCode)}`
+          : `${t('report.financial_report_title')} • ${startDate} au ${endDate}`;
 
       await api('/api/reports', {
         method: 'POST',
@@ -173,6 +179,7 @@ export default function ReportsPage() {
           branchId: branchScope === 'CONSOLIDATED' ? undefined : branchScope,
           startDate: `${startDate}T00:00:00.000Z`,
           endDate: `${endDate}T23:59:59.999Z`,
+          locale,
         },
       });
 
@@ -204,15 +211,15 @@ export default function ReportsPage() {
 
   const invoiceData: InvoiceData = {
     invoiceNumber: `INV-${new Date().getFullYear()}-${periodType.slice(0, 3)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-    date: new Date(startDate).toLocaleDateString('fr-FR'),
-    dueDate: new Date(endDate).toLocaleDateString('fr-FR'),
-    churchName: church?.name || 'Votre Église',
+    date: new Date(startDate).toLocaleDateString(localeCode),
+    dueDate: new Date(endDate).toLocaleDateString(localeCode),
+    churchName: church?.name || t('invoice.default_church_name'),
     ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
-    churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+    churchDenomination: church?.denomination || t('invoice.default_denomination'),
     churchAddress: selectedBranchObj?.name || '',
     recipientName: selectedBranchObj?.name
-      ? `Conseil Paroissial - ${selectedBranchObj.name}`
-      : 'Bureau National de Coordination des Finances',
+      ? `${t('invoice.parish_council')} - ${selectedBranchObj.name}`
+      : t('invoice.national_coordination_office'),
     recipientAddress: '',
     recipientContact: '',
     items:
@@ -221,18 +228,17 @@ export default function ReportsPage() {
             no: String(idx + 1).padStart(2, '0'),
             description:
               tx.category?.name ||
-              (tx.type === 'INCOME' ? 'Offrande de culte' : 'Charge de fonctionnement'),
+              (tx.type === 'INCOME' ? t('invoice.offering_default') : t('invoice.expense_default')),
             subDescription:
               tx.notes ||
-              `Écriture enregistrée le ${new Date(tx.date).toLocaleDateString('fr-FR')}`,
+              `${t('invoice.entry_recorded_on')} ${new Date(tx.date).toLocaleDateString(localeCode)}`,
             amount: tx.amount,
           }))
         : [],
     total: preview?.totalIncome || 0,
     paymentMethod: summarizePaymentMethods(preview?.transactions, church?.paymentMethods),
     ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
-    terms:
-      'Cette facture et récépissé comptable atteste la régularité des écritures inscrites dans les registres de l’église conformément aux normes comptables en vigueur.',
+    terms: t('invoice.aggregate_terms'),
     ...(church?.phone ? { phone: church.phone } : {}),
     ...(church?.email ? { email: church.email } : {}),
     currency: church?.currency,
@@ -243,21 +249,21 @@ export default function ReportsPage() {
     return {
       transactionId: tx.id,
       invoiceNumber: `REC-${String(tx.id).slice(0, 8).toUpperCase()}`,
-      date: new Date(tx.date).toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'Votre Église',
+      date: new Date(tx.date).toLocaleDateString(localeCode),
+      churchName: church?.name || t('invoice.default_church_name'),
       ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
-      churchDenomination: church?.denomination || 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      churchDenomination: church?.denomination || t('invoice.default_denomination'),
       churchAddress: tx.branch.name,
       recipientName: isIncome
-        ? 'Culte Dominical & Assemblée Locale'
-        : `Bénéficiaire — ${tx.category.name}`,
+        ? t('invoice.sunday_worship_assembly')
+        : `${t('invoice.beneficiary_prefix')} — ${tx.category.name}`,
       recipientAddress: '',
       recipientContact: '',
       items: [
         {
           no: '01',
           description: tx.category.name,
-          subDescription: tx.notes || `Écriture enregistrée le ${tx.branch.name}`,
+          subDescription: tx.notes || `${t('invoice.entry_recorded_on')} ${tx.branch.name}`,
           amount: tx.amount,
         },
       ],
@@ -266,7 +272,7 @@ export default function ReportsPage() {
         ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
         : formatPaymentMethods(church?.paymentMethods),
       ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
-      terms: 'Récépissé officiel certifié conforme aux registres paroissiaux de l’église.',
+      terms: t('invoice.receipt_terms'),
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
       currency: church?.currency,
@@ -299,6 +305,7 @@ export default function ReportsPage() {
             terms: built.terms,
             phone: built.phone,
             email: built.email,
+            locale,
           },
         },
       );
@@ -507,7 +514,7 @@ export default function ReportsPage() {
                 type="button"
                 onClick={() => setShowBilanPreview(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 font-bold transition-colors cursor-pointer"
-                title="Masquer l’aperçu"
+                title={t('report.hide_preview')}
               >
                 &times;
               </button>
@@ -516,31 +523,32 @@ export default function ReportsPage() {
             <div className="border-b-2 border-emerald-900 pb-6 flex justify-between items-start">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-800">
-                  {church?.denomination || 'Communauté Chrétienne'}
+                  {church?.denomination || t('report.default_denomination')}
                 </span>
                 <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 mt-1">
                   {church?.name}
                 </h2>
                 <p className="text-xs text-stone-500 mt-1 font-medium">
                   {branchScope === 'CONSOLIDATED'
-                    ? 'Rapport Consolidé de toutes les annexes'
-                    : `Annexe locale : ${selectedBranchObj?.name || 'Annexe'}`}
+                    ? t('report.consolidated')
+                    : `${t('report.local_branch')} ${selectedBranchObj?.name || t('report.default_branch')}`}
                 </p>
               </div>
 
               <div className="text-right">
                 <span className="inline-block rounded bg-emerald-100 px-3 py-1 font-serif text-sm font-bold text-emerald-950">
-                  RAPPORT FINANCIER
+                  {t('report.badge')}
                 </span>
                 <p className="text-xs text-stone-500 mt-2">
-                  Période :{' '}
+                  {t('report.period_label')}{' '}
                   <strong className="text-stone-800">
-                    {new Date(startDate).toLocaleDateString('fr-FR')} &rarr;{' '}
-                    {new Date(endDate).toLocaleDateString('fr-FR')}
+                    {new Date(startDate).toLocaleDateString(localeCode)} &rarr;{' '}
+                    {new Date(endDate).toLocaleDateString(localeCode)}
                   </strong>
                 </p>
                 <p className="text-[10px] text-stone-400 mt-0.5">
-                  Édité le {new Date().toLocaleDateString('fr-FR')} via Goshen
+                  {t('report.edited_on')} {new Date().toLocaleDateString(localeCode)}{' '}
+                  {t('report.via_goshen')}
                 </p>
               </div>
             </div>
@@ -548,29 +556,35 @@ export default function ReportsPage() {
             {/* Financial Summary Table */}
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center border-y border-stone-200 py-4 bg-stone-50">
               <div>
-                <span className="text-[11px] text-stone-500 font-medium">Solde d’ouverture</span>
+                <span className="text-[11px] text-stone-500 font-medium">
+                  {t('report.opening_balance')}
+                </span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-stone-900 mt-1">
-                  {preview.openingBalance.toLocaleString('fr-FR')} {currency}
+                  {preview.openingBalance.toLocaleString(localeCode)} {currency}
                 </p>
               </div>
               <div>
-                <span className="text-[11px] text-emerald-700 font-medium">+ Total Entrées</span>
+                <span className="text-[11px] text-emerald-700 font-medium">
+                  + {t('report.total_income')}
+                </span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-emerald-800 mt-1">
-                  +{preview.totalIncome.toLocaleString('fr-FR')} {currency}
+                  +{preview.totalIncome.toLocaleString(localeCode)} {currency}
                 </p>
               </div>
               <div>
                 <span className="text-[11px] text-stone-600 font-medium">
-                  - Total Décaissements
+                  - {t('report.total_expense')}
                 </span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-stone-800 mt-1">
-                  -{preview.totalExpense.toLocaleString('fr-FR')} {currency}
+                  -{preview.totalExpense.toLocaleString(localeCode)} {currency}
                 </p>
               </div>
               <div>
-                <span className="text-[11px] text-emerald-950 font-bold">= Solde de clôture</span>
+                <span className="text-[11px] text-emerald-950 font-bold">
+                  = {t('report.closing_balance')}
+                </span>
                 <p className="font-mono tabular-nums text-lg sm:text-xl font-bold text-emerald-950 mt-1">
-                  {preview.closingBalance.toLocaleString('fr-FR')} {currency}
+                  {preview.closingBalance.toLocaleString(localeCode)} {currency}
                 </p>
               </div>
             </div>
@@ -580,14 +594,14 @@ export default function ReportsPage() {
               {/* Incomes Breakdown */}
               <div>
                 <h3 className="font-serif text-sm font-bold text-emerald-950 pb-2 border-b border-emerald-200 uppercase tracking-wider flex justify-between">
-                  <span>Détail des Entrées</span>
+                  <span>{t('report.income_detail')}</span>
                   <span className="font-mono tabular-nums text-emerald-800">
-                    +{preview.totalIncome.toLocaleString('fr-FR')} {currency}
+                    +{preview.totalIncome.toLocaleString(localeCode)} {currency}
                   </span>
                 </h3>
                 <div className="mt-3 space-y-2">
                   {Object.keys(preview.incomesByCategory).length === 0 ? (
-                    <p className="text-stone-400 italic">Aucune entrée sur cette période.</p>
+                    <p className="text-stone-400 italic">{t('report.no_income')}</p>
                   ) : (
                     Object.entries(preview.incomesByCategory).map(([catName, sum]) => (
                       <div
@@ -596,7 +610,7 @@ export default function ReportsPage() {
                       >
                         <span className="text-stone-700 font-medium">{catName}</span>
                         <span className="font-mono tabular-nums font-bold text-stone-900">
-                          {sum.toLocaleString('fr-FR')} {currency}
+                          {sum.toLocaleString(localeCode)} {currency}
                         </span>
                       </div>
                     ))
@@ -607,14 +621,14 @@ export default function ReportsPage() {
               {/* Expenses Breakdown */}
               <div>
                 <h3 className="font-serif text-sm font-bold text-stone-900 pb-2 border-b border-stone-200 uppercase tracking-wider flex justify-between">
-                  <span>Détail des Décaissements</span>
+                  <span>{t('report.expense_detail')}</span>
                   <span className="font-mono tabular-nums text-stone-800">
-                    -{preview.totalExpense.toLocaleString('fr-FR')} {currency}
+                    -{preview.totalExpense.toLocaleString(localeCode)} {currency}
                   </span>
                 </h3>
                 <div className="mt-3 space-y-2">
                   {Object.keys(preview.expensesByCategory).length === 0 ? (
-                    <p className="text-stone-400 italic">Aucune dépense sur cette période.</p>
+                    <p className="text-stone-400 italic">{t('report.no_expense')}</p>
                   ) : (
                     Object.entries(preview.expensesByCategory).map(([catName, sum]) => (
                       <div
@@ -623,7 +637,7 @@ export default function ReportsPage() {
                       >
                         <span className="text-stone-700 font-medium">{catName}</span>
                         <span className="font-mono tabular-nums font-bold text-stone-900">
-                          {sum.toLocaleString('fr-FR')} {currency}
+                          {sum.toLocaleString(localeCode)} {currency}
                         </span>
                       </div>
                     ))
@@ -635,21 +649,24 @@ export default function ReportsPage() {
             {/* Signature Blocks */}
             <div className="mt-14 pt-8 border-t border-stone-200 grid grid-cols-2 gap-12 text-xs">
               <div className="text-center">
-                <p className="font-bold text-stone-800">Pour le Pasteur Principal</p>
-                <p className="text-[11px] text-stone-400 mt-1">Signature & Sceau de l’église</p>
+                <p className="font-bold text-stone-800">{t('report.pastor_signature')}</p>
+                <p className="text-[11px] text-stone-400 mt-1">
+                  {t('report.pastor_signature_sub')}
+                </p>
                 <div className="mt-12 border-b border-dashed border-stone-300 w-40 mx-auto" />
               </div>
               <div className="text-center">
-                <p className="font-bold text-stone-800">Pour le Trésorier Général</p>
-                <p className="text-[11px] text-stone-400 mt-1">Signature & Visa de contrôle</p>
+                <p className="font-bold text-stone-800">{t('report.treasurer_signature')}</p>
+                <p className="text-[11px] text-stone-400 mt-1">
+                  {t('report.treasurer_signature_sub')}
+                </p>
                 <div className="mt-12 border-b border-dashed border-stone-300 w-40 mx-auto" />
               </div>
             </div>
 
             {/* Theological stamp / footer */}
             <div className="mt-10 pt-4 border-t border-stone-100 text-center text-[10px] text-stone-400 italic">
-              « Que tout se fasse avec bienséance et avec ordre. » &mdash; 1 Corinthiens 14:40
-              &bull; Document généré via Goshen Finance.
+              {t('report.footer_verse')} • {t('report.footer_generated')}
             </div>
           </div>
         )}

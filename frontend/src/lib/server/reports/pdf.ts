@@ -32,7 +32,56 @@ export interface ReportPdfInput {
   expensesByCategory: Record<string, number>;
   transactions: ReportPdfTransaction[];
   currency?: string;
+  /** Selected by the user via the language toggle at generation time — the
+   * client sends the value current at click time, so an archived PDF stays
+   * pinned to whatever was selected when it was created, exactly like the
+   * on-screen bilan preview it mirrors. Defaults to 'fr'. */
+  locale?: 'fr' | 'en' | undefined;
 }
+
+// Every static label drawn on the page — the only thing that varies with
+// `input.locale`. Numbers/currency go through formatCurrency (already
+// locale-correct via toLocaleString) and dates through formatDate below.
+const LABELS = {
+  fr: {
+    opening: 'Ouverture',
+    income: 'Entrées',
+    expense: 'Dépenses',
+    closing: 'Clôture',
+    incomeByCategory: 'Entrées par catégorie',
+    expenseByCategory: 'Dépenses par catégorie',
+    noIncome: 'Aucune entrée sur la période.',
+    noExpense: 'Aucune dépense sur la période.',
+    operationsDetail: 'DÉTAIL DES OPÉRATIONS',
+    colDate: 'DATE',
+    colCategory: 'CATÉGORIE',
+    colBeneficiary: 'BÉNÉFICIAIRE',
+    colAmount: 'MONTANT',
+    noOperations: 'Aucune opération sur la période.',
+    generatedOn: 'Généré le',
+    amountsIn: 'Montants en',
+    page: 'Page',
+  },
+  en: {
+    opening: 'Opening',
+    income: 'Income',
+    expense: 'Expenses',
+    closing: 'Closing',
+    incomeByCategory: 'Income by category',
+    expenseByCategory: 'Expenses by category',
+    noIncome: 'No income for this period.',
+    noExpense: 'No expenses for this period.',
+    operationsDetail: 'TRANSACTION DETAILS',
+    colDate: 'DATE',
+    colCategory: 'CATEGORY',
+    colBeneficiary: 'BENEFICIARY',
+    colAmount: 'AMOUNT',
+    noOperations: 'No transactions for this period.',
+    generatedOn: 'Generated on',
+    amountsIn: 'Amounts in',
+    page: 'Page',
+  },
+} as const;
 
 // Palette mirrors goshen-tokens.css (frontend/src/app/globals.css) so the
 // archived PDF reads as the same brand as the app, not pdfkit's black-on-
@@ -46,8 +95,8 @@ const EMERALD = '#086158'; // --color-emerald-800 — brand primary, income
 const EMERALD_DARK = '#033330'; // --color-emerald-950 — table header band
 const ROSE = '#be123c'; // expenses / negative figures
 
-function formatDate(d: string | Date): string {
-  return new Date(d).toLocaleDateString('fr-FR');
+function formatDate(d: string | Date, locale: 'fr' | 'en'): string {
+  return new Date(d).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR');
 }
 
 /** Adds a page (resetting the y cursor to the top margin) once `needed` pt
@@ -78,10 +127,13 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
 
       const currency = input.currency;
       const currencyLabel = getCurrencyLabel(currency);
+      const locale = input.locale === 'en' ? 'en' : 'fr';
+      const L = LABELS[locale];
       const left = doc.page.margins.left;
       const right = doc.page.width - doc.page.margins.right;
       const contentWidth = right - left;
       const amount = (n: number) => formatCurrency(n, currency);
+      const date = (d: string | Date) => formatDate(d, locale);
 
       // ── Brand strip ─────────────────────────────────────────────────
       doc.rect(0, 0, doc.page.width, 6).fill(EMERALD);
@@ -110,7 +162,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
         .font('Helvetica')
         .fillColor(MUTED)
         .text(
-          `${input.branchName} — ${formatDate(input.startDate)} au ${formatDate(input.endDate)}`,
+          `${input.branchName} — ${date(input.startDate)} ${locale === 'en' ? 'to' : 'au'} ${date(input.endDate)}`,
           left,
           doc.y + 2,
           { width: contentWidth, align: 'right' },
@@ -123,11 +175,11 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
 
       // ── Summary stat cards ─────────────────────────────────────────
       const cards: { label: string; value: number; color: string }[] = [
-        { label: 'Ouverture', value: input.openingBalance, color: INK },
-        { label: 'Entrées', value: input.totalIncome, color: EMERALD },
-        { label: 'Dépenses', value: input.totalExpense, color: ROSE },
+        { label: L.opening, value: input.openingBalance, color: INK },
+        { label: L.income, value: input.totalIncome, color: EMERALD },
+        { label: L.expense, value: input.totalExpense, color: ROSE },
         {
-          label: 'Clôture',
+          label: L.closing,
           value: input.closingBalance,
           color: input.closingBalance >= 0 ? EMERALD : ROSE,
         },
@@ -224,19 +276,19 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
         left,
         columnWidth,
         columnsTop,
-        'Entrées par catégorie',
+        L.incomeByCategory,
         EMERALD,
         incomeEntries,
-        'Aucune entrée sur la période.',
+        L.noIncome,
       );
       const expenseEnd = drawCategoryColumn(
         left + columnWidth + columnGap,
         columnWidth,
         columnsTop,
-        'Dépenses par catégorie',
+        L.expenseByCategory,
         ROSE,
         expenseEntries,
-        'Aucune dépense sur la période.',
+        L.noExpense,
       );
       doc.y = Math.max(incomeEnd, expenseEnd) + 26;
 
@@ -246,7 +298,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
         .fontSize(9.5)
         .font('Helvetica-Bold')
         .fillColor(INK)
-        .text('DÉTAIL DES OPÉRATIONS', left, doc.y, { characterSpacing: 0.4 });
+        .text(L.operationsDetail, left, doc.y, { characterSpacing: 0.4 });
       doc.moveDown(0.6);
 
       const colDate = 68;
@@ -260,13 +312,13 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
         doc.rect(left, y, contentWidth, headerHeight).fill(EMERALD_DARK);
         doc.fontSize(8).font('Helvetica-Bold').fillColor('#ffffff');
         let x = left;
-        doc.text('DATE', x + 8, y + 7, { width: colDate - 8 });
+        doc.text(L.colDate, x + 8, y + 7, { width: colDate - 8 });
         x += colDate;
-        doc.text('CATÉGORIE', x + 8, y + 7, { width: colCategory - 8 });
+        doc.text(L.colCategory, x + 8, y + 7, { width: colCategory - 8 });
         x += colCategory;
-        doc.text('BÉNÉFICIAIRE', x + 8, y + 7, { width: colBeneficiary - 8 });
+        doc.text(L.colBeneficiary, x + 8, y + 7, { width: colBeneficiary - 8 });
         x += colBeneficiary;
-        doc.text('MONTANT', x, y + 7, { width: colAmount - 10, align: 'right' });
+        doc.text(L.colAmount, x, y + 7, { width: colAmount - 10, align: 'right' });
         return y + headerHeight;
       }
 
@@ -278,7 +330,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
           .fontSize(9)
           .font('Helvetica')
           .fillColor(FAINT)
-          .text('Aucune opération sur la période.', left + 10, tableY + 10);
+          .text(L.noOperations, left + 10, tableY + 10);
         tableY += 30;
       } else {
         input.transactions.forEach((t, idx) => {
@@ -293,7 +345,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
             .fontSize(8)
             .font('Helvetica')
             .fillColor(MUTED)
-            .text(formatDate(t.date), x + 8, tableY + 6, {
+            .text(date(t.date), x + 8, tableY + 6, {
               width: colDate - 8,
               height: 14,
               ellipsis: true,
@@ -346,7 +398,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
           .font('Helvetica')
           .fillColor(FAINT)
           .text(
-            `Généré le ${formatDate(new Date())} — Goshen Finance · Montants en ${currencyLabel}`,
+            `${L.generatedOn} ${date(new Date())} — Goshen Finance · ${L.amountsIn} ${currencyLabel}`,
             left,
             footerY,
             { width: contentWidth * 0.7 },
@@ -355,7 +407,7 @@ export async function generateReportPdf(input: ReportPdfInput): Promise<Buffer> 
           .fontSize(7.5)
           .font('Helvetica')
           .fillColor(FAINT)
-          .text(`Page ${i - pageRange.start + 1} / ${pageRange.count}`, left, footerY, {
+          .text(`${L.page} ${i - pageRange.start + 1} / ${pageRange.count}`, left, footerY, {
             width: contentWidth,
             align: 'right',
           });

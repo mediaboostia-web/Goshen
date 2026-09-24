@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import Link from 'next/link';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api, ApiError } from '@/lib/api';
 import { queueMutation } from '@/lib/offlineQueue';
 import { COOKIE_PREFIX } from '@/lib/constants';
@@ -37,6 +38,8 @@ interface ExpenseTransaction {
 export default function ExpensesPage() {
   const { church, branches, currentBranch, isConsolidated, refreshBranches } = useBranch();
   const { toast } = useToast();
+  const { locale, t } = useLanguage();
+  const localeCode = locale === 'en' ? 'en-US' : 'fr-FR';
   const currency = getCurrencyLabel(church?.currency);
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -271,12 +274,12 @@ export default function ExpensesPage() {
     setActiveInvoiceData({
       transactionId: tx.id,
       invoiceNumber: `DEP-${String(tx.id).slice(0, 8).toUpperCase()}`,
-      date: new Date(tx.date).toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'Votre Église',
+      date: new Date(tx.date).toLocaleDateString(localeCode),
+      churchName: church?.name || t('invoice.default_church_name'),
       ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
-      churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      churchDenomination: t('invoice.default_denomination'),
       churchAddress: tx.branchName,
-      recipientName: tx.beneficiary || 'Prestataire / Fournisseur de Services',
+      recipientName: tx.beneficiary || t('invoice.default_provider'),
       recipientAddress: '',
       recipientContact: '',
       items: [
@@ -285,7 +288,7 @@ export default function ExpensesPage() {
           description: tx.categoryName,
           subDescription:
             tx.notes ||
-            `Décaissement autorisé — ${tx.beneficiary ? `Bénéficiaire : ${tx.beneficiary}` : 'Justificatif conforme'}`,
+            `${t('invoice.expense_authorized_prefix')} ${tx.beneficiary ? `${t('invoice.beneficiary_label')} ${tx.beneficiary}` : t('invoice.supporting_doc_compliant')}`,
           amount: tx.amount,
         },
       ],
@@ -294,8 +297,7 @@ export default function ExpensesPage() {
         ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
         : formatPaymentMethods(church?.paymentMethods),
       ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
-      terms:
-        'Ce bon de dépense et reçu d’encaissement atteste la sortie effective des fonds du compte ecclésiastique. Décaissement validé par la Trésorerie Générale avec signature autorisée.',
+      terms: t('invoice.expense_terms'),
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
       currency: church?.currency,
