@@ -403,7 +403,7 @@ export default function HomePage() {
                 <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
                   Du culte au{' '}
                   <span className="relative inline-block">
-                    bilan
+                    <span className="shimmer-text">bilan</span>
                     <svg
                       aria-hidden
                       viewBox="0 0 200 20"
@@ -416,6 +416,7 @@ export default function HomePage() {
                         stroke="currentColor"
                         strokeWidth={5}
                         strokeLinecap="round"
+                        className="animate-draw-underline"
                       />
                     </svg>
                   </span>
@@ -471,15 +472,27 @@ export default function HomePage() {
               <Image> elements toggled with display classes; only one
               carries `preload` so the head never preloads both). Mobile
               shows a real person presenting the app (warmer, more
-              immediately legible at small size); desktop shows the
-              product-only dual-phone mockup with its own floating cards.
-              Both are genuinely transparent PNGs, so neither needs a mask
-              trick, and both float continuously so the section feels
-              alive. */}
+              immediately legible at small size), its lower edge dissolved
+              via mask so it doesn't sit in a visible box; desktop shows the
+              product-only dual-phone mockup, already cleanly transparent on
+              every edge with no mask needed. Both float continuously so the
+              section feels alive. */}
             <Reveal immediate delayMs={150} className="relative flex justify-center lg:justify-end">
+              {/* Mobile-only glow sitting behind the photo — softens its
+                silhouette against the page background and, combined with
+                the mask below, keeps the scroll into the next section from
+                reading as a hard rectangular cut. */}
+              <div
+                aria-hidden
+                className="animate-float pointer-events-none absolute -z-10 -bottom-6 left-1/2 h-56 w-[115%] -translate-x-1/2 rounded-full bg-gradient-to-t from-emerald-100/70 via-amber-50/40 to-transparent blur-3xl lg:hidden"
+              />
+
               {/* Mobile — LCP element for the majority of visitors (this
                 app targets phones on 3G first), so this is the one with
-                `preload`. */}
+                `preload`. Its own bottom fifth dissolves via mask-image
+                instead of ending on the photo's hard edge (where the
+                subject is cropped), so it blends into the glow above and
+                the section below instead of sitting in a visible box. */}
               <Image
                 src="/photos/hero-mockup-mobile.png"
                 alt="Une utilisatrice de Goshen présentant le tableau de bord de son église sur son téléphone"
@@ -487,6 +500,11 @@ export default function HomePage() {
                 height={1254}
                 sizes="(min-width: 640px) 480px, 85vw"
                 className="animate-float relative z-10 block h-auto w-full max-w-sm drop-shadow-2xl sm:max-w-md lg:hidden"
+                style={{
+                  WebkitMaskImage:
+                    'linear-gradient(to bottom, black 0%, black 78%, transparent 100%)',
+                  maskImage: 'linear-gradient(to bottom, black 0%, black 78%, transparent 100%)',
+                }}
                 preload
               />
               {/* Desktop — the ~1.7 MB source PNG is served as a resized
