@@ -464,44 +464,41 @@ export default function HomePage() {
                   Prêt en 2 minutes &bull; Aucune carte bancaire &bull; Gratuit pour toujours
                 </p>
               </Reveal>
-
-              {/* Scroll amorce — a quiet curiosity nudge, distinct from the two
-                action CTAs above, hinting at what the next section proves. */}
-              <Reveal immediate delayMs={400}>
-                <div className="mt-8 flex justify-center lg:justify-start">
-                  <a
-                    href="#probleme"
-                    className="group inline-flex items-center gap-1.5 text-xs font-medium text-stone-400 transition-colors hover:text-emerald-700"
-                  >
-                    Découvrez pourquoi les trésoriers gagnent 2 heures chaque dimanche
-                    <ChevronDownIcon className="h-3.5 w-3.5 animate-bounce" />
-                  </a>
-                </div>
-              </Reveal>
             </div>
 
-            {/* Right: product-only mockup (two phones + the floating balance/
-              chart/action cards already composed into the artwork itself),
-              shown directly against the page background — genuinely
-              transparent PNG, so no mask trick is needed to blend its
-              edges. It carries its own continuous float so it reads as
-              alive rather than a static screenshot. */}
+            {/* Right: two different visuals by breakpoint (art direction —
+              next/image has no native per-breakpoint source, so this is two
+              <Image> elements toggled with display classes; only one
+              carries `preload` so the head never preloads both). Mobile
+              shows a real person presenting the app (warmer, more
+              immediately legible at small size); desktop shows the
+              product-only dual-phone mockup with its own floating cards.
+              Both are genuinely transparent PNGs, so neither needs a mask
+              trick, and both float continuously so the section feels
+              alive. */}
             <Reveal immediate delayMs={150} className="relative flex justify-center lg:justify-end">
-              {/* LCP element. next/image (not a raw <img>) so the ~1.7 MB
-                source PNG is served as a resized AVIF/WebP — a visitor on a
-                phone downloads a few dozen KB instead of the full-size
-                original. `preload` emits the <link rel=preload> so the
-                request starts with the HTML rather than after the bundle
-                parses, and `sizes` stops mobile from fetching the desktop
-                width. */}
+              {/* Mobile — LCP element for the majority of visitors (this
+                app targets phones on 3G first), so this is the one with
+                `preload`. */}
+              <Image
+                src="/photos/hero-mockup-mobile.png"
+                alt="Une utilisatrice de Goshen présentant le tableau de bord de son église sur son téléphone"
+                width={1254}
+                height={1254}
+                sizes="(min-width: 640px) 480px, 85vw"
+                className="animate-float relative z-10 block h-auto w-full max-w-sm drop-shadow-2xl sm:max-w-md lg:hidden"
+                preload
+              />
+              {/* Desktop — the ~1.7 MB source PNG is served as a resized
+                AVIF/WebP; `sizes` matches its actual rendered width so
+                desktop visitors don't fetch more than needed. */}
               <Image
                 src="/photos/hero-mockup.png"
                 alt="Aperçu du tableau de bord Goshen sur smartphone : solde de trésorerie, entrées et sorties du culte, et les actions rapides de saisie"
                 width={1536}
                 height={1024}
-                sizes="(min-width: 1024px) 820px, (min-width: 640px) 640px, 100vw"
-                className="animate-float relative z-10 h-auto w-full max-w-xl drop-shadow-2xl sm:max-w-2xl lg:max-w-3xl"
-                preload
+                sizes="820px"
+                className="animate-float relative z-10 hidden h-auto w-full drop-shadow-2xl lg:block lg:max-w-3xl"
               />
             </Reveal>
 
