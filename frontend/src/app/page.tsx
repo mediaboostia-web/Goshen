@@ -401,11 +401,9 @@ export default function HomePage() {
             <div className="relative z-10 text-center lg:text-left">
               <Reveal immediate>
                 <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
-                  Sachez, à tout instant,
-                  <br />
-                  combien votre église a{' '}
+                  Du culte au{' '}
                   <span className="relative inline-block">
-                    en caisse
+                    bilan
                     <svg
                       aria-hidden
                       viewBox="0 0 200 20"
@@ -421,7 +419,9 @@ export default function HomePage() {
                       />
                     </svg>
                   </span>
-                  .
+                  ,
+                  <br />
+                  sans un seul calcul à la main.
                 </h1>
               </Reveal>
 
