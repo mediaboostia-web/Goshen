@@ -135,9 +135,9 @@ interface ShowcaseFeature {
 const SHOWCASE_FEATURES: ShowcaseFeature[] = [
   {
     icon: <CloudSyncIcon className="h-5 w-5" />,
-    title: 'Mode hors-ligne à 100 %',
+    title: 'Pas de connexion ? Continuez quand même.',
     description:
-      'Continuez la saisie même si le réseau coupe. Tout se synchronise automatiquement dès que la connexion revient — aucune écriture perdue.',
+      'Au culte, la connexion peut ralentir ou disparaître. Vous continuez à enregistrer les dîmes, offrandes et dépenses hors ligne — tout se synchronise dès que la connexion revient.',
     image: '/photos/hero-section.png',
     imageAlt:
       'Une utilisatrice de Goshen consultant le solde de trésorerie de son église sur son téléphone',
@@ -147,9 +147,9 @@ const SHOWCASE_FEATURES: ShowcaseFeature[] = [
   },
   {
     icon: <UsersGroupIcon className="h-5 w-5" />,
-    title: 'Des rôles et des accès stricts',
+    title: 'Chacun son rôle. Tout le monde voit clair.',
     description:
-      'Pasteur, trésorier, auditeur : chacun voit et fait uniquement ce qui le concerne. Zéro confusion, zéro accès superflu.',
+      'Le pasteur supervise. Le trésorier enregistre. L’auditeur vérifie. Chaque personne dispose uniquement des accès dont elle a besoin.',
     image: '/photos/photo-3.jpg',
     imageAlt: 'Une équipe paroissiale répartissant les responsabilités autour de la trésorerie',
     fit: 'cover',
@@ -158,9 +158,9 @@ const SHOWCASE_FEATURES: ShowcaseFeature[] = [
   },
   {
     icon: <DownloadIcon className="h-5 w-5" />,
-    title: 'Vos données, exportables à tout moment',
+    title: 'Votre bilan est prêt quand vous l’êtes.',
     description:
-      'Un rapport PDF prêt à imprimer en un clic. Chaque écriture reste tracée — vos données vous appartiennent, sans verrouillage.',
+      'Plus besoin de reprendre les cahiers pour préparer le rapport du dimanche. Goshen consolide vos données et génère votre rapport PDF en un clic.',
     image: '/photos/image-goshen.png',
     imageAlt: 'Un trésorier présentant le rapport PDF généré automatiquement par Goshen',
     fit: 'contain',
@@ -590,9 +590,13 @@ export default function HomePage() {
             <div className="relative z-10 text-center lg:text-left">
               <Reveal immediate>
                 <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
-                  Du culte au{' '}
+                  La trésorerie
+                  <br />
+                  de votre église.
+                  <br />
+                  Enfin{' '}
                   <span className="relative inline-block">
-                    <span className="shimmer-text">bilan</span>
+                    <span className="shimmer-text">simple.</span>
                     <svg
                       aria-hidden
                       viewBox="0 0 200 20"
@@ -609,16 +613,20 @@ export default function HomePage() {
                       />
                     </svg>
                   </span>
-                  ,
-                  <br />
-                  sans un seul calcul à la main.
                 </h1>
               </Reveal>
 
+              <Reveal immediate delayMs={80}>
+                <p className="mx-auto mt-4 font-serif text-base italic text-emerald-700 sm:text-lg lg:mx-0">
+                  Du culte au bilan, sans un seul calcul à la main.
+                </p>
+              </Reveal>
+
               <Reveal immediate delayMs={100}>
-                <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-stone-600 sm:text-lg lg:mx-0">
-                  Enregistrez les dîmes, les offrandes et les dépenses depuis votre téléphone — même
-                  sans connexion. Goshen calcule et range tout pour vous.
+                <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-stone-600 sm:text-lg lg:mx-0">
+                  Enregistrez les dîmes, les offrandes et les dépenses depuis votre téléphone, même
+                  sans connexion. Goshen organise et calcule — vous retrouvez des comptes clairs en
+                  quelques minutes.
                 </p>
               </Reveal>
 
@@ -628,7 +636,7 @@ export default function HomePage() {
                     href="/signup"
                     className="w-full transform rounded-full bg-emerald-800 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 sm:w-auto"
                   >
-                    Créer mon église
+                    Commencer gratuitement &rarr;
                   </Link>
                   <a
                     href="#comment-ca-marche"
@@ -651,7 +659,7 @@ export default function HomePage() {
               <Reveal immediate delayMs={300}>
                 <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-stone-500 lg:justify-start">
                   <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
-                  Prêt en 2 minutes &bull; Aucune carte bancaire &bull; Gratuit pour toujours
+                  Gratuit pour toujours &bull; Sans carte bancaire &bull; Prêt en 2 minutes
                 </p>
               </Reveal>
             </div>
@@ -734,12 +742,12 @@ export default function HomePage() {
                   Le vrai coût du cahier papier
                 </span>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
-                  Combien de dimanches votre trésorier a-t-il déjà perdus à recompter la corbeille ?
+                  Le dimanche devrait se terminer après le culte. Pas après les comptes.
                 </h2>
                 <p className="mt-4 text-stone-600 text-base leading-relaxed">
-                  Un chiffre qui ne tombe pas juste, et c’est tout le dimanche qui recommence. Le
-                  papier ne pardonne aucune erreur — et chaque erreur coûte du temps, de l’argent ou
-                  la confiance de l’église.
+                  Après le culte, les fidèles rentrent chez eux. Le trésorier, lui, reste encore à
+                  compter, recompter, vérifier les reçus et chercher pourquoi le solde ne correspond
+                  pas.
                 </p>
               </div>
             </Reveal>
@@ -748,22 +756,22 @@ export default function HomePage() {
               <Reveal delayMs={0}>
                 <PainCard
                   icon={<CalendarClockIcon className="h-6 w-6" />}
-                  title="Plus d’une heure perdue chaque dimanche"
-                  description="Pendant que la communauté rentre chez elle, le trésorier recompte encore la corbeille à la main — et recommence dès qu’un chiffre ne tombe pas juste."
+                  title="Des heures perdues"
+                  description="À recompter la même corbeille, plusieurs fois."
                 />
               </Reveal>
               <Reveal delayMs={150}>
                 <PainCard
                   icon={<AlertTriangleIcon className="h-6 w-6" />}
-                  title="Des écarts de caisse jamais expliqués"
-                  description="Un billet manquant, une dépense oubliée : personne ne sait où est parti l’argent, et le doute s’installe dans l’équipe."
+                  title="Des écarts difficiles à expliquer"
+                  description="Un chiffre qui ne correspond jamais tout à fait."
                 />
               </Reveal>
               <Reveal delayMs={300}>
                 <PainCard
                   icon={<ReceiptTextIcon className="h-6 w-6" />}
-                  title="Des reçus égarés, aucune preuve à montrer"
-                  description="Sans justificatif retrouvable, impossible de prouver une dépense devant le comité ou l’assemblée."
+                  title="Des justificatifs introuvables"
+                  description="La dépense du mois dernier, notée où, déjà ?"
                 />
               </Reveal>
             </div>
@@ -774,7 +782,7 @@ export default function HomePage() {
                   href="#comment-ca-marche"
                   className="group inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
                 >
-                  Voir la solution en 3 étapes
+                  Goshen change cette routine
                   <ChevronDownIcon className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
                 </a>
               </div>
@@ -817,11 +825,11 @@ export default function HomePage() {
                       </span>
                       <div>
                         <h3 className="font-serif text-base font-bold text-emerald-950">
-                          Saisie du culte en 2 minutes
+                          Vous enregistrez
                         </h3>
                         <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                          Dîmes, offrandes ordinaires et dons spéciaux, enregistrés depuis le
-                          smartphone du trésorier — même sans connexion.
+                          Le culte, une dépense, un justificatif photo — depuis le smartphone du
+                          trésorier, même sans connexion.
                         </p>
                       </div>
                     </div>
@@ -837,11 +845,11 @@ export default function HomePage() {
                       </span>
                       <div>
                         <h3 className="font-serif text-base font-bold text-emerald-950">
-                          Justification & Reçus photos
+                          Goshen organise
                         </h3>
                         <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                          Pour chaque achat ou dépense, prenez le justificatif en photo et validez
-                          les sorties récurrentes en 1 clic. Zéro justificatif égaré.
+                          Classement automatique de chaque entrée et dépense, calcul du solde en
+                          continu.
                         </p>
                       </div>
                     </div>
@@ -857,11 +865,11 @@ export default function HomePage() {
                       </span>
                       <div>
                         <h3 className="font-serif text-base font-bold text-emerald-950">
-                          Clôture & Bilan instantané
+                          Vous obtenez votre bilan
                         </h3>
                         <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                          Le solde consolidé est calculé automatiquement. Le rapport dominical PDF
-                          est généré et transmis au pasteur et au comité sans délai.
+                          Rapport PDF prêt en quelques minutes, transmis au pasteur et au comité
+                          sans délai.
                         </p>
                       </div>
                     </div>
@@ -878,14 +886,16 @@ export default function HomePage() {
               </div>
 
               <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-stone-900 tracking-tight leading-tight">
-                Du panier d'offrandes{' '}
-                <span className="text-emerald-700">au bilan PDF, en 2 minutes</span>
+                Du culte au bilan. <span className="text-emerald-700">Tout est déjà organisé.</span>
               </h2>
 
               <p className="mt-5 text-stone-600 text-base sm:text-lg leading-relaxed font-light">
-                Fini les heures de calculs tard le dimanche soir, les cahiers introuvables et les
-                erreurs de caisse. Goshen structure chaque flux financier de façon limpide, de
-                l’encaissement de la corbeille jusqu’à la consolidation multi-annexes.
+                Vous enregistrez une entrée, une dépense, un justificatif. Goshen classe, additionne
+                et met à jour votre solde — vous n’avez plus rien à recalculer à la main.
+              </p>
+
+              <p className="mt-3 font-serif text-lg font-bold text-emerald-800">
+                Vous enregistrez. Goshen organise et calcule.
               </p>
 
               {/* Key Metrics / Stats */}
@@ -986,12 +996,11 @@ export default function HomePage() {
                     Supervision de Réseau
                   </span>
                   <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 leading-tight">
-                    Gérez vos annexes, chacune avec sa propre caisse
+                    Plusieurs annexes. Une seule vision.
                   </h3>
                   <p className="mt-4 text-stone-600 text-base leading-relaxed">
-                    Le pasteur principal bascule d’une annexe à l’autre en un tap. Chaque annexe
-                    garde son historique et son trésorier, pendant que le siège dispose d’une{' '}
-                    <strong>vue consolidée</strong> pour la coordination.
+                    Chaque annexe garde sa caisse, son historique, son trésorier, ses opérations. Le
+                    siège, lui, garde une <strong>vision consolidée</strong> de l’ensemble.
                   </p>
                   <ul className="mt-6 space-y-3 text-sm text-stone-700">
                     <li className="flex items-center gap-2">
@@ -1000,9 +1009,12 @@ export default function HomePage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-emerald-700 font-bold">✓</span> Alerte automatique si le
-                      solde descend sous le seuil configuré
+                      solde d’une annexe descend sous le seuil que vous avez fixé
                     </li>
                   </ul>
+                  <p className="mt-4 font-serif text-base font-bold text-emerald-800">
+                    Chaque église garde son autonomie. Vous gardez la visibilité.
+                  </p>
                   <Link
                     href="/signup"
                     className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
@@ -1029,8 +1041,15 @@ export default function HomePage() {
             {/* Interactive feature showcase — offline, roles, export/audit */}
             <FeatureShowcase />
 
+            <Reveal delayMs={50}>
+              <p className="mx-auto mt-16 flex max-w-lg items-center justify-center gap-2 text-center font-serif text-lg font-bold text-emerald-950">
+                <DownloadIcon className="h-4 w-4 shrink-0 text-emerald-700" />
+                Vos données vous appartiennent — rien n’est verrouillé.
+              </p>
+            </Reveal>
+
             <Reveal delayMs={100}>
-              <div className="mt-12 flex justify-center">
+              <div className="mt-8 flex justify-center">
                 <a
                   href="#communaute"
                   className="inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
@@ -1062,11 +1081,14 @@ export default function HomePage() {
                 {/* Left Column: Heading & Feature Points */}
                 <Reveal className="lg:col-span-7">
                   <div className="space-y-2">
-                    <p className="font-serif text-lg sm:text-xl text-stone-700">Rejoignez la</p>
+                    <p className="font-serif text-lg sm:text-xl text-stone-700">Une question ?</p>
                     <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-emerald-950 tracking-tight leading-tight">
-                      Communauté <br />
-                      <span className="text-emerald-800">WhatsApp Goshen</span>
+                      Vous n’êtes <span className="text-emerald-800">pas seul.</span>
                     </h2>
+                    <p className="max-w-md pt-2 text-base leading-relaxed text-stone-600">
+                      Notre équipe vous accompagne en français, notamment via WhatsApp, lorsque vous
+                      en avez besoin.
+                    </p>
                   </div>
 
                   {/* Triangle bullet list matching Image 3 */}
