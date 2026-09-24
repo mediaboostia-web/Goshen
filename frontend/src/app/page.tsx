@@ -138,10 +138,10 @@ const SHOWCASE_FEATURES: ShowcaseFeature[] = [
     title: 'Pas de connexion ? Continuez quand même.',
     description:
       'Au culte, la connexion peut ralentir ou disparaître. Vous continuez à enregistrer les dîmes, offrandes et dépenses hors ligne — tout se synchronise dès que la connexion revient.',
-    image: '/photos/hero-section.png',
+    image: '/photos/feature-offline.png',
     imageAlt:
-      'Une utilisatrice de Goshen consultant le solde de trésorerie de son église sur son téléphone',
-    fit: 'contain',
+      'Une utilisatrice de Goshen en pleine saisie sur son téléphone en mode hors ligne, pendant le culte',
+    fit: 'cover',
     statValue: '100 %',
     statLabel: 'Disponible hors-ligne',
   },
@@ -157,13 +157,25 @@ const SHOWCASE_FEATURES: ShowcaseFeature[] = [
     statLabel: 'Rôles distincts',
   },
   {
+    icon: <ReceiptTextIcon className="h-5 w-5" />,
+    title: 'Chaque dépense laisse une trace.',
+    description:
+      'Pourquoi, combien, quand, par qui, avec quel justificatif : chaque dépense reste tracée. Une caisse que vous pouvez toujours expliquer, à n’importe qui.',
+    image: '/photos/goshen-app.jpg',
+    imageAlt:
+      'Une trésorière enregistrant une dépense avec justificatif depuis l’application Goshen',
+    fit: 'cover',
+    statValue: '5',
+    statLabel: 'Repères par dépense',
+  },
+  {
     icon: <DownloadIcon className="h-5 w-5" />,
     title: 'Votre bilan est prêt quand vous l’êtes.',
     description:
       'Plus besoin de reprendre les cahiers pour préparer le rapport du dimanche. Goshen consolide vos données et génère votre rapport PDF en un clic.',
-    image: '/photos/image-goshen.png',
-    imageAlt: 'Un trésorier présentant le rapport PDF généré automatiquement par Goshen',
-    fit: 'contain',
+    image: '/photos/feature-rapport.png',
+    imageAlt: 'Une utilisatrice téléchargeant son rapport financier PDF généré par Goshen',
+    fit: 'cover',
     statValue: '1 clic',
     statLabel: 'Rapport PDF',
   },
@@ -204,7 +216,7 @@ function FeatureShowcase() {
             Ce qui change dès le premier dimanche
           </h3>
           <p className="mt-3 text-base leading-relaxed text-stone-600">
-            Trois fonctionnalités pensées pour le terrain : simples à utiliser, fiables à tout
+            Quatre fonctionnalités pensées pour le terrain : simples à utiliser, fiables à tout
             moment.
           </p>
         </div>
