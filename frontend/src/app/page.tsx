@@ -15,7 +15,6 @@ import {
   ChevronDownIcon,
   AlertTriangleIcon,
   ReceiptTextIcon,
-  CloudSyncIcon,
   PhoneIcon,
 } from '@/components/icons/ChurchIcons';
 
@@ -61,9 +60,9 @@ const FAQ_ITEMS: FaqEntry[] = [
       'Oui. Goshen est gratuit pour toutes les églises, sans limite de durée ni fonctionnalité cachée derrière un abonnement.',
   },
   {
-    question: 'Goshen fonctionne-t-il sans connexion internet ?',
+    question: 'Comment puis-je soutenir la plateforme ?',
     answer:
-      'Oui. Une fois ouverte, l’application reste utilisable hors ligne : vous consultez vos données et continuez la saisie sans réseau. Tout se synchronise automatiquement dès que la connexion revient.',
+      'Goshen reste entièrement gratuit pour toutes les églises — aucun palier payant, aucune fonctionnalité verrouillée. Faire fonctionner et évoluer la plateforme a cependant un coût réel (hébergement, développement). Si votre église le peut, vous pouvez faire un don libre depuis la page « Soutenir » pour nous aider à la maintenir gratuite pour les autres.',
   },
   {
     question: 'Dans quelle langue est le support ?',
@@ -133,18 +132,6 @@ interface ShowcaseFeature {
 }
 
 const SHOWCASE_FEATURES: ShowcaseFeature[] = [
-  {
-    icon: <CloudSyncIcon className="h-5 w-5" />,
-    title: 'Pas de connexion ? Continuez quand même.',
-    description:
-      'Au culte, la connexion peut ralentir ou disparaître. Vous continuez à enregistrer les dîmes, offrandes et dépenses hors ligne — tout se synchronise dès que la connexion revient.',
-    image: '/photos/feature-offline.png',
-    imageAlt:
-      'Une utilisatrice de Goshen en pleine saisie sur son téléphone en mode hors ligne, pendant le culte',
-    fit: 'cover',
-    statValue: '100 %',
-    statLabel: 'Disponible hors-ligne',
-  },
   {
     icon: <UsersGroupIcon className="h-5 w-5" />,
     title: 'Chacun son rôle. Tout le monde voit clair.',
@@ -216,7 +203,7 @@ function FeatureShowcase() {
             Ce qui change dès le premier dimanche
           </h3>
           <p className="mt-3 text-base leading-relaxed text-stone-600">
-            Quatre fonctionnalités pensées pour le terrain : simples à utiliser, fiables à tout
+            Trois fonctionnalités pensées pour le terrain : simples à utiliser, fiables à tout
             moment.
           </p>
         </div>
@@ -429,7 +416,6 @@ export default function HomePage() {
                 'Dépenses avec justificatifs photo',
                 'Gestion multi-annexes consolidée',
                 'Rapports et bilans PDF en 1 clic',
-                'Utilisation hors connexion',
               ],
               offers: {
                 '@type': 'Offer',
@@ -636,9 +622,9 @@ export default function HomePage() {
 
               <Reveal immediate delayMs={100}>
                 <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-stone-600 sm:text-lg lg:mx-0">
-                  Enregistrez les dîmes, les offrandes et les dépenses depuis votre téléphone, même
-                  sans connexion. Goshen organise et calcule — vous retrouvez des comptes clairs en
-                  quelques minutes.
+                  Enregistrez les dîmes, les offrandes et les dépenses depuis votre téléphone.
+                  Goshen organise et calcule — vous retrouvez des comptes clairs en quelques
+                  minutes.
                 </p>
               </Reveal>
 
@@ -671,7 +657,7 @@ export default function HomePage() {
               <Reveal immediate delayMs={300}>
                 <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-stone-500 lg:justify-start">
                   <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
-                  Gratuit pour toujours &bull; Sans carte bancaire &bull; Prêt en 2 minutes
+                  Sans carte bancaire
                 </p>
               </Reveal>
             </div>
@@ -841,7 +827,7 @@ export default function HomePage() {
                         </h3>
                         <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
                           Le culte, une dépense, un justificatif photo — depuis le smartphone du
-                          trésorier, même sans connexion.
+                          trésorier.
                         </p>
                       </div>
                     </div>
@@ -942,8 +928,8 @@ export default function HomePage() {
                   ✓
                 </div>
                 <span>
-                  Fonctionne même sans connexion internet : la saisie continue hors ligne et se
-                  synchronise automatiquement dès que le réseau revient.
+                  Chaque opération est horodatée et attribuée à son auteur — vous savez toujours qui
+                  a saisi quoi, et quand.
                 </span>
               </div>
 
@@ -955,27 +941,6 @@ export default function HomePage() {
               </Link>
             </Reveal>
           </div>
-
-          {/* Demo video — the proof behind "Voir comment ça marche" in the
-            hero, placed here rather than its own section so it reads as
-            evidence for these 3 steps instead of a separate detour. */}
-          <Reveal delayMs={200}>
-            <div className="relative mx-auto mt-16 max-w-3xl text-center">
-              <p className="text-sm font-bold uppercase tracking-wider text-emerald-800">
-                Voir Goshen en 2 minutes
-              </p>
-              <div className="group relative mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-stone-950 shadow-2xl transition-transform duration-500 hover:scale-[1.01]">
-                <video
-                  controls
-                  preload="metadata"
-                  poster="/photos/dashboard-preview.png"
-                  className="aspect-video w-full"
-                >
-                  <source src="/videos/presentation-goshen.mp4" type="video/mp4" />
-                </video>
-              </div>
-            </div>
-          </Reveal>
         </section>
 
         {/* Fonctionnalités clés — consolidates what used to be two separate
