@@ -13,7 +13,7 @@ import { useState, type FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
-import { GoogleIcon, ShieldCheckIcon } from '@/components/icons/ChurchIcons';
+import { ShieldCheckIcon } from '@/components/icons/ChurchIcons';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
 
 const REASON_MESSAGES: Record<string, string> = {
@@ -82,25 +82,6 @@ function AdminLoginForm() {
             {error}
           </div>
         )}
-
-        <a
-          href="/api/auth/oauth/google/start?next=/admin"
-          className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 py-2.5 px-4 text-xs font-bold text-stone-700 shadow-2xs hover:shadow-xs transition-all active:scale-[0.99] cursor-pointer"
-        >
-          <GoogleIcon className="h-5 w-5 shrink-0" />
-          <span>Continuer avec Google</span>
-        </a>
-
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-stone-200" />
-          </div>
-          <div className="relative flex justify-center text-center">
-            <span className="bg-white px-3 text-[11px] font-medium text-stone-400 uppercase tracking-wider">
-              Ou
-            </span>
-          </div>
-        </div>
 
         <form onSubmit={onSubmit} className="space-y-4 text-xs">
           <div>

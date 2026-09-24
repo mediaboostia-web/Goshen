@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use as usePromise, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getCurrencyLabel } from '@/lib/utils';
@@ -49,6 +50,7 @@ export default function AdminOrganizationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const router = useRouter();
   const { id } = usePromise(params);
   const [data, setData] = useState<DetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +67,14 @@ export default function AdminOrganizationDetailPage({
   const [newRole, setNewRole] = useState<MemberRole>('TREASURER');
   const [addingMember, setAddingMember] = useState(false);
 
+  // Delete is SUPERADMIN-only server-side; fetched here too so an ADMIN
+  // viewer never even sees a button that would just 403.
+  const [meRole, setMeRole] = useState<'ADMIN' | 'SUPERADMIN' | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   async function load() {
     try {
       const res = await api<DetailResponse>(`/api/admin/organizations/${id}`);
@@ -77,6 +87,12 @@ export default function AdminOrganizationDetailPage({
   useEffect(() => {
     void load();
   }, [id]);
+
+  useEffect(() => {
+    api<{ admin: { role: 'ADMIN' | 'SUPERADMIN' } }>('/api/admin/me')
+      .then((res) => setMeRole(res.admin.role))
+      .catch(() => setMeRole(null));
+  }, []);
 
   async function toggleStatus() {
     if (!data) return;
@@ -94,6 +110,23 @@ export default function AdminOrganizationDetailPage({
       setError(err instanceof ApiError ? err.message : 'Échec de la mise à jour.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function deleteOrg() {
+    if (!data) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await api(`/api/admin/organizations/${id}`, {
+        method: 'DELETE',
+        body: { confirmName: deleteConfirmName },
+      });
+      router.push('/admin/organizations');
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : 'Échec de la suppression.');
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -247,6 +280,45 @@ export default function AdminOrganizationDetailPage({
           </button>
         </div>
       </div>
+
+      {meRole === 'SUPERADMIN' && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 shadow-xs space-y-3">
+          <h2 className="text-xs font-bold text-rose-900 uppercase tracking-wider">
+            Zone dangereuse
+          </h2>
+          <p className="text-xs text-rose-800 leading-relaxed">
+            Supprime définitivement {org.name} et toutes ses données (annexes, membres,
+            transactions, rapports, factures). Les dons déjà collectés restent conservés. Cette
+            action est irréversible.
+          </p>
+          {deleteError && (
+            <p className="rounded-lg bg-rose-100 border border-rose-200 px-3 py-2 text-xs text-rose-800">
+              {deleteError}
+            </p>
+          )}
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-rose-800 mb-1">
+                Tapez « {org.name} » pour confirmer
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                className="w-64 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs focus:border-rose-500 focus:outline-hidden"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={deleteConfirmName !== org.name}
+              onClick={() => setDeleteDialogOpen(true)}
+              className="rounded-lg bg-rose-700 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Supprimer l’église
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
         <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider mb-3">
@@ -419,6 +491,17 @@ export default function AdminOrganizationDetailPage({
         busy={removeBusy}
         onConfirm={() => void handleRemoveMember()}
         onCancel={() => setRemoveTarget(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        title={`Supprimer définitivement ${org.name} ?`}
+        description="Toutes les données de cette église seront perdues : annexes, membres, transactions, rapports, factures archivées. Cette action ne peut pas être annulée."
+        confirmLabel="Supprimer définitivement"
+        destructive
+        busy={deleteBusy}
+        onConfirm={() => void deleteOrg()}
+        onCancel={() => setDeleteDialogOpen(false)}
       />
     </div>
   );

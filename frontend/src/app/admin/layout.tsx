@@ -212,7 +212,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <ConfirmDialog
         isOpen={isLogoutConfirmOpen}
         title="Se déconnecter ?"
-        description="Vous devrez ressaisir votre email et votre mot de passe (ou vous reconnecter avec Google) pour accéder de nouveau au tableau de bord superadmin."
+        description="Vous devrez ressaisir votre email et votre mot de passe pour accéder de nouveau au tableau de bord superadmin."
         confirmLabel="Se déconnecter"
         cancelLabel="Annuler"
         destructive
