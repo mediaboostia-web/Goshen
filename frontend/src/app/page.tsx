@@ -190,10 +190,32 @@ function FeatureShowcase() {
   }, []);
 
   return (
-    <div className="mt-16">
-      {/* Desktop — interactive scroll-spy: list left, sticky photo right */}
-      <div className="hidden lg:grid lg:grid-cols-[0.85fr_1fr] lg:gap-16">
-        <div className="space-y-2">
+    <div className="mt-24">
+      {/* Its own eyebrow/title/description — distinguishes this showcase
+        from the multi-annexes block above instead of borrowing that
+        block's H2, which otherwise read as one long, undifferentiated
+        wall of content. */}
+      <Reveal>
+        <div className="mx-auto max-w-xl text-center">
+          <span className="mb-3 inline-block rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+            Fonctionnalités clés
+          </span>
+          <h3 className="font-serif text-2xl font-bold text-stone-900 sm:text-3xl">
+            Ce qui change dès le premier dimanche
+          </h3>
+          <p className="mt-3 text-base leading-relaxed text-stone-600">
+            Trois fonctionnalités pensées pour le terrain : simples à utiliser, fiables à tout
+            moment.
+          </p>
+        </div>
+      </Reveal>
+
+      {/* Desktop — interactive scroll-spy: list left, sticky square photo
+        right. Capped at max-w-md and right-aligned (ml-auto) instead of
+        stretching the full grid column — an edge-to-edge photo read as
+        oversized and left the section with no breathing room. */}
+      <div className="hidden lg:mt-16 lg:grid lg:grid-cols-[0.9fr_1fr] lg:items-start lg:gap-16">
+        <div className="space-y-5">
           {SHOWCASE_FEATURES.map((feature, i) => (
             <button
               key={feature.title}
@@ -203,7 +225,7 @@ function FeatureShowcase() {
               type="button"
               onClick={() => setActiveIndex(i)}
               aria-pressed={activeIndex === i}
-              className={`flex min-h-[172px] w-full cursor-pointer flex-col justify-center rounded-3xl px-7 py-6 text-left transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 ${
+              className={`flex min-h-[168px] w-full cursor-pointer flex-col justify-center rounded-[1.75rem] px-8 py-8 text-left transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 ${
                 activeIndex === i ? 'bg-emerald-950 shadow-xl' : 'hover:bg-white hover:shadow-md'
               }`}
             >
@@ -214,15 +236,15 @@ function FeatureShowcase() {
               >
                 0{i + 1}
               </span>
-              <h3
-                className={`mt-2 font-serif text-lg font-bold transition-colors duration-500 sm:text-xl ${
+              <h4
+                className={`mt-3 font-serif text-lg font-bold transition-colors duration-500 sm:text-xl ${
                   activeIndex === i ? 'text-white' : 'text-emerald-950'
                 }`}
               >
                 {feature.title}
-              </h3>
+              </h4>
               <p
-                className={`mt-2 text-sm leading-relaxed transition-colors duration-500 ${
+                className={`mt-2.5 text-sm leading-relaxed transition-colors duration-500 ${
                   activeIndex === i ? 'text-emerald-100/80' : 'text-stone-500'
                 }`}
               >
@@ -232,15 +254,15 @@ function FeatureShowcase() {
           ))}
         </div>
 
-        <div className="sticky top-28 self-start">
-          <div className="relative aspect-4/5 overflow-hidden rounded-[2.5rem] border border-stone-200/70 bg-gradient-to-br from-emerald-50 via-white to-amber-50/50 shadow-xl">
+        <div className="sticky top-28 ml-auto w-full max-w-md self-start">
+          <div className="relative aspect-square overflow-hidden rounded-[2rem] border border-stone-200/70 bg-gradient-to-br from-emerald-50 via-white to-amber-50/50 shadow-xl">
             <div
               aria-hidden
-              className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-amber-200/30 blur-3xl"
+              className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-amber-200/30 blur-3xl"
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-emerald-200/40 blur-3xl"
+              className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-emerald-200/40 blur-3xl"
             />
 
             {SHOWCASE_FEATURES.map((feature, i) => (
@@ -249,7 +271,7 @@ function FeatureShowcase() {
                 src={feature.image}
                 alt={feature.imageAlt}
                 fill
-                sizes="(min-width: 1024px) 480px, 0px"
+                sizes="(min-width: 1024px) 420px, 0px"
                 className={`transition-opacity duration-700 ease-out ${
                   feature.fit === 'contain' ? 'object-contain p-8' : 'object-cover'
                 } ${activeIndex === i ? 'opacity-100' : 'opacity-0'}`}
@@ -259,15 +281,15 @@ function FeatureShowcase() {
             {SHOWCASE_FEATURES.map((feature, i) => (
               <div
                 key={feature.title}
-                className={`absolute inset-x-5 bottom-5 flex items-center gap-3 rounded-2xl border border-stone-100 bg-white/95 p-3.5 shadow-lg backdrop-blur-md transition-opacity duration-500 ${
+                className={`absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-2xl border border-stone-100 bg-white/95 p-3 shadow-lg backdrop-blur-md transition-opacity duration-500 ${
                   activeIndex === i ? 'opacity-100' : 'pointer-events-none opacity-0'
                 }`}
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-white">
                   {feature.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-serif text-lg font-extrabold leading-none text-emerald-950">
+                  <p className="font-serif text-base font-extrabold leading-none text-emerald-950">
                     {feature.statValue}
                   </p>
                   <p className="mt-1 truncate text-[11px] font-semibold text-stone-500">
@@ -280,18 +302,18 @@ function FeatureShowcase() {
         </div>
       </div>
 
-      {/* Mobile — stacked cards, each with its own photo, no observer */}
-      <div className="grid gap-6 lg:hidden">
+      {/* Mobile — stacked cards, each with its own square photo, no observer */}
+      <div className="mt-12 grid gap-6 lg:hidden">
         {SHOWCASE_FEATURES.map((feature, i) => (
           <Reveal key={feature.title} delayMs={i * 100}>
             <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
-              <div className="relative aspect-16/10 overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-amber-50/50">
+              <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-amber-50/50">
                 <Image
                   src={feature.image}
                   alt={feature.imageAlt}
                   fill
                   sizes="(min-width: 640px) 480px, 100vw"
-                  className={feature.fit === 'contain' ? 'object-contain p-6' : 'object-cover'}
+                  className={feature.fit === 'contain' ? 'object-contain p-8' : 'object-cover'}
                 />
                 <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-xl border border-stone-100 bg-white/95 px-3 py-2 shadow-md backdrop-blur-md">
                   <span className="text-emerald-800">{feature.icon}</span>
@@ -303,9 +325,9 @@ function FeatureShowcase() {
                 <span className="font-serif text-xs font-bold tracking-widest text-amber-600">
                   0{i + 1}
                 </span>
-                <h3 className="mt-1 font-serif text-lg font-bold text-emerald-950">
+                <h4 className="mt-1 font-serif text-lg font-bold text-emerald-950">
                   {feature.title}
-                </h3>
+                </h4>
                 <p className="mt-2 text-sm leading-relaxed text-stone-600">{feature.description}</p>
               </div>
             </div>
