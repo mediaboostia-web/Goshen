@@ -9,14 +9,13 @@ import { Reveal } from '@/components/ui/Reveal';
 import {
   CalendarClockIcon,
   CheckCircleIcon,
-  LockIcon,
   DownloadIcon,
   MessageCircleIcon,
   UsersGroupIcon,
-  DocumentReportIcon,
   ChevronDownIcon,
   AlertTriangleIcon,
   ReceiptTextIcon,
+  CloudSyncIcon,
 } from '@/components/icons/ChurchIcons';
 
 const WHATSAPP_COMMUNITY_URL =
@@ -110,11 +109,11 @@ function FaqItem({ question, answer, defaultOpen = false }: FaqEntry & { default
   );
 }
 
-// Security card — infographic capsule (reference: numbered pill cards with
+// Feature card — infographic capsule (reference: numbered pill cards with
 // a colored icon-half connected by dashed flow lines) instead of a plain
 // feature card, recolored to alternate Goshen's emerald/amber instead of
 // the reference's teal/purple/blue/pink so it stays on-brand.
-function SecurityCard({
+function FeatureCard({
   index,
   icon,
   title,
@@ -174,10 +173,9 @@ function PainCard({
 }
 
 const NAV_LINKS = [
-  { href: '#fonctionnalites', label: 'Pourquoi Goshen' },
   { href: '#comment-ca-marche', label: 'Comment ça marche' },
-  { href: '#securite', label: 'Sécurité' },
-  { href: '#multi-annexes', label: 'Annexes' },
+  { href: '#fonctionnalites', label: 'Fonctionnalités' },
+  { href: '#communaute', label: 'Communauté' },
   { href: '#faq', label: 'FAQ' },
 ];
 
@@ -402,11 +400,19 @@ export default function HomePage() {
             {/* Left: pitch */}
             <div className="relative z-10 text-center lg:text-left">
               <Reveal immediate>
-                <h1 className="font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
-                  La gestion financière
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  Logiciel 100% gratuit pour églises & ministères
+                </span>
+              </Reveal>
+
+              <Reveal immediate delayMs={50}>
+                <h1 className="mt-5 font-serif text-4xl font-extrabold leading-[1.15] tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
+                  Sachez, à tout instant,
                   <br />
+                  combien votre église a{' '}
                   <span className="relative inline-block">
-                    simple
+                    en caisse
                     <svg
                       aria-hidden
                       viewBox="0 0 200 20"
@@ -421,15 +427,15 @@ export default function HomePage() {
                         strokeLinecap="round"
                       />
                     </svg>
-                  </span>{' '}
-                  de votre église
+                  </span>
+                  .
                 </h1>
               </Reveal>
 
               <Reveal immediate delayMs={100}>
                 <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-stone-600 sm:text-lg lg:mx-0">
-                  Suivez dîmes, offrandes et dépenses en temps réel, depuis votre téléphone — même
-                  sans connexion.
+                  Enregistrez les dîmes, les offrandes et les dépenses depuis votre téléphone — même
+                  sans connexion. Goshen calcule et range tout pour vous.
                 </p>
               </Reveal>
 
@@ -439,7 +445,7 @@ export default function HomePage() {
                     href="/signup"
                     className="w-full transform rounded-full bg-emerald-800 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 sm:w-auto"
                   >
-                    Commencer gratuitement
+                    Créer le compte de mon église — gratuit
                   </Link>
                   <a
                     href="#comment-ca-marche"
@@ -462,7 +468,7 @@ export default function HomePage() {
               <Reveal immediate delayMs={300}>
                 <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-stone-500 lg:justify-start">
                   <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
-                  100% gratuit, aucune carte bancaire &bull; Prêt en moins de 2 minutes
+                  Prêt en 2 minutes &bull; Aucune carte bancaire &bull; Gratuit pour toujours
                 </p>
               </Reveal>
 
@@ -510,6 +516,20 @@ export default function HomePage() {
                       </p>
                     </div>
                   </div>
+                </div>
+              </Reveal>
+
+              {/* Scroll amorce — a quiet curiosity nudge, distinct from the two
+                action CTAs above, hinting at what the next section proves. */}
+              <Reveal immediate delayMs={400}>
+                <div className="mt-8 flex justify-center lg:justify-start">
+                  <a
+                    href="#probleme"
+                    className="group inline-flex items-center gap-1.5 text-xs font-medium text-stone-400 transition-colors hover:text-emerald-700"
+                  >
+                    Découvrez pourquoi les trésoriers gagnent 2 heures chaque dimanche
+                    <ChevronDownIcon className="h-3.5 w-3.5 animate-bounce" />
+                  </a>
                 </div>
               </Reveal>
             </div>
@@ -573,43 +593,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Video presentation — right after the hero, so the "Voir comment ça
-          marche" pitch has an actual walkthrough to back it up instead of
-          only a link further down the page. */}
-        <section className="bg-white py-16 px-6">
-          <div className="mx-auto max-w-4xl text-center">
-            <Reveal>
-              <span className="inline-block rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-800 mb-3 border border-emerald-100">
-                Présentation vidéo
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
-                Goshen en 2 minutes
-              </h2>
-              <p className="mt-3 text-stone-600 text-sm sm:text-base">
-                Un tour rapide du tableau de bord, de la saisie du culte et des rapports PDF.
-              </p>
-            </Reveal>
-
-            <Reveal delayMs={150}>
-              <div className="group relative mt-9 overflow-hidden rounded-3xl border border-stone-200 bg-stone-950 shadow-2xl transition-transform duration-500 hover:scale-[1.01]">
-                <video
-                  controls
-                  preload="metadata"
-                  poster="/photos/dashboard-preview.png"
-                  className="aspect-video w-full"
-                >
-                  <source src="/videos/presentation-goshen.mp4" type="video/mp4" />
-                </video>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
         {/* Problem Section — 3 concrete pains (time / trust / proof), each
           card revealing on scroll with a staggered delay so the section
           feels sequenced rather than dumped on the visitor all at once. */}
         <section
-          id="fonctionnalites"
+          id="probleme"
           className="relative overflow-hidden bg-gradient-to-b from-rose-50/50 via-white to-white py-20 px-6"
         >
           <div className="relative mx-auto max-w-7xl">
@@ -619,7 +607,7 @@ export default function HomePage() {
                   Le vrai coût du cahier papier
                 </span>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
-                  Combien de dimanches votre trésorier a-t-il déjà perdus ?
+                  Combien de dimanches votre trésorier a-t-il déjà perdus à recompter la corbeille ?
                 </h2>
                 <p className="mt-4 text-stone-600 text-base leading-relaxed">
                   Un chiffre qui ne tombe pas juste, et c’est tout le dimanche qui recommence. Le
@@ -702,11 +690,11 @@ export default function HomePage() {
                       </span>
                       <div>
                         <h3 className="font-serif text-base font-bold text-emerald-950">
-                          Saisie numérique du culte
+                          Saisie du culte en 2 minutes
                         </h3>
                         <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                          Dîmes, offrandes ordinaires et dons spéciaux : le trésorier enregistre les
-                          montants en 3 minutes sur son smartphone le dimanche.
+                          Dîmes, offrandes ordinaires et dons spéciaux, enregistrés depuis le
+                          smartphone du trésorier — même sans connexion.
                         </p>
                       </div>
                     </div>
@@ -763,8 +751,8 @@ export default function HomePage() {
               </div>
 
               <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-stone-900 tracking-tight leading-tight">
-                La clarté financière de votre église{' '}
-                <span className="text-emerald-700">en 3 étapes simples</span>
+                Du panier d'offrandes{' '}
+                <span className="text-emerald-700">au bilan PDF, en 2 minutes</span>
               </h2>
 
               <p className="mt-5 text-stone-600 text-base sm:text-lg leading-relaxed font-light">
@@ -777,7 +765,7 @@ export default function HomePage() {
               <div className="mt-10 grid grid-cols-3 gap-6 pt-8 border-t border-stone-200">
                 <div className="transition-transform duration-300 hover:-translate-y-1">
                   <p className="text-3xl sm:text-4xl font-serif font-extrabold text-emerald-800">
-                    3 min
+                    2 min
                   </p>
                   <p className="text-xs text-stone-500 mt-1 font-medium">
                     Saisie moyenne d'un culte
@@ -818,154 +806,137 @@ export default function HomePage() {
               </Link>
             </Reveal>
           </div>
+
+          {/* Demo video — the proof behind "Voir comment ça marche" in the
+            hero, placed here rather than its own section so it reads as
+            evidence for these 3 steps instead of a separate detour. */}
+          <Reveal delayMs={200}>
+            <div className="relative mx-auto mt-16 max-w-3xl text-center">
+              <p className="text-sm font-bold uppercase tracking-wider text-emerald-800">
+                Voir Goshen en 2 minutes
+              </p>
+              <div className="group relative mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-stone-950 shadow-2xl transition-transform duration-500 hover:scale-[1.01]">
+                <video
+                  controls
+                  preload="metadata"
+                  poster="/photos/dashboard-preview.png"
+                  className="aspect-video w-full"
+                >
+                  <source src="/videos/presentation-goshen.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+          </Reveal>
         </section>
 
-        {/* Trust & Security Section — right after "Comment ça marche" so the
-          reassurance follows immediately after the pitch. Each card carries
-          its own large numeral watermark; hovering (or focusing) a card is
-          what "activates" it, so nothing here is a static, faked highlight. */}
-        <section id="securite" className="bg-gradient-to-b from-white to-stone-50 py-20 px-6">
+        {/* Fonctionnalités clés — consolidates what used to be two separate
+          sections (Sécurité, Multi-Annexes) into one, per the copy pass:
+          the multi-annexes showcase (real screenshot) leads as the richest
+          proof, then 3 compact feature cards cover offline, roles and
+          export/audit without repeating a whole section for each. */}
+        <section
+          id="fonctionnalites"
+          className="bg-gradient-to-b from-white to-stone-50 py-20 px-6"
+        >
           <div className="mx-auto max-w-7xl">
             <Reveal>
               <div className="text-center max-w-3xl mx-auto">
                 <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 mb-3 border border-emerald-100">
-                  Sécurité & Confiance
+                  Conçu pour le terrain
                 </span>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
-                  L’argent de votre église mérite plus qu’un cahier
+                  Tout ce dont votre trésorerie a besoin, là où vous êtes
                 </h2>
-                <p className="mt-4 text-stone-600 text-base">
-                  Goshen est conçu pour que chaque franc encaissé ou décaissé reste traçable,
-                  réservé aux bonnes personnes, et jamais enfermé chez nous.
-                </p>
               </div>
             </Reveal>
 
-            <div className="relative mt-16">
-              {/* Dashed connector — decorative flow line echoing the
-                reference infographic, hidden below lg since the grid
-                stacks to one column there. */}
-              <svg
-                aria-hidden
-                viewBox="0 0 800 260"
-                preserveAspectRatio="none"
-                className="pointer-events-none absolute inset-0 hidden h-full w-full text-emerald-200 lg:block"
-              >
-                <path
-                  d="M400 0 V50 M400 210 V260 M50 130 H750"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeDasharray="6 8"
-                />
-              </svg>
+            {/* Multi-annexes showcase */}
+            <div className="mt-14 grid md:grid-cols-2 gap-12 items-center">
+              <Reveal>
+                <div>
+                  <span className="inline-block rounded-md bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 mb-4">
+                    Supervision de Réseau
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 leading-tight">
+                    Gérez vos annexes, chacune avec sa propre caisse
+                  </h3>
+                  <p className="mt-4 text-stone-600 text-base leading-relaxed">
+                    Le pasteur principal bascule d’une annexe à l’autre en un tap. Chaque annexe
+                    garde son historique et son trésorier, pendant que le siège dispose d’une{' '}
+                    <strong>vue consolidée</strong> pour la coordination.
+                  </p>
+                  <ul className="mt-6 space-y-3 text-sm text-stone-700">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-700 font-bold">✓</span> Soldes indépendants pour
+                      chaque lieu de culte
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-700 font-bold">✓</span> Alerte automatique si le
+                      solde descend sous le seuil configuré
+                    </li>
+                  </ul>
+                  <Link
+                    href="/signup"
+                    className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
+                  >
+                    Ajouter mes annexes &rarr;
+                  </Link>
+                </div>
+              </Reveal>
 
-              <div className="relative grid gap-6 sm:grid-cols-2">
-                <Reveal delayMs={0}>
-                  <SecurityCard
-                    index={1}
-                    accent="emerald"
-                    icon={<LockIcon className="h-6 w-6" />}
-                    title="Chiffrement & hébergement sécurisé"
-                    description="Vos données sont chiffrées et hébergées sur une infrastructure sécurisée, jour et nuit."
+              <Reveal delayMs={150}>
+                <div className="rounded-3xl border border-stone-300/80 bg-emerald-950 p-2 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
+                  <Image
+                    src="/photos/goshen-desktop.jpg"
+                    alt="Vue consolidée des annexes de l'église affichée sur le tableau de bord Goshen"
+                    width={1536}
+                    height={1024}
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="w-full h-auto rounded-2xl"
                   />
-                </Reveal>
-                <Reveal delayMs={100}>
-                  <SecurityCard
-                    index={2}
-                    accent="amber"
-                    icon={<UsersGroupIcon className="h-6 w-6" />}
-                    title="Rôles stricts par utilisateur"
-                    description="Pasteur, Trésorier, Secrétaire, Auditeur : chacun ne voit et n’agit que sur ce qui le concerne."
-                  />
-                </Reveal>
-                <Reveal delayMs={200}>
-                  <SecurityCard
-                    index={3}
-                    accent="amber"
-                    icon={<DownloadIcon className="h-6 w-6" />}
-                    title="Vos données vous appartiennent"
-                    description="Exportez l’intégralité de vos écritures à tout moment. Aucun verrouillage, aucune otage."
-                  />
-                </Reveal>
-                <Reveal delayMs={300}>
-                  <SecurityCard
-                    index={4}
-                    accent="emerald"
-                    icon={<DocumentReportIcon className="h-6 w-6" />}
-                    title="Piste d’audit complète"
-                    description="Chaque entrée et sortie reste horodatée et attribuée à son auteur, consultable à tout moment."
-                  />
-                </Reveal>
-              </div>
+                </div>
+              </Reveal>
+            </div>
+
+            {/* 3 compact feature cards — offline, roles, export/audit */}
+            <div className="mt-16 grid gap-6 sm:grid-cols-3">
+              <Reveal delayMs={0}>
+                <FeatureCard
+                  index={1}
+                  accent="emerald"
+                  icon={<CloudSyncIcon className="h-6 w-6" />}
+                  title="Mode hors-ligne à 100 %"
+                  description="Continuez la saisie même si le réseau coupe. Tout se synchronise dès que la connexion revient."
+                />
+              </Reveal>
+              <Reveal delayMs={100}>
+                <FeatureCard
+                  index={2}
+                  accent="amber"
+                  icon={<UsersGroupIcon className="h-6 w-6" />}
+                  title="Des rôles et des accès stricts"
+                  description="Pasteur, trésorier, auditeur : chacun voit et fait uniquement ce qui le concerne."
+                />
+              </Reveal>
+              <Reveal delayMs={200}>
+                <FeatureCard
+                  index={3}
+                  accent="emerald"
+                  icon={<DownloadIcon className="h-6 w-6" />}
+                  title="Vos données, exportables à tout moment"
+                  description="PDF ou Excel, en un clic. Chaque écriture reste tracée — vos données vous appartiennent, sans verrouillage."
+                />
+              </Reveal>
             </div>
 
             <Reveal delayMs={100}>
               <div className="mt-12 flex justify-center">
                 <a
-                  href="#multi-annexes"
+                  href="#communaute"
                   className="inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
                 >
-                  Découvrir la supervision multi-annexes &rarr;
+                  Découvrir notre communauté &rarr;
                 </a>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* Multi-branches section */}
-        <section id="multi-annexes" className="bg-stone-100 py-20 px-6 border-y border-stone-200">
-          <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-            <Reveal>
-              <div>
-                <span className="inline-block rounded-md bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 mb-4">
-                  Supervision de Réseau
-                </span>
-                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 leading-tight">
-                  L’église mère supervise ses 2 à 5 annexes sans jamais se déconnecter
-                </h2>
-                <p className="mt-4 text-stone-600 text-base leading-relaxed">
-                  Le pasteur principal ou l’auditeur régional bascule d’une annexe à l’autre en un
-                  tap. Chaque annexe conserve sa caisse propre, son historique et son trésorier
-                  dédié, tandis que le siège dispose d’une <strong>Vue Consolidée</strong> pour la
-                  coordination nationale.
-                </p>
-                <ul className="mt-6 space-y-3 text-sm text-stone-700">
-                  <li className="flex items-center gap-2">
-                    <span className="text-emerald-700 font-bold">✓</span> Soldes indépendants pour
-                    chaque lieu de culte
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-emerald-700 font-bold">✓</span> Rôles stricts : Pasteur,
-                    Trésorier, Secrétaire, Auditeur
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-emerald-700 font-bold">✓</span> Alerte automatique si le
-                    solde descend sous le seuil configuré
-                  </li>
-                </ul>
-                <Link
-                  href="/signup"
-                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-800 px-7 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-lg"
-                >
-                  Ajouter mes annexes &rarr;
-                </Link>
-              </div>
-            </Reveal>
-
-            {/* Real product screenshot, right next to the pitch — replaces
-              the earlier hand-built mockup card with the actual multi-
-              annexes dashboard. */}
-            <Reveal delayMs={150}>
-              <div className="rounded-3xl border border-stone-300/80 bg-emerald-950 p-2 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
-                <Image
-                  src="/photos/goshen-desktop.jpg"
-                  alt="Vue consolidée des annexes de l'église affichée sur le tableau de bord Goshen"
-                  width={1536}
-                  height={1024}
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="w-full h-auto rounded-2xl"
-                />
               </div>
             </Reveal>
           </div>
@@ -1206,6 +1177,41 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Final CTA — the last conversion opportunity before the footer,
+          echoing the hero's offer now that every objection has been
+          answered (problem, solution, features, community, FAQ). */}
+        <section className="relative overflow-hidden bg-emerald-950 py-20 px-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[130%] -translate-x-1/2 rounded-full bg-gradient-to-b from-emerald-800/40 to-transparent blur-3xl"
+          />
+          <Reveal className="relative mx-auto max-w-2xl text-center">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              Donnez à votre église la clarté financière qu’elle mérite, dès ce dimanche.
+            </h2>
+            <p className="mt-4 text-emerald-100/80 text-base">
+              Configurez votre espace en moins de 2 minutes. Sans carte, sans engagement.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/signup"
+                className="w-full transform rounded-full bg-white px-8 py-4 text-base font-bold text-emerald-950 shadow-lg transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-emerald-50 sm:w-auto"
+              >
+                Créer le compte de mon église — gratuit
+              </Link>
+              <a
+                href={WHATSAPP_COMMUNITY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-bold text-emerald-100 hover:text-white transition-colors"
+              >
+                <MessageCircleIcon className="h-4 w-4" />
+                Discuter avec nous sur WhatsApp
+              </a>
+            </div>
+          </Reveal>
+        </section>
       </main>
 
       {/* Footer */}
@@ -1233,23 +1239,18 @@ export default function HomePage() {
               </p>
               <ul className="space-y-2 text-xs">
                 <li>
-                  <a href="#fonctionnalites" className="hover:text-white transition-colors">
-                    Pourquoi Goshen
-                  </a>
-                </li>
-                <li>
                   <a href="#comment-ca-marche" className="hover:text-white transition-colors">
                     Comment ça marche
                   </a>
                 </li>
                 <li>
-                  <a href="#securite" className="hover:text-white transition-colors">
-                    Sécurité
+                  <a href="#fonctionnalites" className="hover:text-white transition-colors">
+                    Fonctionnalités
                   </a>
                 </li>
                 <li>
-                  <a href="#multi-annexes" className="hover:text-white transition-colors">
-                    Annexes
+                  <a href="#probleme" className="hover:text-white transition-colors">
+                    Pourquoi Goshen
                   </a>
                 </li>
               </ul>
