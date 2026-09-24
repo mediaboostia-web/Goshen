@@ -143,26 +143,37 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
       {/* Modal Container */}
       <div className="print-escape relative w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-stone-200 overflow-hidden flex flex-col my-4 max-h-[92vh]">
         {/* Top Actions Bar (Hidden on Print) */}
-        <div className="print:hidden flex items-center justify-between border-b border-stone-200 bg-stone-50 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-800 text-white shadow-xs">
+        <div className="print:hidden flex flex-col gap-3 border-b border-stone-200 bg-stone-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Close Modal Button — a clear, always-reachable way back to the
+                page underneath, not just an icon buried among the actions. */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-200/80 text-stone-700 hover:bg-stone-300 font-bold transition-colors cursor-pointer"
+              title="Retour"
+              aria-label="Retour"
+            >
+              <span aria-hidden>&larr;</span>
+            </button>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-800 text-white shadow-xs">
               <DocumentReportIcon className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-bold text-stone-900">{t('invoice.preview_title')}</h3>
-              <p className="text-[11px] text-stone-500 font-mono">
+              <p className="text-[11px] text-stone-500 font-mono truncate">
                 {t('invoice.preview_ref')} {data.invoiceNumber} • {t('invoice.preview_ref_suffix')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {/* Download PDF Button */}
             <button
               type="button"
               onClick={() => void handleDownload()}
               disabled={downloading}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 disabled:opacity-60 transition-all shadow-xs cursor-pointer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 sm:py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 hover:text-stone-900 disabled:opacity-60 transition-all shadow-xs cursor-pointer"
               title={t('invoice.download_title')}
             >
               <svg
@@ -183,7 +194,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-md cursor-pointer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2.5 sm:py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-md cursor-pointer"
               title={t('invoice.print_title')}
             >
               <svg
@@ -199,31 +210,24 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               </svg>
               <span>{t('invoice.print')}</span>
             </button>
-
-            {/* Close Modal Button */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-200/80 text-stone-700 hover:bg-stone-300 font-bold transition-colors ml-2 cursor-pointer"
-            >
-              &times;
-            </button>
           </div>
         </div>
 
         {/* ── PRINTABLE INVOICE SHEET (EXACT REPRODUCTION OF USER IMAGE) ── */}
-        <div className="print-escape overflow-y-auto p-4 sm:p-10 bg-stone-100 flex justify-center">
+        <div className="print-escape overflow-y-auto p-3 sm:p-10 bg-stone-100 flex justify-center">
           <div
             ref={printRef}
             id="printable-invoice"
-            className="print-area w-full max-w-[780px] bg-white text-stone-900 shadow-lg p-8 sm:p-12 print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none font-sans"
-            style={{ minHeight: '1020px' }}
+            className="print-area w-full max-w-[780px] bg-white text-stone-900 shadow-lg p-5 sm:p-12 print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none print:min-h-[1020px] font-sans"
           >
-            {/* 1. TOP HEADER: LOGO/BRAND (LEFT) & INVOICE TITLE (RIGHT) */}
-            <div className="flex justify-between items-start pb-8 print:pb-4 border-b border-stone-200">
+            {/* 1. TOP HEADER: LOGO/BRAND & INVOICE TITLE — stacked on mobile
+                (two side-by-side blocks fighting for a ~300px-wide preview is
+                what made this unreadable there), side by side from sm up and
+                always on print, where the page is full A4 width. */}
+            <div className="flex flex-col gap-5 pb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-0 sm:pb-8 print:flex-row print:items-start print:justify-between print:gap-0 print:pb-4 border-b border-stone-200">
               {/* Left: Brand / Church Logo & Coordinates */}
               <div className="flex items-start gap-3.5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#e11d48] text-white font-bold text-2xl shadow-xs">
+                <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#e11d48] text-white font-bold text-xl sm:text-2xl shadow-xs">
                   {data.churchLogoUrl ? (
                     <img
                       src={data.churchLogoUrl}
@@ -234,8 +238,8 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
                     (data.churchName || 'É').charAt(0).toUpperCase()
                   )}
                 </div>
-                <div>
-                  <h1 className="text-base font-extrabold tracking-tight text-stone-900 uppercase">
+                <div className="min-w-0">
+                  <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-stone-900 uppercase">
                     {data.churchName || t('invoice.default_church_name')}
                   </h1>
                   <p className="text-[11px] font-bold text-stone-500 tracking-wider uppercase">
@@ -248,8 +252,8 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
               </div>
 
               {/* Right: Big Bold "FACTURE" Title & Number */}
-              <div className="text-right">
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-stone-900 uppercase">
+              <div className="text-left sm:text-right print:text-right">
+                <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-stone-900 uppercase">
                   {t('invoice.doc_title')}
                 </h2>
                 <p className="text-xs font-bold text-stone-400 mt-1 font-mono tracking-wider">
@@ -259,7 +263,7 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             </div>
 
             {/* 2. RECIPIENT & DATE BOX (SPLIT WITH DISTINCTIVE SIDEBAR ACCENT) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 print:py-4 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 sm:gap-8 sm:py-8 print:py-4 items-center">
               {/* Left: Invoice To */}
               <div>
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-500">
@@ -300,8 +304,8 @@ export function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
             </div>
 
             {/* 3. ITEMS TABLE (EXACT IMAGE STRUCTURE: FULL RED/ACCENT HEADER & ZEBRA ROWS) */}
-            <div className="mt-2 overflow-hidden rounded-t-lg">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="mt-2 overflow-x-auto rounded-t-lg print:overflow-visible">
+              <table className="w-full min-w-[480px] text-left text-xs border-collapse print:min-w-0">
                 <thead>
                   <tr className="bg-[#e11d48] text-white font-extrabold tracking-wider text-[11px] uppercase">
                     <th className="py-3 px-4 w-12 text-center">{t('invoice.col_no')}</th>

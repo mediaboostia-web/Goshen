@@ -20,9 +20,12 @@ export const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     // Header
     'header.search_placeholder': 'Rechercher une écriture, reçu, quête, membre... (⌘K)',
     'header.branch': 'Annexe :',
+    'header.branch_label': 'Annexe',
+    'header.connection_status': 'Statut de connexion',
     'header.consolidated': 'Vue consolidée (Toutes)',
     'header.notifications': 'Centre de notifications',
     'header.account_menu': 'Menu du compte & Déconnexion',
+    'header.account': 'Compte',
     'header.settings': 'Paramètres',
     'header.logout_confirm_title': 'Se déconnecter ?',
     'header.logout_confirm_desc':
@@ -38,7 +41,7 @@ export const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     'dashboard.action.new_income': 'Nouvelle Entrée',
     'dashboard.action.new_expense': 'Nouvelle Sortie',
     'dashboard.action.recurrent': 'Charges Fixes',
-    'dashboard.action.report_a4': 'Rapport A4',
+    'dashboard.action.report_a4': 'Rapport',
     'dashboard.action.invoice_pdf': 'Bilan & Reçu',
     'dashboard.filter.month': 'Ce mois',
     'dashboard.filter.quarter': 'Ce trimestre',
@@ -291,9 +294,12 @@ export const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     // Header
     'header.search_placeholder': 'Search entry, receipt, offering, member... (⌘K)',
     'header.branch': 'Branch:',
+    'header.branch_label': 'Branch',
+    'header.connection_status': 'Connection status',
     'header.consolidated': 'Consolidated View (All)',
     'header.notifications': 'Notification Center',
     'header.account_menu': 'Account Menu & Sign Out',
+    'header.account': 'Account',
     'header.settings': 'Settings',
     'header.logout_confirm_title': 'Sign out?',
     'header.logout_confirm_desc':
@@ -309,7 +315,7 @@ export const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     'dashboard.action.new_income': 'New Income',
     'dashboard.action.new_expense': 'New Expense',
     'dashboard.action.recurrent': 'Fixed Charges',
-    'dashboard.action.report_a4': 'A4 Report',
+    'dashboard.action.report_a4': 'Report',
     'dashboard.action.invoice_pdf': 'Summary & Receipt',
     'dashboard.filter.month': 'This Month',
     'dashboard.filter.quarter': 'This Quarter',

@@ -114,38 +114,40 @@ export function AppHeader() {
             </div>
           </div>
 
-          {/* Branch Selector, Language Switcher, Notification & Profile Avatar —
-              this whole cluster only fits a viewport ≥ sm. Below that, only
-              the bell and a hamburger stay in the row; everything else moves
-              into the collapsible mobile panel below so the header never
-              wraps or overflows on a phone. */}
+          {/* Branch Selector, Language Switcher, Notification & Profile Avatar.
+              The language switcher stays visible at every breakpoint — it's
+              a one-tap, always-relevant control, not something that should
+              require opening the burger menu to reach. The branch selector
+              and offline badge only fit a viewport ≥ sm; below that they
+              move into the collapsible mobile panel so the header itself
+              never wraps or overflows on a phone. */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-2 sm:flex sm:gap-3">
-              {/* Language Switcher Toggle (FR | EN) */}
-              <button
-                type="button"
-                onClick={toggleLocale}
-                className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 hover:text-emerald-950 transition-colors cursor-pointer shadow-2xs"
-                title={locale === 'fr' ? 'Switch to English' : 'Passer en Français'}
-                aria-label="Changer de langue / Change language"
+            {/* Language Switcher Toggle (FR | EN) — always visible */}
+            <button
+              type="button"
+              onClick={toggleLocale}
+              className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 hover:text-emerald-950 transition-colors cursor-pointer shadow-2xs"
+              title={locale === 'fr' ? 'Switch to English' : 'Passer en Français'}
+              aria-label="Changer de langue / Change language"
+            >
+              <span
+                className={
+                  locale === 'fr' ? 'text-emerald-900 font-bold' : 'text-stone-400 font-medium'
+                }
               >
-                <span
-                  className={
-                    locale === 'fr' ? 'text-emerald-900 font-bold' : 'text-stone-400 font-medium'
-                  }
-                >
-                  FR
-                </span>
-                <span className="text-stone-300 font-normal">|</span>
-                <span
-                  className={
-                    locale === 'en' ? 'text-emerald-900 font-bold' : 'text-stone-400 font-medium'
-                  }
-                >
-                  EN
-                </span>
-              </button>
+                FR
+              </span>
+              <span className="text-stone-300 font-normal">|</span>
+              <span
+                className={
+                  locale === 'en' ? 'text-emerald-900 font-bold' : 'text-stone-400 font-medium'
+                }
+              >
+                EN
+              </span>
+            </button>
 
+            <div className="hidden items-center gap-2 sm:flex sm:gap-3">
               <OfflineQueueBadge />
 
               {branches.length > 0 && (
@@ -268,13 +270,14 @@ export function AppHeader() {
           </div>
         </div>
 
-        {/* Mobile panel — language, offline status, branch, support link and
-            account actions, all hidden from the row above below sm so the
-            header itself never wraps. */}
+        {/* Mobile panel — offline status, branch, support link and account
+            actions, grouped into clearly labeled sections with room to
+            breathe. The language switcher lives in the row above at every
+            breakpoint, so it's not repeated here. */}
         {isMobileMenuOpen && (
-          <div className="border-t border-stone-200 bg-white px-4 py-4 sm:hidden">
+          <div className="border-t border-stone-200 bg-white px-4 py-5 sm:hidden">
             {church && (
-              <div className="mb-3 flex items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5">
+              <div className="flex items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5">
                 {church.logoUrl && (
                   <img
                     src={church.logoUrl}
@@ -288,50 +291,34 @@ export function AppHeader() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleLocale}
-                className="flex items-center gap-1 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 hover:text-emerald-950 transition-colors cursor-pointer"
-                aria-label="Changer de langue / Change language"
-              >
-                <span
-                  className={
-                    locale === 'fr' ? 'text-emerald-900 font-bold' : 'text-stone-400 font-medium'
-                  }
-                >
-                  FR
-                </span>
-                <span className="text-stone-300 font-normal">|</span>
-                <span
-                  className={
-                    locale === 'en' ? 'text-emerald-900 font-bold' : 'text-stone-400 font-medium'
-                  }
-                >
-                  EN
-                </span>
-              </button>
-
+            <div className="mt-5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
+                {t('header.connection_status', 'Statut de connexion')}
+              </p>
               <OfflineQueueBadge />
             </div>
 
             {branches.length > 0 && (
-              <div className="mt-3 flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5">
-                <span className="text-xs text-stone-500">{t('header.branch', 'Annexe :')}</span>
-                <Select
-                  variant="ghost"
-                  align="left"
-                  aria-label={t('header.branch', 'Sélectionner une annexe')}
-                  value={isConsolidated ? 'CONSOLIDATED' : currentBranch?.id || ''}
-                  onChange={selectBranch}
-                  options={[
-                    {
-                      value: 'CONSOLIDATED',
-                      label: t('header.consolidated', 'Vue consolidée (Toutes)'),
-                    },
-                    ...branches.map((b) => ({ value: b.id, label: b.name })),
-                  ]}
-                />
+              <div className="mt-5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
+                  {t('header.branch_label', 'Annexe')}
+                </p>
+                <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-2">
+                  <Select
+                    variant="ghost"
+                    align="left"
+                    aria-label={t('header.branch', 'Sélectionner une annexe')}
+                    value={isConsolidated ? 'CONSOLIDATED' : currentBranch?.id || ''}
+                    onChange={selectBranch}
+                    options={[
+                      {
+                        value: 'CONSOLIDATED',
+                        label: t('header.consolidated', 'Vue consolidée (Toutes)'),
+                      },
+                      ...branches.map((b) => ({ value: b.id, label: b.name })),
+                    ]}
+                  />
+                </div>
               </div>
             )}
 
@@ -339,13 +326,16 @@ export function AppHeader() {
               <Link
                 href="/soutenir"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="mt-3 flex items-center justify-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+                className="mt-5 flex items-center justify-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
               >
                 {t('nav.support', 'Soutenir')} <span aria-hidden="true">♥</span>
               </Link>
             )}
 
-            <div className="mt-4 border-t border-stone-100 pt-3">
+            <div className="mt-5 border-t border-stone-100 pt-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-2">
+                {t('header.account', 'Compte')}
+              </p>
               <p className="text-xs font-bold text-stone-900 truncate">
                 {user?.name || 'Administrateur'}
               </p>
@@ -355,11 +345,11 @@ export function AppHeader() {
               </span>
             </div>
 
-            <div className="mt-2 flex flex-col gap-1">
+            <div className="mt-3 flex flex-col gap-1.5">
               <Link
                 href="/settings"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-stone-700 hover:bg-stone-50 hover:text-emerald-950 transition-colors"
+                className="flex items-center justify-between rounded-xl px-3 py-3 text-xs font-medium text-stone-700 hover:bg-stone-50 hover:text-emerald-950 transition-colors"
               >
                 <span>{t('header.settings', 'Paramètres')}</span>
                 <span className="flex h-2 w-2 rounded-full bg-emerald-600" />
@@ -370,7 +360,7 @@ export function AppHeader() {
                   setIsMobileMenuOpen(false);
                   setIsLogoutConfirmOpen(true);
                 }}
-                className="text-left rounded-xl px-3 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                className="text-left rounded-xl px-3 py-3 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
               >
                 {t('nav.logout', 'Déconnexion')}
               </button>

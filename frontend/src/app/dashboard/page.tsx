@@ -803,7 +803,7 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
-                {/* Action 4: Rapport A4 — neutral slate (documents, not a transaction) */}
+                {/* Action 4: Rapport — neutral slate (documents, not a transaction) */}
                 <Link
                   href="/reports"
                   className="group flex items-center gap-2 sm:gap-3 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 p-2.5 sm:p-3.5 border border-slate-400/40 hover:from-slate-500 hover:to-slate-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/40 active:translate-y-0 active:scale-[0.98] transition-all duration-200 shadow-md shadow-slate-950/20"
@@ -813,7 +813,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="truncate text-[11px] sm:text-xs font-bold text-white">
-                      {t('dashboard.action.report_a4', 'Rapport A4')}
+                      {t('dashboard.action.report_a4', 'Rapport')}
                     </p>
                     <p className="hidden truncate text-[10px] text-slate-50/80 sm:block">
                       Homologué Culte

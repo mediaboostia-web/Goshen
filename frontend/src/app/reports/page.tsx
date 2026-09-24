@@ -337,11 +337,11 @@ export default function ReportsPage() {
               Rapports & Factures
             </h1>
             <p className="text-xs text-stone-500 mt-1">
-              Éditez en 1 clic le compte-rendu dominical officiel ou la facture récapitulative A4
+              Éditez en 1 clic le compte-rendu dominical officiel ou la facture récapitulative
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="-mx-4 flex items-center gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0">
             {/* New Preview Invoice Button */}
             <button
               type="button"
@@ -350,7 +350,7 @@ export default function ReportsPage() {
                 setIsInvoiceModalOpen(true);
               }}
               disabled={!preview}
-              className="rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
+              className="shrink-0 rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
             >
               <DocumentReportIcon className="h-4 w-4" />
               <span>Facture / Reçu</span>
@@ -360,7 +360,7 @@ export default function ReportsPage() {
               type="button"
               onClick={() => setShowBilanPreview((v) => !v)}
               disabled={!preview}
-              className="rounded-xl border border-emerald-700 bg-white px-4 py-2.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-50 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="shrink-0 rounded-xl border border-emerald-700 bg-white px-4 py-2.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-50 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span>{showBilanPreview ? 'Masquer l’aperçu' : 'Aperçu du Bilan'}</span>
             </button>
@@ -368,7 +368,7 @@ export default function ReportsPage() {
               type="button"
               onClick={handlePrint}
               disabled={!preview}
-              className="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="shrink-0 rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span>Imprimer Bilan</span>
             </button>
@@ -376,7 +376,7 @@ export default function ReportsPage() {
               type="button"
               onClick={handleArchiveReport}
               disabled={saving || !preview}
-              className="rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-800 hover:bg-stone-50 transition-colors cursor-pointer"
+              className="shrink-0 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-800 hover:bg-stone-50 transition-colors cursor-pointer"
             >
               {saving ? 'Archivage…' : 'Archiver'}
             </button>
@@ -445,16 +445,19 @@ export default function ReportsPage() {
             </h2>
             <div className="divide-y divide-stone-100 text-xs">
               {preview.transactions.map((tx) => (
-                <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
+                <div
+                  key={tx.id}
+                  className="py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div className="min-w-0">
                     <span className="font-bold text-stone-900 truncate block">
                       {tx.category.name}
                     </span>
-                    <p className="text-[11px] text-stone-500">
+                    <p className="text-[11px] text-stone-500 mt-0.5">
                       {new Date(tx.date).toLocaleDateString('fr-FR')} &bull; {tx.branch.name}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:justify-end">
                     <span
                       className={`font-mono tabular-nums font-bold ${
                         tx.type === 'INCOME' ? 'text-emerald-800' : 'text-stone-800'
@@ -463,37 +466,39 @@ export default function ReportsPage() {
                       {tx.type === 'INCOME' ? '+' : '-'}
                       {tx.amount.toLocaleString('fr-FR')} {currency}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => openTransactionPreview(tx)}
-                      className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1 cursor-pointer"
-                      title="Prévisualiser la facture"
-                    >
-                      <DocumentReportIcon className="h-3.5 w-3.5" />
-                      <span className="text-[11px]">Aperçu</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void downloadTransactionInvoice(tx)}
-                      disabled={downloadingTxId === tx.id}
-                      className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 hover:bg-emerald-100 disabled:opacity-60 font-bold text-emerald-800 flex items-center gap-1 cursor-pointer"
-                      title="Télécharger la facture PDF"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openTransactionPreview(tx)}
+                        className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1.5 cursor-pointer"
+                        title="Prévisualiser la facture"
                       >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      <span className="text-[11px]">
-                        {downloadingTxId === tx.id ? '…' : 'Télécharger'}
-                      </span>
-                    </button>
+                        <DocumentReportIcon className="h-3.5 w-3.5" />
+                        <span className="text-[11px]">Aperçu</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void downloadTransactionInvoice(tx)}
+                        disabled={downloadingTxId === tx.id}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 hover:bg-emerald-100 disabled:opacity-60 font-bold text-emerald-800 flex items-center gap-1.5 cursor-pointer"
+                        title="Télécharger la facture PDF"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <span className="text-[11px]">
+                          {downloadingTxId === tx.id ? '…' : 'Télécharger'}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -501,22 +506,23 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Printable Official A4 Report Section — hidden until the user asks
-            to see it via "Aperçu du Bilan" (or "Imprimer Bilan A4", which
+        {/* Printable Official Report Section — hidden until the user asks
+            to see it via "Aperçu du Bilan" (or "Imprimer Bilan", which
             reveals it then prints). */}
         {preview && showBilanPreview && (
           <div
             ref={printableRef}
             className="print-area rounded-2xl border border-stone-300 bg-white p-8 sm:p-12 shadow-md max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0"
           >
-            <div className="print:hidden flex justify-end -mt-4 -mr-4 mb-2 sm:-mt-8 sm:-mr-8">
+            <div className="print:hidden flex justify-end mb-4">
               <button
                 type="button"
                 onClick={() => setShowBilanPreview(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 font-bold transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
                 title={t('report.hide_preview')}
               >
-                &times;
+                <span aria-hidden>&larr;</span>
+                <span>Retour</span>
               </button>
             </div>
             {/* Header with church info */}
@@ -679,49 +685,54 @@ export default function ReportsPage() {
             </h2>
             <div className="divide-y divide-stone-100 text-xs">
               {archived.map((rep) => (
-                <div key={rep.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-stone-900">{rep.title}</span>
-                    <p className="text-[11px] text-stone-500">
+                <div
+                  key={rep.id}
+                  className="py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <span className="font-bold text-stone-900 block truncate">{rep.title}</span>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
                       Archivé le {new Date(rep.createdAt).toLocaleDateString('fr-FR')} &bull;{' '}
                       {rep.branch?.name || 'Vue Consolidée'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:justify-end">
                     <span className="font-mono tabular-nums font-bold text-emerald-800">
                       Solde : {rep.closingBalance.toLocaleString('fr-FR')} {currency}
                     </span>
-                    {rep.pdfUrl ? (
-                      <a
-                        href={rep.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 hover:bg-emerald-100 font-bold text-emerald-800 flex items-center gap-1"
-                        title="Télécharger le rapport PDF"
+                    <div className="flex items-center gap-2">
+                      {rep.pdfUrl ? (
+                        <a
+                          href={rep.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 hover:bg-emerald-100 font-bold text-emerald-800 flex items-center gap-1.5"
+                          title="Télécharger le rapport PDF"
+                        >
+                          <DocumentReportIcon className="h-3.5 w-3.5" />
+                          <span className="text-[11px]">PDF</span>
+                        </a>
+                      ) : (
+                        <span
+                          className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-400 text-[11px] font-semibold"
+                          title="PDF indisponible (stockage non configuré au moment de la génération)"
+                        >
+                          PDF indisponible
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalInvoiceData(invoiceData);
+                          setIsInvoiceModalOpen(true);
+                        }}
+                        className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1.5 cursor-pointer"
+                        title="Voir la facture officielle"
                       >
                         <DocumentReportIcon className="h-3.5 w-3.5" />
-                        <span className="text-[11px]">PDF</span>
-                      </a>
-                    ) : (
-                      <span
-                        className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-stone-400 text-[11px] font-semibold"
-                        title="PDF indisponible (stockage non configuré au moment de la génération)"
-                      >
-                        PDF indisponible
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setModalInvoiceData(invoiceData);
-                        setIsInvoiceModalOpen(true);
-                      }}
-                      className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1 cursor-pointer"
-                      title="Voir la facture officielle"
-                    >
-                      <DocumentReportIcon className="h-3.5 w-3.5" />
-                      <span className="text-[11px]">Facture</span>
-                    </button>
+                        <span className="text-[11px]">Facture</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
