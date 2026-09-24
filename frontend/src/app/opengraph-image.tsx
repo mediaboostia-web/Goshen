@@ -50,7 +50,7 @@ export default function OpenGraphImage() {
       </div>
 
       <div style={{ marginTop: '32px', fontSize: 30, color: '#A7BCC4', maxWidth: '880px' }}>
-        Dîmes, offrandes et dépenses en temps réel — multi-annexes, rapports PDF, hors connexion.
+        Dîmes, offrandes et dépenses en temps réel — multi-annexes, rapports PDF en un clic.
       </div>
 
       <div

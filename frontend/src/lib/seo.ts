@@ -32,11 +32,12 @@ export const SUPPORT_PHONE_E164 = '+2290195831126';
 
 export const SITE_TITLE = 'Goshen — Logiciel gratuit de gestion financière pour églises';
 
-// ~157 chars: fits the SERP snippet without truncation, leads with the
+// ~140 chars: fits the SERP snippet without truncation, leads with the
 // primary query intent ("logiciel gratuit … finances … église") and closes
-// on the two differentiators (multi-annexes, hors connexion).
+// on the multi-annexes differentiator. Deliberately makes no offline claim —
+// that mode isn't reliable yet (see FeatureShowcase in app/page.tsx).
 export const SITE_DESCRIPTION =
-  'Logiciel gratuit pour gérer les finances de votre église : dîmes, offrandes, dépenses avec reçus, multi-annexes et rapports PDF en 1 clic, même hors connexion.';
+  'Logiciel gratuit pour gérer les finances de votre église : dîmes, offrandes, dépenses avec reçus, multi-annexes et rapports PDF en 1 clic.';
 
 /**
  * Public, indexable routes — the sitemap and the crawler-facing docs read
