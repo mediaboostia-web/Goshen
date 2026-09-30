@@ -1,5 +1,8 @@
 // Source: RESEARCH.md Pattern 19 — D-15/D-16 email template factories.
-// English by default (per D-15) — fork-edit to localize.
+// Localized to French (per D-15's "fork-edit to localize" note) — Goshen is
+// a French-only product, so shipping the starter's default English subject
+// ("Verify your email") on every other piece of copy being French made the
+// mail look illegitimate/spammy to recipients and to spam filters alike.
 // Plain HTML (per D-16) — no MJML / React Email; per-project may swap.
 //
 // Phase 5's email-queue cron consumes outbox `email.*` events and calls these
@@ -67,16 +70,16 @@ function htmlEscape(s: string): string {
  * be earlier than promised, never later.
  */
 function ttlWording(expiresAtIso: string | undefined): string {
-  if (!expiresAtIso) return 'soon';
+  if (!expiresAtIso) return 'bientôt';
   const expiresMs = Date.parse(expiresAtIso);
-  if (Number.isNaN(expiresMs)) return 'soon';
+  if (Number.isNaN(expiresMs)) return 'bientôt';
   const remainingMs = expiresMs - Date.now();
-  if (remainingMs <= 0) return 'soon'; // expired by the time we render; pre-cron drift
+  if (remainingMs <= 0) return 'bientôt'; // expired by the time we render; pre-cron drift
   const minutes = Math.floor(remainingMs / 60_000);
-  if (minutes < 1) return 'in less than a minute';
-  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? '' : 's'}`;
+  if (minutes < 1) return 'dans moins d’une minute';
+  if (minutes < 60) return `dans ${minutes} minute${minutes === 1 ? '' : 's'}`;
   const hours = Math.floor(minutes / 60);
-  return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+  return `dans ${hours} heure${hours === 1 ? '' : 's'}`;
 }
 
 /**
@@ -92,7 +95,7 @@ function ttlWording(expiresAtIso: string | undefined): string {
 function codeEmailHtml(args: { heading: string; lead: string; code: string; ttl: string }): string {
   const { heading, lead, code, ttl } = args;
   return `<!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -113,12 +116,12 @@ function codeEmailHtml(args: { heading: string; lead: string; code: string; ttl:
           <div style="margin:0 0 20px;padding:16px;background-color:#f5f5f4;border:1px solid #e7e5e4;border-radius:12px;text-align:center;">
             <span style="display:inline-block;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:28px;font-weight:700;letter-spacing:0.28em;color:#0f172a;">${code}</span>
           </div>
-          <p style="margin:0;font-size:13px;line-height:1.6;color:#78716c;">This code expires ${ttl}. If you did not request this, you can safely ignore this email.</p>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#78716c;">Ce code expire ${ttl}. Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet email en toute sécurité.</p>
         </td>
       </tr>
       <tr>
         <td style="padding-top:20px;text-align:center;">
-          <p style="margin:0;font-size:11px;line-height:1.6;color:#a8a29e;">Sent by Goshen &mdash; église, gestion financière.</p>
+          <p style="margin:0;font-size:11px;line-height:1.6;color:#a8a29e;">Envoyé par Goshen &mdash; gestion financière ecclésiale.</p>
         </td>
       </tr>
     </table>
@@ -130,14 +133,14 @@ export function verificationEmail(args: VerificationEmailArgs): EmailTemplate {
   const code = htmlEscape(args.code);
   const ttl = ttlWording(args.expiresAt);
   return {
-    subject: 'Verify your email',
+    subject: 'Confirmez votre adresse email',
     html: codeEmailHtml({
-      heading: 'Confirm your email address',
-      lead: 'Enter this code to finish creating your account:',
+      heading: 'Confirmez votre adresse email',
+      lead: 'Entrez ce code pour terminer la création de votre compte :',
       code,
       ttl,
     }),
-    text: `Your verification code is ${args.code}. It expires ${ttl}. If you did not request this, ignore this email.`,
+    text: `Votre code de vérification est ${args.code}. Il expire ${ttl}. Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.`,
   };
 }
 
@@ -145,13 +148,13 @@ export function resetPasswordEmail(args: ResetPasswordEmailArgs): EmailTemplate 
   const code = htmlEscape(args.code);
   const ttl = ttlWording(args.expiresAt);
   return {
-    subject: 'Reset your password',
+    subject: 'Réinitialisez votre mot de passe',
     html: codeEmailHtml({
-      heading: 'Reset your password',
-      lead: 'Enter this code to choose a new password:',
+      heading: 'Réinitialisez votre mot de passe',
+      lead: 'Entrez ce code pour choisir un nouveau mot de passe :',
       code,
       ttl,
     }),
-    text: `Your password reset code is ${args.code}. It expires ${ttl}. If you did not request this, ignore this email.`,
+    text: `Votre code de réinitialisation est ${args.code}. Il expire ${ttl}. Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.`,
   };
 }
