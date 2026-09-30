@@ -183,10 +183,18 @@ export default function ReportsPage() {
         },
       });
 
-      toast('Rapport officiel archivé avec succès !', 'success');
+      toast(
+        t('reports.archived_toast_success', 'Rapport officiel archivé avec succès !'),
+        'success',
+      );
       await loadArchived();
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Erreur archivage', 'error');
+      toast(
+        err instanceof ApiError
+          ? err.message
+          : t('reports.archived_toast_error', 'Erreur archivage'),
+        'error',
+      );
     } finally {
       setSaving(false);
     }
@@ -312,11 +320,16 @@ export default function ReportsPage() {
       if (res.transaction?.receiptUrl) {
         window.open(res.transaction.receiptUrl, '_blank', 'noopener,noreferrer');
       } else {
-        toast('Le PDF n’a pas pu être généré pour le moment.', 'error');
+        toast(
+          t('reports.pdf_gen_error_toast', 'Le PDF n’a pas pu être généré pour le moment.'),
+          'error',
+        );
       }
     } catch (err) {
       toast(
-        err instanceof ApiError ? err.message : 'Téléchargement impossible pour le moment.',
+        err instanceof ApiError
+          ? err.message
+          : t('reports.download_error_toast', 'Téléchargement impossible pour le moment.'),
         'error',
       );
     } finally {
@@ -334,10 +347,13 @@ export default function ReportsPage() {
         <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-              Rapports & Factures
+              {t('reports.page_title', 'Rapports & Factures')}
             </h1>
             <p className="text-xs text-stone-500 mt-1">
-              Éditez en 1 clic le compte-rendu dominical officiel ou la facture récapitulative
+              {t(
+                'reports.page_subtitle',
+                'Éditez en 1 clic le compte-rendu dominical officiel ou la facture récapitulative',
+              )}
             </p>
           </div>
 
@@ -353,7 +369,7 @@ export default function ReportsPage() {
               className="shrink-0 rounded-xl bg-[#e11d48] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#be123c] disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
             >
               <DocumentReportIcon className="h-4 w-4" />
-              <span>Facture / Reçu</span>
+              <span>{t('reports.new_invoice_button', 'Facture / Reçu')}</span>
             </button>
 
             <button
@@ -362,7 +378,11 @@ export default function ReportsPage() {
               disabled={!preview}
               className="shrink-0 rounded-xl border border-emerald-700 bg-white px-4 py-2.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-50 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <span>{showBilanPreview ? 'Masquer l’aperçu' : 'Aperçu du Bilan'}</span>
+              <span>
+                {showBilanPreview
+                  ? t('report.hide_preview', 'Masquer l’aperçu')
+                  : t('reports.preview_bilan_button', 'Aperçu du Bilan')}
+              </span>
             </button>
             <button
               type="button"
@@ -370,7 +390,7 @@ export default function ReportsPage() {
               disabled={!preview}
               className="shrink-0 rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Imprimer Bilan</span>
+              <span>{t('reports.print_bilan_button', 'Imprimer Bilan')}</span>
             </button>
             <button
               type="button"
@@ -378,7 +398,9 @@ export default function ReportsPage() {
               disabled={saving || !preview}
               className="shrink-0 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-800 hover:bg-stone-50 transition-colors cursor-pointer"
             >
-              {saving ? 'Archivage…' : 'Archiver'}
+              {saving
+                ? t('reports.archiving', 'Archivage…')
+                : t('reports.archive_button', 'Archiver')}
             </button>
           </div>
         </div>
@@ -386,39 +408,48 @@ export default function ReportsPage() {
         {/* Filter Controls (Hidden on print) */}
         <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
           <div>
-            <label className="block font-bold text-stone-700 mb-1">Période du rapport</label>
+            <label className="block font-bold text-stone-700 mb-1">
+              {t('reports.period_label', 'Période du rapport')}
+            </label>
             <Select
-              aria-label="Période du rapport"
+              aria-label={t('reports.period_label', 'Période du rapport')}
               value={periodType}
               onChange={(v) =>
                 setPeriodType(v as 'SUNDAY_SERVICE' | 'MONTHLY' | 'QUARTERLY' | 'CUSTOM')
               }
               options={[
-                { value: 'SUNDAY_SERVICE', label: 'Culte Dominical (Jour précis)' },
-                { value: 'MONTHLY', label: 'Mois Calendaire' },
-                { value: 'QUARTERLY', label: 'Trimestre' },
-                { value: 'CUSTOM', label: 'Dates personnalisées' },
+                {
+                  value: 'SUNDAY_SERVICE',
+                  label: t('reports.period.sunday_service', 'Culte Dominical (Jour précis)'),
+                },
+                { value: 'MONTHLY', label: t('reports.period.monthly', 'Mois Calendaire') },
+                { value: 'QUARTERLY', label: t('reports.period.quarterly', 'Trimestre') },
+                { value: 'CUSTOM', label: t('reports.period.custom', 'Dates personnalisées') },
               ]}
             />
           </div>
 
           <div>
             <label className="block font-bold text-stone-700 mb-1">
-              {periodType === 'SUNDAY_SERVICE' ? 'Date du culte' : 'Mois / Date de référence'}
+              {periodType === 'SUNDAY_SERVICE'
+                ? t('reports.service_date_label', 'Date du culte')
+                : t('reports.reference_date_label', 'Mois / Date de référence')}
             </label>
             <DatePicker value={selectedDate} onChange={setSelectedDate} />
           </div>
 
           <div>
             <label className="block font-bold text-stone-700 mb-1">
-              Paroisse / Annexe concernée
+              {t('reports.branch_scope_label', 'Paroisse / Annexe concernée')}
             </label>
             <div className="w-full rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-stone-800 flex items-center justify-between">
               <span className="font-semibold truncate">
-                {currentBranch?.name || branches[0]?.name || 'Siège Principal'}
+                {currentBranch?.name ||
+                  branches[0]?.name ||
+                  t('reports.main_hq_fallback', 'Siège Principal')}
               </span>
               <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full shrink-0">
-                Annexe active
+                {t('reports.active_branch_badge', 'Annexe active')}
               </span>
             </div>
           </div>
@@ -430,7 +461,9 @@ export default function ReportsPage() {
               disabled={loading}
               className="w-full rounded-xl bg-stone-900 py-2.5 font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors cursor-pointer"
             >
-              {loading ? 'Calcul en cours…' : 'Actualiser le bilan'}
+              {loading
+                ? t('reports.calculating', 'Calcul en cours…')
+                : t('reports.refresh_bilan_button', 'Actualiser le bilan')}
             </button>
           </div>
         </div>
@@ -441,7 +474,8 @@ export default function ReportsPage() {
         {preview && preview.transactions.length > 0 && (
           <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
             <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 border-b border-stone-100 mb-4">
-              Factures & Reçus de la période ({preview.transactions.length})
+              {t('reports.period_invoices_title', 'Factures & Reçus de la période')} (
+              {preview.transactions.length})
             </h2>
             <div className="divide-y divide-stone-100 text-xs">
               {preview.transactions.map((tx) => (
@@ -471,17 +505,20 @@ export default function ReportsPage() {
                         type="button"
                         onClick={() => openTransactionPreview(tx)}
                         className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1.5 cursor-pointer"
-                        title="Prévisualiser la facture"
+                        title={t('reports.preview_invoice_title_attr', 'Prévisualiser la facture')}
                       >
                         <DocumentReportIcon className="h-3.5 w-3.5" />
-                        <span className="text-[11px]">Aperçu</span>
+                        <span className="text-[11px]">{t('reports.preview_label', 'Aperçu')}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => void downloadTransactionInvoice(tx)}
                         disabled={downloadingTxId === tx.id}
                         className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 hover:bg-emerald-100 disabled:opacity-60 font-bold text-emerald-800 flex items-center gap-1.5 cursor-pointer"
-                        title="Télécharger la facture PDF"
+                        title={t(
+                          'reports.download_invoice_title_attr',
+                          'Télécharger la facture PDF',
+                        )}
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -495,7 +532,9 @@ export default function ReportsPage() {
                           <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
                         <span className="text-[11px]">
-                          {downloadingTxId === tx.id ? '…' : 'Télécharger'}
+                          {downloadingTxId === tx.id
+                            ? '…'
+                            : t('reports.download_label', 'Télécharger')}
                         </span>
                       </button>
                     </div>
@@ -522,7 +561,7 @@ export default function ReportsPage() {
                 title={t('report.hide_preview')}
               >
                 <span aria-hidden>&larr;</span>
-                <span>Retour</span>
+                <span>{t('reports.back_button', 'Retour')}</span>
               </button>
             </div>
             {/* Header with church info */}
@@ -681,7 +720,7 @@ export default function ReportsPage() {
         {archived.length > 0 && (
           <div className="print:hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
             <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 border-b border-stone-100 mb-4">
-              Rapports Archivés
+              {t('reports.archived_title', 'Rapports Archivés')}
             </h2>
             <div className="divide-y divide-stone-100 text-xs">
               {archived.map((rep) => (
@@ -692,13 +731,16 @@ export default function ReportsPage() {
                   <div className="min-w-0">
                     <span className="font-bold text-stone-900 block truncate">{rep.title}</span>
                     <p className="text-[11px] text-stone-500 mt-0.5">
-                      Archivé le {new Date(rep.createdAt).toLocaleDateString('fr-FR')} &bull;{' '}
-                      {rep.branch?.name || 'Vue Consolidée'}
+                      {t('reports.archived_on_prefix', 'Archivé le')}{' '}
+                      {new Date(rep.createdAt).toLocaleDateString('fr-FR')} &bull;{' '}
+                      {rep.branch?.name ||
+                        t('reports.consolidated_view_fallback', 'Vue Consolidée')}
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:justify-end">
                     <span className="font-mono tabular-nums font-bold text-emerald-800">
-                      Solde : {rep.closingBalance.toLocaleString('fr-FR')} {currency}
+                      {t('reports.balance_label', 'Solde :')}{' '}
+                      {rep.closingBalance.toLocaleString('fr-FR')} {currency}
                     </span>
                     <div className="flex items-center gap-2">
                       {rep.pdfUrl ? (
@@ -707,7 +749,10 @@ export default function ReportsPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 hover:bg-emerald-100 font-bold text-emerald-800 flex items-center gap-1.5"
-                          title="Télécharger le rapport PDF"
+                          title={t(
+                            'reports.download_report_title_attr',
+                            'Télécharger le rapport PDF',
+                          )}
                         >
                           <DocumentReportIcon className="h-3.5 w-3.5" />
                           <span className="text-[11px]">PDF</span>
@@ -715,9 +760,12 @@ export default function ReportsPage() {
                       ) : (
                         <span
                           className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-stone-400 text-[11px] font-semibold"
-                          title="PDF indisponible (stockage non configuré au moment de la génération)"
+                          title={t(
+                            'reports.pdf_unavailable_title_attr',
+                            'PDF indisponible (stockage non configuré au moment de la génération)',
+                          )}
                         >
-                          PDF indisponible
+                          {t('reports.pdf_unavailable_label', 'PDF indisponible')}
                         </span>
                       )}
                       <button
@@ -727,10 +775,15 @@ export default function ReportsPage() {
                           setIsInvoiceModalOpen(true);
                         }}
                         className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 hover:bg-stone-100 font-bold text-[#e11d48] flex items-center gap-1.5 cursor-pointer"
-                        title="Voir la facture officielle"
+                        title={t(
+                          'reports.view_official_invoice_title_attr',
+                          'Voir la facture officielle',
+                        )}
                       >
                         <DocumentReportIcon className="h-3.5 w-3.5" />
-                        <span className="text-[11px]">Facture</span>
+                        <span className="text-[11px]">
+                          {t('dashboard.invoice_button_label', 'Facture')}
+                        </span>
                       </button>
                     </div>
                   </div>

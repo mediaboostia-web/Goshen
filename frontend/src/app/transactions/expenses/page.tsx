@@ -139,15 +139,15 @@ export default function ExpensesPage() {
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || 'Téléversement échoué');
+        throw new Error(errJson.message || t('expenses.upload_failed'));
       }
 
       const data = await res.json();
       setReceiptUrl(data.url || data.secure_url);
       setReceiptPublicId(data.key || data.public_id || '');
-      toast('Photo du reçu téléversée avec succès !', 'success');
+      toast(t('expenses.receipt_uploaded_toast'), 'success');
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'Échec téléversement du reçu', 'error');
+      toast(err instanceof Error ? err.message : t('expenses.upload_error_fallback'), 'error');
     } finally {
       setUploadingReceipt(false);
     }
@@ -159,15 +159,15 @@ export default function ExpensesPage() {
     const parsedAmount = Number.parseInt(amount.replace(/\D/g, ''), 10);
 
     if (!parsedAmount || parsedAmount <= 0) {
-      setError(`Veuillez saisir un montant valide supérieur à 0 ${currency}.`);
+      setError(`${t('incomes.invalid_amount_error')} ${currency}.`);
       return;
     }
     if (!branchId) {
-      setError('Choisissez une annexe précise dans l’en-tête avant de saisir une dépense.');
+      setError(t('expenses.no_branch_error'));
       return;
     }
     if (!categoryId) {
-      setError('Veuillez sélectionner une catégorie.');
+      setError(t('incomes.no_category_error'));
       return;
     }
 
@@ -200,10 +200,10 @@ export default function ExpensesPage() {
         url: '/api/transactions',
         method: 'POST',
         body: payload,
-        label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
+        label: `${t('expenses.queue_label_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
       });
       toast(
-        `Hors connexion — dépense de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée localement, synchronisation au retour du réseau.`,
+        `${t('expenses.offline_queued_toast_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency} ${t('incomes.offline_queued_toast_suffix')}`,
         'info',
       );
       resetForm();
@@ -223,8 +223,11 @@ export default function ExpensesPage() {
       const savedTxInfo = {
         id: createdTx?.transaction?.id || `EXP-${Date.now()}`,
         amount: parsedAmount,
-        categoryName: matchedCat?.name || 'Dépense Ecclésiastique',
-        branchName: matchedBranch?.name || currentBranch?.name || 'Siège Principal',
+        categoryName: matchedCat?.name || t('expenses.default_category_fallback'),
+        branchName:
+          matchedBranch?.name ||
+          currentBranch?.name ||
+          t('reports.main_hq_fallback', 'Siège Principal'),
         date,
         beneficiary: beneficiary.trim() || null,
         notes: notes.trim() || null,
@@ -232,7 +235,7 @@ export default function ExpensesPage() {
       setLastSavedExpense(savedTxInfo);
 
       toast(
-        `Dépense de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`,
+        `${t('expenses.success_toast_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency} ${t('incomes.success_toast_suffix')}`,
         'success',
       );
       resetForm();
@@ -240,19 +243,16 @@ export default function ExpensesPage() {
       await refreshBranches();
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message || 'Erreur lors de l’enregistrement');
+        setError(err.message || t('incomes.save_error'));
       } else {
         // Connection dropped mid-request — queue it rather than losing the entry.
         queueMutation({
           url: '/api/transactions',
           method: 'POST',
           body: payload,
-          label: `Dépense ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
+          label: `${t('expenses.queue_label_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
         });
-        toast(
-          `Connexion perdue — dépense enregistrée localement, synchronisation au retour du réseau.`,
-          'info',
-        );
+        toast(t('expenses.connection_lost_toast'), 'info');
         resetForm();
       }
     } finally {
@@ -320,7 +320,9 @@ export default function ExpensesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-stone-200">
-              <span className="text-xs font-bold text-stone-800">Photo du Justificatif / Reçu</span>
+              <span className="text-xs font-bold text-stone-800">
+                {t('expenses.receipt_modal_title')}
+              </span>
               <button
                 type="button"
                 onClick={() => setPreviewReceiptUrl(null)}
@@ -332,7 +334,7 @@ export default function ExpensesPage() {
             <div className="mt-3 flex justify-center">
               <img
                 src={previewReceiptUrl}
-                alt="Reçu de dépense"
+                alt={t('expenses.receipt_modal_alt')}
                 className="max-h-[70vh] object-contain rounded-lg shadow-sm"
               />
             </div>
@@ -343,12 +345,9 @@ export default function ExpensesPage() {
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-            Dépenses & Justificatifs
+            {t('expenses.page_title')}
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
-            Enregistrez chaque sortie d’argent avec son motif et attachez la photo du reçu pour une
-            traçabilité irréprochable.
-          </p>
+          <p className="text-xs text-stone-500 mt-1">{t('expenses.page_subtitle')}</p>
         </div>
 
         {/* Success Banner with Instant Print / Download */}
@@ -360,13 +359,14 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Dépense de {lastSavedExpense.amount.toLocaleString('fr-FR')} {currency}{' '}
-                  enregistrée avec succès !
+                  {t('expenses.saved_banner_prefix')}{' '}
+                  {lastSavedExpense.amount.toLocaleString('fr-FR')} {currency}{' '}
+                  {t('incomes.saved_banner_suffix', 'enregistrée avec succès !')}
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
                   {lastSavedExpense.categoryName} • {lastSavedExpense.branchName}
                   {lastSavedExpense.beneficiary
-                    ? ` • Bénéficiaire: ${lastSavedExpense.beneficiary}`
+                    ? ` ${t('expenses.beneficiary_inline_prefix')} ${lastSavedExpense.beneficiary}`
                     : ''}
                 </p>
               </div>
@@ -386,16 +386,17 @@ export default function ExpensesPage() {
           {/* Form Card (1 col) */}
           <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs h-fit">
             <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 mb-4 flex items-center justify-between gap-2 border-b border-stone-100">
-              <span>Nouveau Décaissement</span>
+              <span>{t('expenses.new_expense_title')}</span>
               <span className="text-[11px] font-medium text-stone-400 truncate">
-                {isConsolidated ? 'Choisir une annexe ↑' : currentBranch?.name}
+                {isConsolidated
+                  ? t('incomes.choose_branch_hint', 'Choisir une annexe ↑')
+                  : currentBranch?.name}
               </span>
             </h2>
 
             {!church?.isTreasurer && !church?.isPastor ? (
               <p className="rounded-lg bg-stone-50 border border-stone-200 p-3 text-xs text-stone-500">
-                Accès en lecture seule : seuls le trésorier et le pasteur peuvent saisir une
-                dépense.
+                {t('expenses.readonly_access_note')}
               </p>
             ) : (
               <>
@@ -408,7 +409,7 @@ export default function ExpensesPage() {
                 <form onSubmit={handleAddExpense} className="space-y-4 text-xs">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Montant décaissé (en {currency}) *
+                      {t('expenses.amount_label_prefix')} {currency}) *
                     </label>
                     <div className="relative">
                       <input
@@ -416,7 +417,7 @@ export default function ExpensesPage() {
                         min="100"
                         step="100"
                         required
-                        placeholder="Ex: 35000"
+                        placeholder={t('expenses.amount_placeholder')}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-mono font-bold text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
@@ -429,23 +430,23 @@ export default function ExpensesPage() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Catégorie de dépense *
+                      {t('expenses.category_label')}
                     </label>
                     {categories.length === 0 && !loading && (
                       <p className="mb-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-800">
-                        Aucune catégorie de dépense n’existe encore.{' '}
+                        {t('expenses.no_category_exists')}{' '}
                         <Link href="/settings/church" className="font-bold underline">
-                          Créez-en une dans Paramètres
+                          {t('transactions.create_category_link')}
                         </Link>
                         .
                       </p>
                     )}
                     <Select
-                      aria-label="Catégorie de dépense"
+                      aria-label={t('expenses.category_aria')}
                       options={categories.map((c) => ({ value: c.id, label: c.name }))}
                       value={categoryId}
                       onChange={setCategoryId}
-                      placeholder="Choisir une catégorie"
+                      placeholder={t('transactions.choose_category_placeholder')}
                     />
                   </div>
 
@@ -455,11 +456,11 @@ export default function ExpensesPage() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Bénéficiaire / Payé à
+                      {t('expenses.beneficiary_label')}
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: Quincaillerie du Carrefour, Électricien M. Ondo..."
+                      placeholder={t('expenses.beneficiary_placeholder')}
                       value={beneficiary}
                       onChange={(e) => setBeneficiary(e.target.value)}
                       className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
@@ -468,17 +469,17 @@ export default function ExpensesPage() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Date du décaissement
+                      {t('expenses.disbursement_date_label')}
                     </label>
                     <DatePicker value={date} onChange={setDate} />
                   </div>
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Moyen de paiement (optionnel)
+                      {t('transactions.payment_method_label')}
                     </label>
                     <Select
-                      aria-label="Moyen de paiement"
+                      aria-label={t('transactions.payment_method_aria')}
                       value={paymentMethod}
                       onChange={setPaymentMethod}
                       placeholder={`Par défaut (${formatPaymentMethods(church?.paymentMethods)})`}
@@ -492,19 +493,19 @@ export default function ExpensesPage() {
                   {/* Photo du reçu */}
                   <div className="rounded-xl border border-dashed border-stone-300 p-3 bg-stone-50">
                     <label className="block font-bold text-stone-700 mb-1">
-                      Photo du Reçu / Justificatif (Recommandé)
+                      {t('expenses.receipt_upload_label')}
                     </label>
                     {receiptUrl ? (
                       <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-stone-200 mt-1">
                         <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
-                          <span>✓</span> Reçu attaché
+                          <span>✓</span> {t('expenses.receipt_attached_label')}
                         </span>
                         <button
                           type="button"
                           onClick={() => setReceiptUrl('')}
                           className="text-[11px] text-red-600 hover:underline"
                         >
-                          Supprimer
+                          {t('expenses.remove_button')}
                         </button>
                       </div>
                     ) : (
@@ -519,18 +520,18 @@ export default function ExpensesPage() {
                     )}
                     {uploadingReceipt && (
                       <p className="mt-1 text-[10px] text-stone-500">
-                        Téléversement du reçu en cours…
+                        {t('expenses.uploading_receipt')}
                       </p>
                     )}
                   </div>
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Commentaire / Motif du décaissement
+                      {t('expenses.notes_label')}
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="Ex: Remplacement du câble d'ampli sono endommagé..."
+                      placeholder={t('expenses.notes_placeholder')}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
@@ -542,7 +543,7 @@ export default function ExpensesPage() {
                     disabled={submitting || categories.length === 0}
                     className="w-full rounded-lg bg-stone-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-stone-800 disabled:opacity-50 transition-colors"
                   >
-                    {submitting ? 'Validation…' : 'Valider la dépense'}
+                    {submitting ? t('expenses.validating') : t('expenses.submit_button')}
                   </button>
                 </form>
               </>
@@ -554,10 +555,10 @@ export default function ExpensesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-stone-100 gap-2 mb-4">
               <div>
                 <h2 className="font-serif text-lg font-bold text-stone-900">
-                  Historique des Dépenses
+                  {t('expenses.history_title')}
                 </h2>
                 <p className="text-xs text-stone-500">
-                  Total décaissé affiché :{' '}
+                  {t('expenses.total_displayed_label')}{' '}
                   <span className="font-mono tabular-nums font-bold text-stone-900">
                     -{totalExpense.toLocaleString('fr-FR')} {currency}
                   </span>
@@ -566,22 +567,22 @@ export default function ExpensesPage() {
             </div>
 
             {loading ? (
-              <p className="py-8 text-center text-xs text-stone-500">Chargement des dépenses…</p>
+              <p className="py-8 text-center text-xs text-stone-500">{t('expenses.loading')}</p>
             ) : expenses.length === 0 ? (
               <div className="py-12 text-center text-xs text-stone-400">
-                <p>Aucune dépense enregistrée pour la sélection.</p>
+                <p>{t('expenses.empty_state')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-stone-100 text-stone-400 font-medium">
-                      <th className="pb-2">Date</th>
-                      <th className="pb-2">Catégorie & Bénéficiaire</th>
-                      <th className="pb-2">Annexe</th>
-                      <th className="pb-2 text-right">Montant</th>
-                      <th className="pb-2 text-center">Justificatif</th>
-                      <th className="pb-2 text-right">Facture / Reçu</th>
+                      <th className="pb-2">{t('incomes.col_date', 'Date')}</th>
+                      <th className="pb-2">{t('expenses.col_category_beneficiary')}</th>
+                      <th className="pb-2">{t('incomes.col_branch', 'Annexe')}</th>
+                      <th className="pb-2 text-right">{t('incomes.col_amount', 'Montant')}</th>
+                      <th className="pb-2 text-center">{t('expenses.col_receipt')}</th>
+                      <th className="pb-2 text-right">{t('expenses.col_invoice_receipt')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
@@ -598,7 +599,7 @@ export default function ExpensesPage() {
                           <span className="font-semibold text-stone-900">{exp.category.name}</span>
                           {exp.beneficiary && (
                             <span className="block text-[11px] text-stone-600 font-medium">
-                              Payé à : {exp.beneficiary}
+                              {t('expenses.paid_to_prefix')} {exp.beneficiary}
                             </span>
                           )}
                           {exp.notes && (
@@ -617,12 +618,14 @@ export default function ExpensesPage() {
                               type="button"
                               onClick={() => setPreviewReceiptUrl(exp.receiptUrl)}
                               className="rounded bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors"
-                              title="Voir le reçu"
+                              title={t('expenses.view_receipt_title')}
                             >
-                              📷 Voir reçu
+                              {t('expenses.view_receipt_label')}
                             </button>
                           ) : (
-                            <span className="text-[11px] text-stone-400 italic">Sans reçu</span>
+                            <span className="text-[11px] text-stone-400 italic">
+                              {t('expenses.no_receipt_label')}
+                            </span>
                           )}
                         </td>
                         <td className="py-3 text-right">
@@ -641,10 +644,10 @@ export default function ExpensesPage() {
                               })
                             }
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 text-[#e11d48] hover:bg-red-100 text-[11px] font-bold transition-colors cursor-pointer"
-                            title="Prévisualiser / Imprimer la facture"
+                            title={t('expenses.invoice_title_attr')}
                           >
                             <DocumentReportIcon className="h-3.5 w-3.5" />
-                            <span>Facture</span>
+                            <span>{t('dashboard.invoice_button_label', 'Facture')}</span>
                           </button>
                         </td>
                       </tr>

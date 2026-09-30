@@ -110,15 +110,15 @@ export default function IncomesPage() {
     const parsedAmount = Number.parseInt(amount.replace(/\D/g, ''), 10);
 
     if (!parsedAmount || parsedAmount <= 0) {
-      setError(`Veuillez saisir un montant valide supérieur à 0 ${currency}.`);
+      setError(`${t('incomes.invalid_amount_error')} ${currency}.`);
       return;
     }
     if (!branchId) {
-      setError('Choisissez une annexe précise dans l’en-tête avant de saisir une entrée.');
+      setError(t('incomes.no_branch_error'));
       return;
     }
     if (!categoryId) {
-      setError('Veuillez sélectionner une catégorie.');
+      setError(t('incomes.no_category_error'));
       return;
     }
 
@@ -139,10 +139,10 @@ export default function IncomesPage() {
         url: '/api/transactions',
         method: 'POST',
         body: payload,
-        label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
+        label: `${t('incomes.queue_label_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
       });
       toast(
-        `Hors connexion — entrée de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée localement, synchronisation au retour du réseau.`,
+        `${t('incomes.offline_queued_toast_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency} ${t('incomes.offline_queued_toast_suffix')}`,
         'info',
       );
       setAmount('');
@@ -164,15 +164,15 @@ export default function IncomesPage() {
       const savedTxInfo = {
         id: createdTx?.transaction?.id || `REC-${Date.now().toString().slice(-6)}`,
         amount: parsedAmount,
-        categoryName: selectedCat?.name || 'Offrande de culte',
-        branchName: selectedBr?.name || currentBranch?.name || 'Paroisse Locale',
+        categoryName: selectedCat?.name || t('invoice.offering_default'),
+        branchName: selectedBr?.name || currentBranch?.name || t('incomes.default_branch_fallback'),
         date,
         notes: notes.trim(),
       };
       setLastSavedIncome(savedTxInfo);
 
       toast(
-        `Entrée de ${parsedAmount.toLocaleString('fr-FR')} ${currency} enregistrée !`,
+        `${t('incomes.success_toast_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency} ${t('incomes.success_toast_suffix')}`,
         'success',
       );
       setAmount('');
@@ -182,19 +182,16 @@ export default function IncomesPage() {
       await refreshBranches();
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message || 'Erreur lors de l’enregistrement');
+        setError(err.message || t('incomes.save_error'));
       } else {
         // Connection dropped mid-request — queue it rather than losing the entry.
         queueMutation({
           url: '/api/transactions',
           method: 'POST',
           body: payload,
-          label: `Entrée ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
+          label: `${t('incomes.queue_label_prefix')} ${parsedAmount.toLocaleString('fr-FR')} ${currency}`,
         });
-        toast(
-          `Connexion perdue — entrée enregistrée localement, synchronisation au retour du réseau.`,
-          'info',
-        );
+        toast(t('incomes.connection_lost_toast'), 'info');
         setAmount('');
         setNotes('');
         setPaymentMethod('');
@@ -253,12 +250,9 @@ export default function IncomesPage() {
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-emerald-950">
-            Entrées & Culte
+            {t('incomes.page_title')}
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
-            Saisie rapide des dîmes, offrandes et libéralités avec prévisualisation immédiate de la
-            facture ou du reçu
-          </p>
+          <p className="text-xs text-stone-500 mt-1">{t('incomes.page_subtitle')}</p>
         </div>
 
         {/* Immediate Print/Download Prompt for the last recorded entry */}
@@ -270,8 +264,9 @@ export default function IncomesPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-950">
-                  Entrée de {lastSavedIncome.amount.toLocaleString('fr-FR')} {currency} enregistrée
-                  avec succès !
+                  {t('incomes.saved_banner_prefix')}{' '}
+                  {lastSavedIncome.amount.toLocaleString('fr-FR')} {currency}{' '}
+                  {t('incomes.saved_banner_suffix')}
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
                   {lastSavedIncome.categoryName} • {lastSavedIncome.branchName}
@@ -293,15 +288,15 @@ export default function IncomesPage() {
           {/* Form Card (1 col) */}
           <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs h-fit">
             <h2 className="font-serif text-lg font-bold text-stone-900 pb-3 mb-4 flex items-center justify-between gap-2 border-b border-stone-100">
-              <span>Nouvelle Entrée</span>
+              <span>{t('dashboard.action.new_income', 'Nouvelle Entrée')}</span>
               <span className="text-[11px] font-medium text-stone-400 truncate">
-                {isConsolidated ? 'Choisir une annexe ↑' : currentBranch?.name}
+                {isConsolidated ? t('incomes.choose_branch_hint') : currentBranch?.name}
               </span>
             </h2>
 
             {!church?.isTreasurer && !church?.isPastor ? (
               <p className="rounded-lg bg-stone-50 border border-stone-200 p-3 text-xs text-stone-500">
-                Accès en lecture seule : seuls le trésorier et le pasteur peuvent saisir une entrée.
+                {t('incomes.readonly_access_note')}
               </p>
             ) : (
               <>
@@ -314,7 +309,7 @@ export default function IncomesPage() {
                 <form onSubmit={handleAddIncome} className="space-y-4 text-xs">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Montant collecté (en {currency}) *
+                      {t('incomes.amount_label_prefix')} {currency}) *
                     </label>
                     <div className="relative">
                       <input
@@ -322,7 +317,7 @@ export default function IncomesPage() {
                         min="100"
                         step="100"
                         required
-                        placeholder="Ex: 85000"
+                        placeholder={t('incomes.amount_placeholder')}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-base font-mono font-bold text-emerald-950 shadow-2xs focus:border-emerald-700 focus:outline-hidden pr-14"
@@ -335,23 +330,23 @@ export default function IncomesPage() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Catégorie de collecte *
+                      {t('incomes.category_label')}
                     </label>
                     {categories.length === 0 && !loading && (
                       <p className="mb-2 rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-800">
-                        Aucune catégorie d’entrée n’existe encore.{' '}
+                        {t('incomes.no_category_exists')}{' '}
                         <Link href="/settings/church" className="font-bold underline">
-                          Créez-en une dans Paramètres
+                          {t('transactions.create_category_link')}
                         </Link>
                         .
                       </p>
                     )}
                     <Select
-                      aria-label="Catégorie de collecte"
+                      aria-label={t('incomes.category_aria')}
                       options={categories.map((c) => ({ value: c.id, label: c.name }))}
                       value={categoryId}
                       onChange={setCategoryId}
-                      placeholder="Choisir une catégorie"
+                      placeholder={t('transactions.choose_category_placeholder')}
                     />
                   </div>
 
@@ -362,16 +357,18 @@ export default function IncomesPage() {
                   autonomous by default. */}
 
                   <div>
-                    <label className="block font-bold text-stone-700 mb-1">Date du culte</label>
+                    <label className="block font-bold text-stone-700 mb-1">
+                      {t('reports.service_date_label', 'Date du culte')}
+                    </label>
                     <DatePicker value={date} onChange={setDate} />
                   </div>
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Moyen de paiement (optionnel)
+                      {t('transactions.payment_method_label')}
                     </label>
                     <Select
-                      aria-label="Moyen de paiement"
+                      aria-label={t('transactions.payment_method_aria')}
                       value={paymentMethod}
                       onChange={setPaymentMethod}
                       placeholder={`Par défaut (${formatPaymentMethods(church?.paymentMethods)})`}
@@ -384,11 +381,11 @@ export default function IncomesPage() {
 
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">
-                      Commentaire / Précision (Facultatif)
+                      {t('incomes.notes_label')}
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="Ex: Culte de sainte cène, appel don pour le toit..."
+                      placeholder={t('incomes.notes_placeholder')}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
@@ -400,7 +397,7 @@ export default function IncomesPage() {
                     disabled={submitting || categories.length === 0}
                     className="w-full rounded-lg bg-emerald-800 py-3 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                   >
-                    {submitting ? 'Enregistrement…' : 'Valider l’entrée'}
+                    {submitting ? t('incomes.saving') : t('incomes.submit_button')}
                   </button>
                 </form>
               </>
@@ -412,10 +409,10 @@ export default function IncomesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-stone-100 gap-2 mb-4">
               <div>
                 <h2 className="font-serif text-lg font-bold text-stone-900">
-                  Historique des Entrées
+                  {t('incomes.history_title')}
                 </h2>
                 <p className="text-xs text-stone-500">
-                  Total cumulé affiché :{' '}
+                  {t('incomes.total_displayed_label')}{' '}
                   <span className="font-mono tabular-nums font-bold text-emerald-800">
                     +{totalIncome.toLocaleString('fr-FR')} {currency}
                   </span>
@@ -424,22 +421,22 @@ export default function IncomesPage() {
             </div>
 
             {loading ? (
-              <p className="py-8 text-center text-xs text-stone-500">Chargement des entrées…</p>
+              <p className="py-8 text-center text-xs text-stone-500">{t('incomes.loading')}</p>
             ) : incomes.length === 0 ? (
               <div className="py-12 text-center text-xs text-stone-400">
-                <p>Aucune entrée enregistrée pour la sélection.</p>
+                <p>{t('incomes.empty_state')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-stone-100 text-stone-400 font-medium">
-                      <th className="pb-2">Date</th>
-                      <th className="pb-2">Catégorie</th>
-                      <th className="pb-2">Annexe</th>
-                      <th className="pb-2 text-right">Montant</th>
-                      <th className="pb-2 text-right">Auteur</th>
-                      <th className="pb-2 text-center w-24">Action</th>
+                      <th className="pb-2">{t('incomes.col_date')}</th>
+                      <th className="pb-2">{t('incomes.col_category')}</th>
+                      <th className="pb-2">{t('incomes.col_branch')}</th>
+                      <th className="pb-2 text-right">{t('incomes.col_amount')}</th>
+                      <th className="pb-2 text-right">{t('incomes.col_author')}</th>
+                      <th className="pb-2 text-center w-24">{t('incomes.col_action')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
@@ -482,10 +479,10 @@ export default function IncomesPage() {
                               })
                             }
                             className="rounded-xl border border-stone-200 bg-white px-2.5 py-1 text-xs font-bold text-[#e11d48] hover:bg-[#e11d48] hover:text-white transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1"
-                            title="Prévisualiser, imprimer ou télécharger la facture/reçu"
+                            title={t('incomes.invoice_title_attr')}
                           >
                             <DocumentReportIcon className="h-3.5 w-3.5" />
-                            <span>Facture</span>
+                            <span>{t('dashboard.invoice_button_label', 'Facture')}</span>
                           </button>
                         </td>
                       </tr>

@@ -213,7 +213,7 @@ function SettingsContent() {
         ...prev,
         [eventType]: { ...prev[eventType], [channel]: current },
       }));
-      toast(err instanceof ApiError ? err.message : 'Erreur réseau.', 'error');
+      toast(err instanceof ApiError ? err.message : t('settings.account.network_error'), 'error');
     } finally {
       setSavingNotifPref(null);
     }
@@ -499,7 +499,7 @@ function SettingsContent() {
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Pasteur Jean-Marc"
+                      placeholder={t('settings.account.full_name_placeholder')}
                       className="w-full rounded-lg border border-stone-300 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
                     />
                   </div>
@@ -751,7 +751,7 @@ function SettingsContent() {
                             required
                             value={newMemberEmail}
                             onChange={(e) => setNewMemberEmail(e.target.value)}
-                            placeholder="pierre.ndong@eglise.ga"
+                            placeholder={t('settings.members.email_placeholder')}
                             className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 focus:outline-hidden transition-all"
                           />
                         </div>

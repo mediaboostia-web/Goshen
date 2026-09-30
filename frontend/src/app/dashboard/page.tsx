@@ -191,8 +191,8 @@ export default function DashboardPage() {
     } catch (err) {
       setLoadError(
         err instanceof ApiError
-          ? err.message || 'Impossible de charger vos données.'
-          : 'Erreur réseau. Veuillez réessayer.',
+          ? err.message || t('dashboard.load_data_error', 'Impossible de charger vos données.')
+          : t('dashboard.network_error_retry', 'Erreur réseau. Veuillez réessayer.'),
       );
     } finally {
       setDataLoading(false);
@@ -241,7 +241,9 @@ export default function DashboardPage() {
         },
       });
       await refreshBranches();
-      setBranchActionMessage(`Nouvelle annexe "${newBranchName.trim()}" enregistrée.`);
+      setBranchActionMessage(
+        `${t('dashboard.branch_created_prefix', 'Nouvelle annexe')} "${newBranchName.trim()}" ${t('dashboard.branch_created_suffix', 'enregistrée.')}`,
+      );
 
       setNewBranchName('');
       setNewBranchCity('');
@@ -250,7 +252,11 @@ export default function DashboardPage() {
       setIsAddBranchModalOpen(false);
       setTimeout(() => setBranchActionMessage(null), 5000);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Erreur lors de la création de l’annexe.');
+      alert(
+        err instanceof ApiError
+          ? err.message
+          : t('dashboard.create_branch_error', 'Erreur lors de la création de l’annexe.'),
+      );
     } finally {
       setIsCreatingBranch(false);
     }
@@ -269,9 +275,11 @@ export default function DashboardPage() {
   }, [branches]);
 
   const activeBranchLabel = useMemo(() => {
-    if (isConsolidated) return 'Vue Consolidée (Toutes les Paroisses)';
-    return currentBranch?.name || 'Paroisse Principale';
-  }, [isConsolidated, currentBranch]);
+    if (isConsolidated) {
+      return t('dashboard.consolidated_label_full', 'Vue Consolidée (Toutes les Paroisses)');
+    }
+    return currentBranch?.name || t('dashboard.main_parish_fallback', 'Paroisse Principale');
+  }, [isConsolidated, currentBranch, t]);
 
   const activeBalance = useMemo(() => {
     return isConsolidated
@@ -338,26 +346,29 @@ export default function DashboardPage() {
       ...(tx.id ? { transactionId: tx.id } : {}),
       invoiceNumber: `INV-${tx.id ? String(tx.id).slice(0, 8).toUpperCase() : '2026-0841'}`,
       date: tx.date || new Date().toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'Votre Église',
+      churchName: church?.name || t('invoice.default_church_name', 'Votre Église'),
       ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
-      churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
-      churchAddress: tx.branchName || 'Paroisse',
+      churchDenomination: t(
+        'invoice.default_denomination',
+        'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      ),
+      churchAddress: tx.branchName || t('report.default_branch', 'Paroisse'),
       recipientName:
         tx.beneficiary ||
         (tx.type === 'INCOME'
-          ? 'Culte Dominical & Assemblée'
-          : 'Prestataire / Fournisseur Paroissial'),
+          ? t('dashboard.invoice.recipient_income', 'Culte Dominical & Assemblée')
+          : t('dashboard.invoice.recipient_expense', 'Prestataire / Fournisseur Paroissial')),
       recipientAddress: '',
       recipientContact: '',
       items: [
         {
           no: '01',
-          description: tx.categoryName || 'Opération',
+          description: tx.categoryName || t('dashboard.invoice.item_default_desc', 'Opération'),
           subDescription:
             tx.notes ||
             (tx.type === 'INCOME'
-              ? 'Collecte et libéralités dominicales approuvées'
-              : 'Règlement de charge avec pièce comptable'),
+              ? t('dashboard.invoice.sub_income', 'Collecte et libéralités dominicales approuvées')
+              : t('dashboard.invoice.sub_expense', 'Règlement de charge avec pièce comptable')),
           amount: tx.amount,
         },
       ],
@@ -366,8 +377,10 @@ export default function DashboardPage() {
         ? (PAYMENT_METHOD_LABELS[tx.paymentMethod] ?? tx.paymentMethod)
         : formatPaymentMethods(church?.paymentMethods),
       ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
-      terms:
+      terms: t(
+        'dashboard.invoice.terms_single',
         'Certifié conforme aux écritures du grand livre de la communauté. Pièce justificative officielle.',
+      ),
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
       currency: church?.currency,
@@ -379,24 +392,45 @@ export default function DashboardPage() {
     setActiveInvoiceData({
       invoiceNumber: `PER-${new Date().getFullYear()}-${periodFilter}`,
       date: new Date().toLocaleDateString('fr-FR'),
-      churchName: church?.name || 'Votre Église',
+      churchName: church?.name || t('invoice.default_church_name', 'Votre Église'),
       ...(church?.logoUrl ? { churchLogoUrl: church.logoUrl } : {}),
-      churchDenomination: 'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      churchDenomination: t(
+        'invoice.default_denomination',
+        'GOSHEN FINANCE • GESTION ECCLÉSIASTIQUE',
+      ),
       churchAddress: activeBranchLabel,
-      recipientName: `Conseil Paroissial & Commission des Finances`,
+      recipientName: t(
+        'dashboard.invoice.period_recipient',
+        'Conseil Paroissial & Commission des Finances',
+      ),
       recipientAddress: '',
       recipientContact: '',
       items: [
         {
           no: '01',
-          description: 'Dîmes & Offrandes ordinaires dominicales',
-          subDescription: `Total des collectes de culte (${periodFilter === 'MONTH' ? 'Ce mois' : periodFilter === 'SUNDAY' ? 'Dernier culte' : 'Trimestre'})`,
+          description: t(
+            'dashboard.invoice.period_income_desc',
+            'Dîmes & Offrandes ordinaires dominicales',
+          ),
+          subDescription: `${t('dashboard.invoice.period_income_sub_prefix', 'Total des collectes de culte')} (${
+            periodFilter === 'MONTH'
+              ? t('dashboard.filter.month', 'Ce mois')
+              : periodFilter === 'SUNDAY'
+                ? t('dashboard.filter.last_service', 'Dernier culte')
+                : t('dashboard.filter.quarter', 'Ce trimestre')
+          })`,
           amount: activeIncomes,
         },
         {
           no: '02',
-          description: 'Décaissements autorisés & Charges courantes',
-          subDescription: 'Factures d’électricité, loyers de sanctuaire et charges acquittées',
+          description: t(
+            'dashboard.invoice.period_expense_desc',
+            'Décaissements autorisés & Charges courantes',
+          ),
+          subDescription: t(
+            'dashboard.invoice.period_expense_sub',
+            'Factures d’électricité, loyers de sanctuaire et charges acquittées',
+          ),
           amount: activeExpenses,
         },
       ],
@@ -413,8 +447,10 @@ export default function DashboardPage() {
           : formatPaymentMethods(church?.paymentMethods);
       })(),
       ...(church?.paymentDetails ? { paymentDetails: church.paymentDetails } : {}),
-      terms:
+      terms: t(
+        'dashboard.invoice.terms_period',
         'Synthèse officielle des opérations financières de la période certifiée par la trésorerie.',
+      ),
       ...(church?.phone ? { phone: church.phone } : {}),
       ...(church?.email ? { email: church.email } : {}),
     });
@@ -431,7 +467,7 @@ export default function DashboardPage() {
         id: tx.id,
         type: tx.type,
         categoryName: tx.category?.name || 'Général',
-        branchName: tx.branch?.name || 'Paroisse',
+        branchName: tx.branch?.name || t('report.default_branch', 'Paroisse'),
         amount: tx.amount,
         date: new Date(tx.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
         time: new Date(tx.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
@@ -441,7 +477,7 @@ export default function DashboardPage() {
         authorName: tx.author?.name || tx.author?.email?.split('@')[0] || 'Trésorier',
         paymentMethod: tx.paymentMethod,
       }));
-  }, [transactions, txFilter]);
+  }, [transactions, txFilter, t]);
 
   const reserveDiff = activeBalance - activeThreshold;
   const isLowBalance = reserveDiff < 0;
@@ -466,12 +502,18 @@ export default function DashboardPage() {
       {branchError && !church && (
         <div className="mx-auto max-w-7xl px-4 pt-3">
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 flex items-center justify-between shadow-xs">
-            <span>Impossible de charger votre église pour le moment. {branchError}</span>
+            <span>
+              {t(
+                'dashboard.church_load_error_prefix',
+                'Impossible de charger votre église pour le moment.',
+              )}{' '}
+              {branchError}
+            </span>
             <button
               onClick={() => void refreshBranches()}
               className="text-red-700 hover:text-red-950 font-bold ml-4 underline"
             >
-              Réessayer
+              {t('dashboard.retry', 'Réessayer')}
             </button>
           </div>
         </div>
@@ -535,13 +577,14 @@ export default function DashboardPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-sm font-bold tracking-wider text-emerald-100 uppercase">
-                        {church?.name || 'Communauté Chrétienne'}
+                        {church?.name ||
+                          t('settings.default_church_badge', 'Communauté Chrétienne')}
                       </h2>
                       <Link
                         href="/soutenir"
                         className="inline-flex items-center gap-1 rounded-md bg-rose-400/20 px-2 py-0.5 text-[10px] font-bold text-rose-300 border border-rose-400/40 hover:bg-rose-400/30 transition-colors"
                       >
-                        Soutenir <span aria-hidden="true">♥</span>
+                        {t('dashboard.support_badge', 'Soutenir')} <span aria-hidden="true">♥</span>
                       </Link>
                     </div>
 
@@ -567,7 +610,7 @@ export default function DashboardPage() {
                             />
                             <div className="absolute left-0 mt-2 w-72 rounded-2xl border border-emerald-700/60 bg-emerald-950 p-2 shadow-2xl z-40 text-stone-100 animate-in fade-in zoom-in-95 duration-100">
                               <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400/80">
-                                Sélectionner une paroisse
+                                {t('dashboard.select_parish', 'Sélectionner une paroisse')}
                               </div>
 
                               <div className="space-y-1 my-1">
@@ -583,7 +626,12 @@ export default function DashboardPage() {
                                 >
                                   <div className="flex items-center gap-2">
                                     <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
-                                    <span>Vue Consolidée (Toutes)</span>
+                                    <span>
+                                      {t(
+                                        'dashboard.consolidated_option',
+                                        'Vue Consolidée (Toutes)',
+                                      )}
+                                    </span>
                                   </div>
                                   <span className="text-[11px] text-amber-300 font-mono font-bold">
                                     {(
@@ -630,7 +678,9 @@ export default function DashboardPage() {
                                     className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700/90 py-2 text-xs font-bold text-emerald-100 border border-emerald-600/40 transition-colors cursor-pointer"
                                   >
                                     <PlusIcon className="h-3.5 w-3.5" />
-                                    <span>Ajouter une annexe</span>
+                                    <span>
+                                      {t('dashboard.add_branch_button', 'Ajouter une annexe')}
+                                    </span>
                                   </button>
                                 </div>
                               )}
@@ -652,7 +702,7 @@ export default function DashboardPage() {
                         : 'text-emerald-200 hover:text-white'
                     }`}
                   >
-                    Ce mois
+                    {t('dashboard.filter.month', 'Ce mois')}
                   </button>
                   <button
                     onClick={() => setPeriodFilter('SUNDAY')}
@@ -662,7 +712,7 @@ export default function DashboardPage() {
                         : 'text-emerald-200 hover:text-white'
                     }`}
                   >
-                    Dernier culte
+                    {t('dashboard.filter.last_service', 'Dernier culte')}
                   </button>
                   <button
                     onClick={() => setPeriodFilter('QUARTER')}
@@ -672,7 +722,7 @@ export default function DashboardPage() {
                         : 'text-emerald-200 hover:text-white'
                     }`}
                   >
-                    Trimestre
+                    {t('dashboard.filter.quarter', 'Ce trimestre')}
                   </button>
                 </div>
               </div>
@@ -700,11 +750,11 @@ export default function DashboardPage() {
                     <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-950/70 px-2.5 py-1 font-medium text-emerald-200 border border-emerald-700/60 shadow-xs">
                       <TrendingUpIcon className="h-3.5 w-3.5 text-emerald-300" />
                       <span className="text-emerald-300 font-bold">+23.5%</span>
-                      <span>vs mois précédent</span>
+                      <span>{t('dashboard.vs_last_month', 'vs mois précédent')}</span>
                     </div>
                     <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-950/70 px-2.5 py-1 text-stone-200 border border-emerald-700/60 shadow-xs">
                       <ShieldCheckIcon className="h-3.5 w-3.5 text-amber-300" />
-                      <span>Seuil de réserve :</span>
+                      <span>{t('dashboard.reserve_threshold_label', 'Seuil de réserve :')}</span>
                       <span className="font-mono tabular-nums font-bold text-white">
                         {activeThreshold.toLocaleString('fr-FR')} {currency}
                       </span>
@@ -755,7 +805,7 @@ export default function DashboardPage() {
                       + {t('dashboard.action.new_income', 'Saisie Culte')}
                     </p>
                     <p className="hidden truncate text-[10px] text-emerald-50/90 sm:block">
-                      Dîmes & Offrandes
+                      {t('dashboard.action.new_income_sub', 'Dîmes & Offrandes')}
                     </p>
                   </div>
                 </Link>
@@ -773,7 +823,7 @@ export default function DashboardPage() {
                       - {t('dashboard.action.new_expense', 'Décaissement')}
                     </p>
                     <p className="hidden truncate text-[10px] text-rose-50/90 sm:block">
-                      Dépense avec Reçu
+                      {t('dashboard.action.new_expense_sub', 'Dépense avec Reçu')}
                     </p>
                   </div>
                 </Link>
@@ -798,7 +848,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <p className="hidden truncate text-[10px] text-blue-50/90 sm:block">
-                      Loyer, Électricité, Eau
+                      {t('dashboard.action.recurrent_sub', 'Loyer, Électricité, Eau')}
                     </p>
                   </div>
                 </Link>
@@ -816,7 +866,7 @@ export default function DashboardPage() {
                       {t('dashboard.action.report_a4', 'Rapport')}
                     </p>
                     <p className="hidden truncate text-[10px] text-slate-50/80 sm:block">
-                      Homologué Culte
+                      {t('dashboard.action.report_sub', 'Homologué Culte')}
                     </p>
                   </div>
                 </Link>
@@ -832,7 +882,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <ShieldCheckIcon className="h-4 w-4 text-emerald-800" />
                     <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">
-                      Santé & Réserve
+                      {t('dashboard.health_reserve_title', 'Santé & Réserve')}
                     </span>
                   </div>
                   <span
@@ -842,13 +892,19 @@ export default function DashboardPage() {
                         : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     }`}
                   >
-                    <span>{isLowBalance ? 'Alerte Seuil' : 'Trésorerie Saine'}</span>
+                    <span>
+                      {isLowBalance
+                        ? t('dashboard.alert_threshold', 'Alerte Seuil')
+                        : t('dashboard.treasury_healthy', 'Trésorerie Saine')}
+                    </span>
                   </span>
                 </div>
 
                 <div className="mt-4">
                   <div className="flex items-baseline justify-between">
-                    <p className="text-xs text-stone-500">Marge au-dessus du seuil</p>
+                    <p className="text-xs text-stone-500">
+                      {t('dashboard.margin_above_threshold', 'Marge au-dessus du seuil')}
+                    </p>
                     <span className="font-mono tabular-nums text-lg font-bold text-emerald-950">
                       {reserveDiff > 0
                         ? `+${reserveDiff.toLocaleString('fr-FR')} ${currency}`
@@ -878,10 +934,18 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="mt-4 rounded-lg bg-stone-50 p-3 border border-stone-200 text-xs text-stone-600 leading-relaxed">
-                  <strong className="text-stone-800">Note de gestion :</strong>{' '}
+                  <strong className="text-stone-800">
+                    {t('dashboard.management_note_label', 'Note de gestion :')}
+                  </strong>{' '}
                   {isLowBalance
-                    ? 'Le solde est critique. Différez tout achat non prioritaire jusqu’au prochain culte.'
-                    : 'La caisse couvre les charges courantes de la paroisse avec une réserve saine.'}
+                    ? t(
+                        'dashboard.critical_balance_note',
+                        'Le solde est critique. Différez tout achat non prioritaire jusqu’au prochain culte.',
+                      )
+                    : t(
+                        'dashboard.healthy_balance_note',
+                        'La caisse couvre les charges courantes de la paroisse avec une réserve saine.',
+                      )}
                 </div>
               </div>
 
@@ -892,14 +956,18 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <CalendarClockIcon className="h-4 w-4 text-stone-600" />
                     <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">
-                      Projection Fin de Mois
+                      {t('dashboard.month_end_projection_title', 'Projection Fin de Mois')}
                     </span>
                   </div>
-                  <span className="text-[11px] font-medium text-stone-500">Charges déduites</span>
+                  <span className="text-[11px] font-medium text-stone-500">
+                    {t('dashboard.charges_deducted_label', 'Charges déduites')}
+                  </span>
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-xs text-stone-500">Solde estimé au 30 du mois</p>
+                  <p className="text-xs text-stone-500">
+                    {t('dashboard.estimated_balance_eom', 'Solde estimé au 30 du mois')}
+                  </p>
                   <p className="mt-1 font-mono tabular-nums text-3xl font-bold text-stone-900">
                     {netProjected.toLocaleString('fr-FR')}{' '}
                     <span className="text-sm font-sans font-normal text-stone-500">{currency}</span>
@@ -907,19 +975,26 @@ export default function DashboardPage() {
 
                   <div className="mt-3 space-y-1.5 text-xs text-stone-600 border-t border-stone-100 pt-3">
                     <div className="flex justify-between">
-                      <span>Solde en caisse :</span>
+                      <span>{t('dashboard.cash_balance_label', 'Solde en caisse :')}</span>
                       <span className="font-mono tabular-nums font-semibold text-stone-800">
                         {activeBalance.toLocaleString('fr-FR')} {currencyShort}
                       </span>
                     </div>
                     <div className="flex justify-between text-amber-800">
-                      <span>Charges récurrentes prévues :</span>
+                      <span>
+                        {t(
+                          'dashboard.planned_recurring_charges_label',
+                          'Charges récurrentes prévues :',
+                        )}
+                      </span>
                       <span className="font-mono tabular-nums font-semibold">
                         -{pendingTotalAmount.toLocaleString('fr-FR')} {currencyShort}
                       </span>
                     </div>
                     <div className="flex justify-between font-bold text-emerald-900 pt-1 border-t border-dashed border-stone-200">
-                      <span>Marge nette prévisionnelle :</span>
+                      <span>
+                        {t('dashboard.projected_net_margin_label', 'Marge nette prévisionnelle :')}
+                      </span>
                       <span className="font-mono tabular-nums">
                         {netProjected.toLocaleString('fr-FR')} {currencyShort}
                       </span>
@@ -932,7 +1007,12 @@ export default function DashboardPage() {
                     href="/recurrent-expenses"
                     className="text-xs font-bold text-emerald-800 hover:text-emerald-950 inline-flex items-center gap-1"
                   >
-                    <span>Planning des charges récurrentes</span>
+                    <span>
+                      {t(
+                        'dashboard.recurring_charges_planning_link',
+                        'Planning des charges récurrentes',
+                      )}
+                    </span>
                     <ArrowRightIcon className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -946,11 +1026,11 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2">
                       <BuildingBranchIcon className="h-4 w-4 text-stone-600" />
                       <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">
-                        Paroisses & Annexes
+                        {t('dashboard.parishes_branches_title', 'Paroisses & Annexes')}
                       </span>
                     </div>
                     <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-semibold text-stone-700">
-                      {branches.length} Lieux
+                      {branches.length} {t('dashboard.locations_suffix', 'Lieux')}
                     </span>
                   </div>
 
@@ -965,7 +1045,12 @@ export default function DashboardPage() {
                     >
                       <span className="flex items-center gap-2">
                         <ChurchIcon className="h-4 w-4 text-emerald-800" />
-                        <span>Vue Consolidée (Toutes Paroisses)</span>
+                        <span>
+                          {t(
+                            'dashboard.consolidated_all_parishes',
+                            'Vue Consolidée (Toutes Paroisses)',
+                          )}
+                        </span>
                       </span>
                       <span className="text-[11px] font-mono tabular-nums font-semibold text-emerald-800">
                         {branches
@@ -1002,7 +1087,9 @@ export default function DashboardPage() {
                     href="/settings/branches"
                     className="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between"
                   >
-                    <span>Gérer les annexes de l’église</span>
+                    <span>
+                      {t('dashboard.manage_branches_link', 'Gérer les annexes de l’église')}
+                    </span>
                     <ArrowRightIcon className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -1017,14 +1104,18 @@ export default function DashboardPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
                   <div>
                     <h3 className="font-serif text-lg sm:text-xl font-bold text-emerald-950">
-                      Répartition des Entrées de Culte
+                      {t('dashboard.income_breakdown_title', 'Répartition des Entrées de Culte')}
                     </h3>
                     <p className="text-xs text-stone-500">
-                      Ventilation canonique des dîmes, offrandes et souscriptions spéciales
+                      {t(
+                        'dashboard.income_breakdown_subtitle',
+                        'Ventilation canonique des dîmes, offrandes et souscriptions spéciales',
+                      )}
                     </p>
                   </div>
                   <span className="text-xs font-mono tabular-nums font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200 self-start">
-                    Total : {activeIncomes.toLocaleString('fr-FR')} {currency}
+                    {t('dashboard.total_label', 'Total :')} {activeIncomes.toLocaleString('fr-FR')}{' '}
+                    {currency}
                   </span>
                 </div>
 
@@ -1032,7 +1123,10 @@ export default function DashboardPage() {
                   <div className="mt-6 py-8 text-center text-xs text-stone-400">
                     <CoinsHandIcon className="h-7 w-7 mx-auto text-stone-300 mb-2" />
                     <p className="font-semibold text-stone-600">
-                      Aucune entrée enregistrée pour l’instant.
+                      {t(
+                        'dashboard.no_income_recorded',
+                        'Aucune entrée enregistrée pour l’instant.',
+                      )}
                     </p>
                   </div>
                 ) : (
@@ -1074,7 +1168,8 @@ export default function DashboardPage() {
                               <div>
                                 <p className="text-xs font-bold text-stone-900">{item.category}</p>
                                 <p className="text-[11px] text-stone-500">
-                                  {item.percentage}% de la collecte
+                                  {item.percentage}%{' '}
+                                  {t('dashboard.of_collection_suffix', 'de la collecte')}
                                 </p>
                               </div>
                             </div>
@@ -1097,9 +1192,16 @@ export default function DashboardPage() {
                 <div className="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-3 text-xs text-amber-950">
                   <ShieldCheckIcon className="h-5 w-5 text-amber-800 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="font-bold">Protocole de Transparence Goshen :</strong> Le
-                    dépouillement et le comptage dominical sont obligatoirement contresignés par
-                    deux personnes avant la clôture du registre.
+                    <strong className="font-bold">
+                      {t(
+                        'dashboard.transparency_protocol_label',
+                        'Protocole de Transparence Goshen :',
+                      )}
+                    </strong>{' '}
+                    {t(
+                      'dashboard.transparency_protocol_desc',
+                      'Le dépouillement et le comptage dominical sont obligatoirement contresignés par deux personnes avant la clôture du registre.',
+                    )}
                   </div>
                 </div>
               </div>
@@ -1111,14 +1213,18 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between border-b border-stone-100 pb-4">
                     <div>
                       <h3 className="font-serif text-lg font-bold text-stone-900">
-                        Charges Fixes à Valider
+                        {t('dashboard.pending_validation_title', 'Charges Fixes à Valider')}
                       </h3>
                       <p className="text-xs text-stone-500">
-                        Loyer du temple, factures d’énergie et charges
+                        {t(
+                          'dashboard.pending_validation_desc',
+                          'Loyer du temple, factures d’énergie et charges',
+                        )}
                       </p>
                     </div>
                     <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-800 border border-red-200">
-                      {activePendingRecurrents.length} en attente
+                      {activePendingRecurrents.length}{' '}
+                      {t('dashboard.pending_count_suffix', 'en attente')}
                     </span>
                   </div>
 
@@ -1137,7 +1243,7 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-1.5">
                               {rec.urgent && (
                                 <span className="rounded bg-red-600 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase">
-                                  Imminent
+                                  {t('dashboard.imminent_badge', 'Imminent')}
                                 </span>
                               )}
                               <p className="text-xs font-bold text-stone-900">{rec.name}</p>
@@ -1153,7 +1259,7 @@ export default function DashboardPage() {
 
                         <div className="mt-3 flex items-center justify-between pt-2 border-t border-stone-200/80 text-xs">
                           <span className="text-[11px] text-stone-500">
-                            Échéance :{' '}
+                            {t('dashboard.due_date_label', 'Échéance :')}{' '}
                             <strong className="text-stone-700">
                               {new Date(rec.dueDate).toLocaleDateString('fr-FR')}
                             </strong>
@@ -1162,7 +1268,7 @@ export default function DashboardPage() {
                             href="/recurrent-expenses/validation"
                             className="rounded-md bg-emerald-800 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 transition-colors inline-flex items-center gap-1"
                           >
-                            <span>Valider</span>
+                            <span>{t('dashboard.validate', 'Valider')}</span>
                             <ArrowRightIcon className="h-3 w-3" />
                           </Link>
                         </div>
@@ -1176,7 +1282,10 @@ export default function DashboardPage() {
                     href="/recurrent-expenses/validation"
                     className="block w-full text-center rounded-lg bg-stone-900 py-2.5 text-xs font-bold text-white hover:bg-stone-800 transition-colors shadow-xs"
                   >
-                    Ouvrir le Centre de Décaissement en 1 Clic
+                    {t(
+                      'dashboard.open_disbursement_center',
+                      'Ouvrir le Centre de Décaissement en 1 Clic',
+                    )}
                   </Link>
                 </div>
               </div>
@@ -1187,10 +1296,13 @@ export default function DashboardPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-100 pb-5">
                 <div>
                   <h3 className="font-serif text-xl font-bold text-stone-900">
-                    Journal des Écritures Comptables
+                    {t('dashboard.accounting_journal_title', 'Journal des Écritures Comptables')}
                   </h3>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    Mouvements de caisse horodatés et pièces justificatives
+                    {t(
+                      'dashboard.accounting_journal_subtitle',
+                      'Mouvements de caisse horodatés et pièces justificatives',
+                    )}
                   </p>
                 </div>
 
@@ -1204,7 +1316,7 @@ export default function DashboardPage() {
                         : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                     }`}
                   >
-                    Toutes ({displayTransactions.length})
+                    {t('dashboard.filter_all', 'Toutes')} ({displayTransactions.length})
                   </button>
                   <button
                     onClick={() => setTxFilter('INCOME')}
@@ -1214,7 +1326,7 @@ export default function DashboardPage() {
                         : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                     }`}
                   >
-                    + Entrées Cultes
+                    {t('dashboard.filter_incomes', '+ Entrées Cultes')}
                   </button>
                   <button
                     onClick={() => setTxFilter('EXPENSE')}
@@ -1224,7 +1336,7 @@ export default function DashboardPage() {
                         : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
                     }`}
                   >
-                    - Dépenses & Reçus
+                    {t('dashboard.filter_expenses', '- Dépenses & Reçus')}
                   </button>
                 </div>
               </div>
@@ -1235,13 +1347,13 @@ export default function DashboardPage() {
                   <div className="py-12 text-center text-xs text-stone-400">
                     <DocumentReportIcon className="h-8 w-8 mx-auto text-stone-300 mb-2" />
                     <p className="font-semibold text-stone-600">
-                      Aucune écriture comptable enregistrée.
+                      {t('dashboard.no_entries_recorded', 'Aucune écriture comptable enregistrée.')}
                     </p>
                     <Link
                       href="/transactions/incomes"
                       className="mt-3 inline-block text-emerald-800 font-bold underline"
                     >
-                      Enregistrer votre première entrée
+                      {t('dashboard.record_first_entry', 'Enregistrer votre première entrée')}
                     </Link>
                   </div>
                 ) : (
@@ -1275,7 +1387,9 @@ export default function DashboardPage() {
                                   : 'bg-stone-100 text-stone-800 border border-stone-200'
                               }`}
                             >
-                              {tx.type === 'INCOME' ? 'CULTE / ENTRÉE' : 'DÉCAISSEMENT'}
+                              {tx.type === 'INCOME'
+                                ? t('dashboard.badge_income', 'CULTE / ENTRÉE')
+                                : t('dashboard.badge_expense', 'DÉCAISSEMENT')}
                             </span>
                             <span className="text-[10px] font-medium text-stone-600 bg-stone-100 rounded px-1.5 py-0.2">
                               {tx.branchName}
@@ -1283,7 +1397,9 @@ export default function DashboardPage() {
                           </div>
 
                           <p className="text-[11px] text-stone-500 mt-1">
-                            {tx.notes || tx.beneficiary || 'Écriture validée'}
+                            {tx.notes ||
+                              tx.beneficiary ||
+                              t('dashboard.validated_entry_fallback', 'Écriture validée')}
                           </p>
 
                           <div className="mt-1 flex items-center gap-2 text-[10px] text-stone-400">
@@ -1291,7 +1407,9 @@ export default function DashboardPage() {
                               {tx.date} à {tx.time}
                             </span>
                             <span>&bull;</span>
-                            <span>Saisi par {tx.authorName}</span>
+                            <span>
+                              {t('dashboard.entered_by_prefix', 'Saisi par')} {tx.authorName}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1318,10 +1436,15 @@ export default function DashboardPage() {
                             type="button"
                             onClick={() => handleOpenTransactionInvoice(tx)}
                             className="rounded-xl border border-stone-200 bg-white px-2.5 py-1.5 hover:bg-stone-50 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold text-stone-700 hover:text-emerald-950 cursor-pointer"
-                            title="Prévisualiser, imprimer ou télécharger la facture officielle de cette opération"
+                            title={t(
+                              'dashboard.invoice_button_title',
+                              'Prévisualiser, imprimer ou télécharger la facture officielle de cette opération',
+                            )}
                           >
                             <DocumentReportIcon className="h-3.5 w-3.5 text-emerald-800" />
-                            <span className="hidden sm:inline text-[11px]">Facture</span>
+                            <span className="hidden sm:inline text-[11px]">
+                              {t('dashboard.invoice_button_label', 'Facture')}
+                            </span>
                           </button>
 
                           {tx.receiptUrl && (
@@ -1329,10 +1452,15 @@ export default function DashboardPage() {
                               type="button"
                               onClick={() => setSelectedReceiptUrl(tx.receiptUrl)}
                               className="rounded-xl border border-stone-200 bg-white px-2.5 py-1.5 hover:bg-stone-50 shadow-2xs transition-colors flex items-center gap-1 text-xs font-semibold text-emerald-800 cursor-pointer"
-                              title="Voir la photo du justificatif"
+                              title={t(
+                                'dashboard.receipt_button_title',
+                                'Voir la photo du justificatif',
+                              )}
                             >
                               <CameraIcon className="h-3.5 w-3.5 text-emerald-800" />
-                              <span className="hidden sm:inline text-[11px]">Reçu</span>
+                              <span className="hidden sm:inline text-[11px]">
+                                {t('dashboard.receipt_button_label', 'Reçu')}
+                              </span>
                             </button>
                           )}
                         </div>
@@ -1344,7 +1472,10 @@ export default function DashboardPage() {
 
               <div className="mt-6 pt-4 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <span className="text-stone-500">
-                  Affichage des écritures comptables certifiées de l'assemblée
+                  {t(
+                    'dashboard.journal_footer_note',
+                    'Affichage des écritures comptables certifiées de l’assemblée',
+                  )}
                 </span>
                 <div className="flex items-center gap-3">
                   <button
@@ -1353,14 +1484,21 @@ export default function DashboardPage() {
                     className="font-bold text-[#e11d48] hover:text-[#be123c] inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <DocumentReportIcon className="h-3.5 w-3.5" />
-                    <span>Facture récapitulative de la période</span>
+                    <span>
+                      {t('dashboard.period_invoice_link', 'Facture récapitulative de la période')}
+                    </span>
                   </button>
                   <span className="text-stone-300 hidden sm:inline">|</span>
                   <Link
                     href="/reports"
                     className="font-bold text-emerald-800 hover:text-emerald-950 inline-flex items-center gap-1"
                   >
-                    <span>Éditer le rapport dominical officiel</span>
+                    <span>
+                      {t(
+                        'dashboard.edit_official_report_link',
+                        'Éditer le rapport dominical officiel',
+                      )}
+                    </span>
                     <ArrowRightIcon className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -1378,7 +1516,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <CameraIcon className="h-4 w-4 text-emerald-800" />
                 <h4 className="font-serif text-sm font-bold text-stone-900">
-                  Justificatif Comptable Numérique
+                  {t('dashboard.receipt_modal_title', 'Justificatif Comptable Numérique')}
                 </h4>
               </div>
               <button
@@ -1391,19 +1529,21 @@ export default function DashboardPage() {
             <div className="p-4 bg-stone-950 flex items-center justify-center min-h-[280px]">
               <img
                 src={selectedReceiptUrl}
-                alt="Justificatif de dépense"
+                alt={t('dashboard.receipt_modal_alt', 'Justificatif de dépense')}
                 className="max-h-[65vh] rounded-lg object-contain shadow-md"
               />
             </div>
             <div className="p-3.5 bg-white flex justify-between items-center text-xs border-t border-stone-200">
-              <span className="text-stone-500">Pièce archivée sur Goshen</span>
+              <span className="text-stone-500">
+                {t('dashboard.receipt_modal_archived_note', 'Pièce archivée sur Goshen')}
+              </span>
               <a
                 href={selectedReceiptUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-md bg-emerald-800 px-3 py-1.5 font-bold text-white hover:bg-emerald-700"
               >
-                Télécharger l'original
+                {t('dashboard.download_original', 'Télécharger l’original')}
               </a>
             </div>
           </div>
@@ -1418,7 +1558,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <BuildingBranchIcon className="h-5 w-5 text-emerald-800" />
                 <h3 className="font-serif text-base font-bold text-stone-900">
-                  Ajouter une Nouvelle Annexe
+                  {t('dashboard.add_branch_modal_title', 'Ajouter une Nouvelle Annexe')}
                 </h3>
               </div>
               <button
@@ -1433,12 +1573,15 @@ export default function DashboardPage() {
             <form onSubmit={handleCreateBranch} className="space-y-4 mt-4 text-xs">
               <div>
                 <label className="block font-bold text-stone-700 mb-1">
-                  Nom de l'annexe ou paroisse *
+                  {t('dashboard.branch_name_label', 'Nom de l’annexe ou paroisse *')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Annexe Port-Gentil (Grand Village)"
+                  placeholder={t(
+                    'dashboard.branch_name_placeholder',
+                    'Ex: Annexe Port-Gentil (Grand Village)',
+                  )}
                   value={newBranchName}
                   onChange={(e) => setNewBranchName(e.target.value)}
                   className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
@@ -1446,10 +1589,12 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Ville / Commune</label>
+                <label className="block font-bold text-stone-700 mb-1">
+                  {t('dashboard.city_label', 'Ville / Commune')}
+                </label>
                 <input
                   type="text"
-                  placeholder="Ex: Port-Gentil"
+                  placeholder={t('dashboard.city_placeholder', 'Ex: Port-Gentil')}
                   value={newBranchCity}
                   onChange={(e) => setNewBranchCity(e.target.value)}
                   className="w-full rounded-xl border border-stone-200 p-2.5 text-xs text-stone-900 shadow-2xs focus:border-emerald-700 focus:outline-hidden"
@@ -1459,7 +1604,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">
-                    Solde initial ({currency})
+                    {t('dashboard.initial_balance_label', 'Solde initial')} ({currency})
                   </label>
                   <input
                     type="number"
@@ -1473,7 +1618,7 @@ export default function DashboardPage() {
 
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">
-                    Seuil de réserve ({currency})
+                    {t('dashboard.threshold_label', 'Seuil de réserve')} ({currency})
                   </label>
                   <input
                     type="number"
@@ -1492,14 +1637,16 @@ export default function DashboardPage() {
                   onClick={() => setIsAddBranchModalOpen(false)}
                   className="rounded-xl border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer"
                 >
-                  Annuler
+                  {t('header.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingBranch || !newBranchName.trim()}
                   className="rounded-xl bg-emerald-800 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer"
                 >
-                  {isCreatingBranch ? 'Création…' : 'Enregistrer l’annexe'}
+                  {isCreatingBranch
+                    ? t('dashboard.creating_branch', 'Création…')
+                    : t('dashboard.save_branch', 'Enregistrer l’annexe')}
                 </button>
               </div>
             </form>
