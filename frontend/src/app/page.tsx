@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { GoshenWordmark } from '@/components/icons/GoshenWordmark';
 import { Reveal } from '@/components/ui/Reveal';
+import { ShowreelScroll } from '@/components/landing/ShowreelScroll';
 import {
   CalendarClockIcon,
   CheckCircleIcon,
@@ -725,6 +726,8 @@ export default function HomePage() {
             />
           </div>
         </section>
+
+        <ShowreelScroll />
 
         {/* Problem Section — 3 concrete pains (time / trust / proof), each
           card revealing on scroll with a staggered delay so the section
