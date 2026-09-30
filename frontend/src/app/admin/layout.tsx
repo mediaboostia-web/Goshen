@@ -1,19 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { GoshenLogo } from '@/components/icons/GoshenLogo';
-import { BellIcon } from '@/components/icons/ChurchIcons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface AdminMe {
   admin: { id: string; email: string; role: 'ADMIN' | 'SUPERADMIN' };
   can: string[];
 }
-
-const NOTIFICATION_POLL_MS = 60_000;
 
 const NAV = [
   { href: '/admin', label: 'Vue d’ensemble', exact: true },
@@ -30,19 +27,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === '/admin/login';
   const [admin, setAdmin] = useState<AdminMe['admin'] | null>(null);
   const [checked, setChecked] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-
-  const refreshUnreadCount = useCallback(async () => {
-    try {
-      const res = await api<{ count: number }>('/api/notifications/count');
-      setUnreadCount(res.count);
-    } catch {
-      // Non-critical — leave the last known count on the badge.
-    }
-  }, []);
 
   useEffect(() => {
     if (isLoginPage) return;
@@ -65,13 +52,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [router, isLoginPage]);
-
-  useEffect(() => {
-    if (isLoginPage || !admin) return;
-    void refreshUnreadCount();
-    const timer = setInterval(() => void refreshUnreadCount(), NOTIFICATION_POLL_MS);
-    return () => clearInterval(timer);
-  }, [isLoginPage, admin, refreshUnreadCount]);
 
   if (isLoginPage) {
     return <>{children}</>;
@@ -138,23 +118,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <h1 className="text-sm font-bold text-stone-900">{currentLabel ?? 'Admin'}</h1>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/notifications"
-              className="group relative rounded-xl p-2 text-stone-500 hover:bg-stone-100 hover:text-emerald-900 transition-colors"
-              title={
-                unreadCount > 0
-                  ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}`
-                  : 'Centre de notifications'
-              }
-            >
-              <BellIcon className="h-5 w-5 text-stone-600 group-hover:text-emerald-900 transition-colors" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Link>
-
             <div className="relative">
               <button
                 type="button"
